@@ -44,8 +44,6 @@ public class Player {
         if (hitbox.y < 0f) hitbox.y = 0f;
         if (hitbox.x + hitbox.width > worldWidth) hitbox.x = worldWidth - hitbox.width;
         if (hitbox.y + hitbox.height > worldHeight) hitbox.y = worldHeight - hitbox.height;
-
-        TrumpBoss.updateActive(delta, worldWidth, worldHeight);
     }
 
     public static Player getActivePlayer() {
