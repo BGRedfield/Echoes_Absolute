@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
@@ -781,7 +782,6 @@ public class LuaScreen extends ScreenAdapter {
             return;
         }
 
-        // O jogador precisa realmente entrar no portal depois de desbloqueá-lo.
         if (!playerAtPortal) {
             portalEntryArmed = true;
         }
@@ -1049,10 +1049,11 @@ public class LuaScreen extends ScreenAdapter {
         }
 
         Texture rifleTexture = assets.getRifleTexture();
+        TextureRegion rifleRegion = new TextureRegion(rifleTexture);
         for (RifleWeapon rifle : rifleWeapons) {
             if (!rifle.isDestroyed()) {
                 batch.draw(
-                        rifleTexture,
+                        rifleRegion,
                         rifle.getX(),
                         rifle.getY(),
                         rifle.getWidth() / 2f,
