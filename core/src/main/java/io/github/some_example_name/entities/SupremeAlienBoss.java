@@ -6,7 +6,7 @@ import com.badlogic.gdx.math.Rectangle;
 /** Giant fictional Martian boss used after the Mars weapon upgrade. */
 public class SupremeAlienBoss {
 
-    public static final float MAX_HEALTH = 1000f;
+    public static final float MAX_HEALTH = 5000f;
     public static final float WIDTH = 130f;
     public static final float HEIGHT = 130f;
     public static final float SPEED = 105f;
