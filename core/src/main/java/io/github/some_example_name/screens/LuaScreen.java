@@ -1,6 +1,7 @@
 package io.github.some_example_name.screens;
 
 import com.badlogic.gdx.Game;
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
@@ -12,6 +13,7 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.some_example_name.entities.Laser;
+import io.github.some_example_name.entities.LuaItem;
 import io.github.some_example_name.entities.Player;
 import io.github.some_example_name.managers.AssetManager;
 
@@ -31,7 +33,7 @@ public class LuaScreen extends ScreenAdapter {
     private static final float LUNAR_BASE_WIDTH = 240f;
     private static final float LUNAR_BASE_HEIGHT = 160f;
 
-    private static final float LASER_INTERVAL = 0.5f;
+    private static final float TILE_SIZE = 128f;
 
     private final Game game;
     private final OrthographicCamera camera;
@@ -40,8 +42,7 @@ public class LuaScreen extends ScreenAdapter {
     private final AssetManager assets;
     private final Player player;
     private final Array<Laser> lasers;
-
-    private float laserTimer;
+    private final Array<LuaItem> luaItems;
 
     public LuaScreen(Game game) {
         this.game = game;
@@ -53,9 +54,63 @@ public class LuaScreen extends ScreenAdapter {
 
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
         lasers = new Array<>();
-        laserTimer = 0f;
+        luaItems = new Array<>();
 
+        createLuaResources();
         updateCamera();
+    }
+
+    private void createLuaResources() {
+        // Comida: cubos/itens laranjas.
+        luaItems.add(new LuaItem(
+                LuaItem.Type.FOOD,
+                780f,
+                620f,
+                52f,
+                52f
+        ));
+
+        luaItems.add(new LuaItem(
+                LuaItem.Type.FOOD,
+                1540f,
+                420f,
+                52f,
+                52f
+        ));
+
+        // Tanques de O2: objetos propositalmente mais altos e estreitos.
+        luaItems.add(new LuaItem(
+                LuaItem.Type.O2_TANK,
+                1050f,
+                920f,
+                42f,
+                118f
+        ));
+
+        luaItems.add(new LuaItem(
+                LuaItem.Type.O2_TANK,
+                2050f,
+                1320f,
+                42f,
+                118f
+        ));
+
+        // Gelo: cubos azuis.
+        luaItems.add(new LuaItem(
+                LuaItem.Type.ICE,
+                1350f,
+                1300f,
+                70f,
+                70f
+        ));
+
+        luaItems.add(new LuaItem(
+                LuaItem.Type.ICE,
+                2380f,
+                760f,
+                70f,
+                70f
+        ));
     }
 
     @Override
@@ -69,11 +124,8 @@ public class LuaScreen extends ScreenAdapter {
 
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
 
-        laserTimer += delta;
-
-        while (laserTimer >= LASER_INTERVAL) {
-            laserTimer -= LASER_INTERVAL;
-
+        // Agora cada clique do mouse dispara exatamente um laser.
+        if (Gdx.input.justTouched()) {
             lasers.add(new Laser(
                     player.getCenterX(),
                     player.getCenterY(),
@@ -114,6 +166,53 @@ public class LuaScreen extends ScreenAdapter {
         camera.update();
     }
 
+    private void drawLuaFloor() {
+        Texture tile = assets.getLuaTileTexture();
+
+        for (float x = 0f; x < WORLD_WIDTH; x += TILE_SIZE) {
+            for (float y = 0f; y < WORLD_HEIGHT; y += TILE_SIZE) {
+                float width = Math.min(TILE_SIZE, WORLD_WIDTH - x);
+                float height = Math.min(TILE_SIZE, WORLD_HEIGHT - y);
+
+                batch.draw(
+                        tile,
+                        x,
+                        y,
+                        width,
+                        height
+                );
+            }
+        }
+    }
+
+    private void drawLuaItems() {
+        for (LuaItem item : luaItems) {
+            Texture texture;
+
+            switch (item.getType()) {
+                case FOOD:
+                    texture = assets.getFoodTexture();
+                    break;
+                case O2_TANK:
+                    texture = assets.getO2TankTexture();
+                    break;
+                case ICE:
+                    texture = assets.getIceTexture();
+                    break;
+                default:
+                    continue;
+            }
+
+            batch.draw(
+                    texture,
+                    item.getX(),
+                    item.getY(),
+                    item.getWidth(),
+                    item.getHeight()
+            );
+        }
+    }
+
     @Override
     public void render(float delta) {
         update(delta);
@@ -123,9 +222,15 @@ public class LuaScreen extends ScreenAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
+        // Fundo geral.
         Texture background = assets.getLuaBackgroundTexture();
         batch.draw(background, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
 
+        // Sistema de tiles do chão. Quando lua_tile.png for colocado,
+        // ele será repetido por todo o mapa em uma grade de 128x128.
+        drawLuaFloor();
+
+        // Base lunar.
         Texture lunarBase = assets.getLunarBaseTexture();
         batch.draw(
                 lunarBase,
@@ -135,6 +240,10 @@ public class LuaScreen extends ScreenAdapter {
                 LUNAR_BASE_HEIGHT
         );
 
+        // Recursos espalhados pela Lua.
+        drawLuaItems();
+
+        // Lasers disparados pelos cliques.
         Texture laserTexture = assets.getLaserTexture();
         for (Laser laser : lasers) {
             batch.draw(
@@ -146,6 +255,7 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
+        // Jogador.
         Texture playerTexture = assets.getPlayerTexture();
         batch.draw(
                 playerTexture,
