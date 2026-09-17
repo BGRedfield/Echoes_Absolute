@@ -643,7 +643,10 @@ public class LuaScreen extends ScreenAdapter {
         float barX = (hudWidth - barWidth) / 2f;
         float barY = 40f;
 
+        shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         drawBar(barX, barY, barWidth, barHeight, trumpBoss.getHealth(), TrumpBoss.MAX_HEALTH, Color.ORANGE);
+        shapeRenderer.end();
 
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
