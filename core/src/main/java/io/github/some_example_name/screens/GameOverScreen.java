@@ -30,6 +30,7 @@ public class GameOverScreen extends ScreenAdapter {
 
     private final Rectangle retryButton = new Rectangle();
     private final Rectangle menuButton = new Rectangle();
+    private boolean changingScreen = false;
 
     public GameOverScreen(Game game, DeathCause deathCause) {
         this.game = game;
@@ -45,6 +46,7 @@ public class GameOverScreen extends ScreenAdapter {
     public void show() {
         viewport.apply(true);
         layoutButtons();
+        changingScreen = false;
     }
 
     private void layoutButtons() {
@@ -97,18 +99,32 @@ public class GameOverScreen extends ScreenAdapter {
     }
 
     private void retry() {
-        dispose();
+        if (changingScreen) {
+            return;
+        }
+
+        changingScreen = true;
         game.setScreen(new LuaScreen(game));
     }
 
     private void goToMenu() {
-        dispose();
+        if (changingScreen) {
+            return;
+        }
+
+        changingScreen = true;
         game.setScreen(new MenuScreen(game));
     }
 
     @Override
     public void render(float delta) {
         handleInput();
+
+        // A troca de tela aconteceu durante este render.
+        // Não podemos continuar usando os objetos desta tela neste frame.
+        if (changingScreen) {
+            return;
+        }
 
         Gdx.gl.glClearColor(0f, 0f, 0f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
