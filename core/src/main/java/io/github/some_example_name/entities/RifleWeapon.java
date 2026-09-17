@@ -26,6 +26,7 @@ public class RifleWeapon {
     private final Rectangle hitbox;
     private float health = MAX_HEALTH;
     private float shotTimer;
+    private float rotationDegrees;
     private boolean destroyed;
 
     public RifleWeapon(String name, float x, float y) {
@@ -33,7 +34,7 @@ public class RifleWeapon {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
     }
 
-    /** Keeps the rifle at its current orbit position. */
+    /** Keeps the rifle at its current orbit position and fires toward the player. */
     public void update(float delta, float playerX, float playerY, Array<EnemyBullet> bullets) {
         if (destroyed) {
             return;
@@ -52,6 +53,15 @@ public class RifleWeapon {
     public void setPosition(float x, float y) {
         hitbox.x = x;
         hitbox.y = y;
+    }
+
+    /** Rotation of the sprite in degrees, used to keep the barrel pointing away from Trump. */
+    public void setRotationDegrees(float rotationDegrees) {
+        this.rotationDegrees = rotationDegrees;
+    }
+
+    public float getRotationDegrees() {
+        return rotationDegrees;
     }
 
     public void takeDamage(float amount) {
