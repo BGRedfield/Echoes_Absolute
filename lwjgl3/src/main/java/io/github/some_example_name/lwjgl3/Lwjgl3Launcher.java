@@ -24,10 +24,8 @@ public class Lwjgl3Launcher {
                 Lwjgl3ApplicationConfiguration.getDisplayMode().refreshRate + 1
         );
 
-        // Abre o jogo ocupando a tela inteira do monitor.
-        configuration.setFullscreenMode(
-                Lwjgl3ApplicationConfiguration.getDisplayMode()
-        );
+        // Janela normal/maximizada: ocupa a área disponível da tela, mas não usa fullscreen.
+        configuration.setMaximized(true);
 
         configuration.setWindowIcon(
                 "libgdx128.png",
