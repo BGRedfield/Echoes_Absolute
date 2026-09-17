@@ -71,12 +71,8 @@ public class LuaScreen extends ScreenAdapter {
     private static final float RIFLE_ORBIT_RADIUS = 410f;
     private static final float RIFLE_ORBIT_SPEED = 0.55f;
     private static final float RIFLE_OUTWARD_ROTATION_OFFSET = 0f;
-
-    // Antes do Trump aparecer, a Lua mantém uma quantidade constante de americanos ativos.
     private static final int MAX_ACTIVE_LUA_AMERICANS = 3;
     private static final float AMERICAN_RESPAWN_INTERVAL = 2.5f;
-
-    // Chave vermelha usada para liberar o portal depois da morte do boss.
     private static final float RED_KEY_SIZE = 76f;
 
     private final Game game;
@@ -112,6 +108,7 @@ public class LuaScreen extends ScreenAdapter {
     private float americanSpawnTimer;
     private boolean portalSpawned;
     private boolean portalUnlocked;
+    private boolean portalEntryArmed;
     private boolean redKeyVisible;
     private boolean bossDeathSequenceStarted;
     private int bossAttackCycle;
@@ -209,6 +206,7 @@ public class LuaScreen extends ScreenAdapter {
         if (mission == LuaMission.GO_TO_MARS
                 && portalSpawned
                 && portalUnlocked
+                && portalEntryArmed
                 && marsPortal != null
                 && player.getHitbox().overlaps(marsPortal.getHitbox())) {
             screenChanged = true;
@@ -299,7 +297,6 @@ public class LuaScreen extends ScreenAdapter {
             }
         }
 
-        // Até o Trump aparecer, a Lua repõe americanos constantemente até manter três ativos.
         if (trumpBoss == null && mission != LuaMission.GO_TO_MARS) {
             if (americans.size < MAX_ACTIVE_LUA_AMERICANS) {
                 americanSpawnTimer -= delta;
@@ -324,7 +321,6 @@ public class LuaScreen extends ScreenAdapter {
         float x;
         float y;
 
-        // Escolhe posições afastadas do jogador e dentro do mapa.
         for (int attempt = 0; attempt < 20; attempt++) {
             x = MathUtils.random(160f, WORLD_WIDTH - 220f);
             y = MathUtils.random(160f, WORLD_HEIGHT - 220f);
@@ -449,6 +445,7 @@ public class LuaScreen extends ScreenAdapter {
         bossDeathSequenceStarted = false;
         portalSpawned = false;
         portalUnlocked = false;
+        portalEntryArmed = false;
         redKeyVisible = false;
         bossAttackCycle = 0;
 
@@ -761,8 +758,8 @@ public class LuaScreen extends ScreenAdapter {
     private void spawnMarsPortal() {
         portalSpawned = true;
         portalUnlocked = false;
+        portalEntryArmed = false;
         redKeyVisible = true;
-        // O portal fica no canto inferior-direito da Lua, longe do ponto do boss.
         marsPortal = new MarsPortal(2580f, 1530f);
         showMessage("A chave vermelha e o portal apareceram. Siga a flecha vermelha até lá!");
     }
@@ -774,10 +771,19 @@ public class LuaScreen extends ScreenAdapter {
 
         boolean playerAtPortal = player.getHitbox().overlaps(marsPortal.getHitbox());
 
-        if (playerAtPortal && !portalUnlocked && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-            portalUnlocked = true;
-            redKeyVisible = false;
-            showMessage("CHAVE USADA! Portal para Marte aberto. Entre nele.");
+        if (!portalUnlocked) {
+            if (playerAtPortal && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                portalUnlocked = true;
+                portalEntryArmed = false;
+                redKeyVisible = false;
+                showMessage("CHAVE USADA! Portal para Marte aberto. Saia e entre no portal novamente.");
+            }
+            return;
+        }
+
+        // O jogador precisa realmente entrar no portal depois de desbloqueá-lo.
+        if (!playerAtPortal) {
+            portalEntryArmed = true;
         }
     }
 
@@ -1045,8 +1051,6 @@ public class LuaScreen extends ScreenAdapter {
         Texture rifleTexture = assets.getRifleTexture();
         for (RifleWeapon rifle : rifleWeapons) {
             if (!rifle.isDestroyed()) {
-                float centerX = rifle.getX() + rifle.getWidth() / 2f;
-                float centerY = rifle.getY() + rifle.getHeight() / 2f;
                 batch.draw(
                         rifleTexture,
                         rifle.getX(),
@@ -1158,6 +1162,8 @@ public class LuaScreen extends ScreenAdapter {
                     } else {
                         objective = "Siga a flecha vermelha até o portal para Marte";
                     }
+                } else if (!portalEntryArmed) {
+                    objective = "Portal aberto: saia e entre novamente para viajar a Marte";
                 } else {
                     objective = "Portal aberto: entre nele para continuar";
                 }
