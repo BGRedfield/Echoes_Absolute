@@ -21,14 +21,14 @@ public class MenuScreen extends ScreenAdapter {
     private final Viewport viewport;
     private final Rectangle playButton = new Rectangle();
 
-    private boolean changingScreen = false;
+    private boolean changingScreen;
+    private boolean disposed;
 
     public MenuScreen(Game game) {
         this.game = game;
-        this.batch = new SpriteBatch();
-        this.font = new BitmapFont();
-        this.viewport = new ScreenViewport();
-
+        batch = new SpriteBatch();
+        font = new BitmapFont();
+        viewport = new ScreenViewport();
         font.setColor(Color.WHITE);
     }
 
@@ -43,12 +43,7 @@ public class MenuScreen extends ScreenAdapter {
         float width = viewport.getWorldWidth();
         float height = viewport.getWorldHeight();
 
-        playButton.set(
-                width / 2f - 170f,
-                height / 2f - 55f,
-                340f,
-                80f
-        );
+        playButton.set(width / 2f - 170f, height / 2f - 55f, 340f, 80f);
     }
 
     private void handleInput() {
@@ -66,7 +61,6 @@ public class MenuScreen extends ScreenAdapter {
         if (Gdx.input.justTouched()) {
             float x = Gdx.input.getX();
             float y = Gdx.graphics.getHeight() - Gdx.input.getY();
-
             if (playButton.contains(x, y)) {
                 startGame();
             }
@@ -91,8 +85,6 @@ public class MenuScreen extends ScreenAdapter {
     public void render(float delta) {
         handleInput();
 
-        // A troca de tela aconteceu durante este render.
-        // Não podemos continuar usando o SpriteBatch desta tela.
         if (changingScreen) {
             return;
         }
@@ -128,7 +120,16 @@ public class MenuScreen extends ScreenAdapter {
     }
 
     @Override
+    public void hide() {
+        dispose();
+    }
+
+    @Override
     public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
         batch.dispose();
         font.dispose();
     }
