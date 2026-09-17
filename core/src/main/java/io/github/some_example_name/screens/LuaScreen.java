@@ -70,6 +70,14 @@ public class LuaScreen extends ScreenAdapter {
     private static final float BOSS_EXPLOSION_DURATION = 1.25f;
     private static final float RIFLE_ORBIT_RADIUS = 410f;
     private static final float RIFLE_ORBIT_SPEED = 0.55f;
+    private static final float RIFLE_OUTWARD_ROTATION_OFFSET = 0f;
+
+    // Antes do Trump aparecer, a Lua mantém uma quantidade constante de americanos ativos.
+    private static final int MAX_ACTIVE_LUA_AMERICANS = 3;
+    private static final float AMERICAN_RESPAWN_INTERVAL = 2.5f;
+
+    // Chave vermelha usada para liberar o portal depois da morte do boss.
+    private static final float RED_KEY_SIZE = 76f;
 
     private final Game game;
     private final OrthographicCamera camera;
@@ -101,7 +109,10 @@ public class LuaScreen extends ScreenAdapter {
     private float messageTimer;
     private float bossExplosionTimer;
     private float rifleOrbitAngle;
+    private float americanSpawnTimer;
     private boolean portalSpawned;
+    private boolean portalUnlocked;
+    private boolean redKeyVisible;
     private boolean bossDeathSequenceStarted;
     private int bossAttackCycle;
     private String missionMessage = "";
@@ -131,7 +142,6 @@ public class LuaScreen extends ScreenAdapter {
     }
 
     private void createLuaResources() {
-        // Mais comida espalhada pela Lua.
         addItem(LuaItem.Type.FOOD, 780f, 620f, 56f, 56f);
         addItem(LuaItem.Type.FOOD, 1120f, 430f, 56f, 56f);
         addItem(LuaItem.Type.FOOD, 1680f, 560f, 56f, 56f);
@@ -139,7 +149,6 @@ public class LuaScreen extends ScreenAdapter {
         addItem(LuaItem.Type.FOOD, 720f, 1510f, 56f, 56f);
         addItem(LuaItem.Type.FOOD, 1900f, 1560f, 56f, 56f);
 
-        // Mais oxigênio.
         addItem(LuaItem.Type.O2_TANK, 1050f, 920f, 46f, 125f);
         addItem(LuaItem.Type.O2_TANK, 2050f, 1320f, 46f, 125f);
         addItem(LuaItem.Type.O2_TANK, 1450f, 560f, 46f, 125f);
@@ -147,7 +156,6 @@ public class LuaScreen extends ScreenAdapter {
         addItem(LuaItem.Type.O2_TANK, 560f, 1180f, 46f, 125f);
         addItem(LuaItem.Type.O2_TANK, 2400f, 1540f, 46f, 125f);
 
-        // Oito pontos de gelo. A missão exige cinco.
         addItem(LuaItem.Type.ICE, 880f, 820f, 74f, 74f);
         addItem(LuaItem.Type.ICE, 1350f, 1300f, 74f, 74f);
         addItem(LuaItem.Type.ICE, 2380f, 760f, 74f, 74f);
@@ -166,6 +174,7 @@ public class LuaScreen extends ScreenAdapter {
         americans.add(new AmericanEnemy(2380f, 1540f));
         americans.add(new AmericanEnemy(2200f, 520f));
         americans.add(new AmericanEnemy(1750f, 1700f));
+        americanSpawnTimer = AMERICAN_RESPAWN_INTERVAL;
     }
 
     @Override
@@ -189,6 +198,7 @@ public class LuaScreen extends ScreenAdapter {
         updateRifleBullets(delta);
         updateAmericanBullets(delta);
         updateBoss(delta);
+        handleMarsPortalInteraction();
         stats.update(delta);
 
         if (stats.isDead()) {
@@ -198,11 +208,15 @@ public class LuaScreen extends ScreenAdapter {
 
         if (mission == LuaMission.GO_TO_MARS
                 && portalSpawned
+                && portalUnlocked
                 && marsPortal != null
                 && player.getHitbox().overlaps(marsPortal.getHitbox())) {
             screenChanged = true;
+            float health = stats.getHealth();
+            float hunger = stats.getHunger();
+            float oxygen = stats.getOxygen();
             dispose();
-            game.setScreen(new MarteScreen(game));
+            game.setScreen(new LuaLevelStatusScreen(game, health, hunger, oxygen, REQUIRED_ICE));
             return false;
         }
 
@@ -271,10 +285,6 @@ public class LuaScreen extends ScreenAdapter {
     }
 
     private void updateAmericans(float delta) {
-        if (americans.size == 0) {
-            return;
-        }
-
         for (int i = americans.size - 1; i >= 0; i--) {
             AmericanEnemy enemy = americans.get(i);
             enemy.update(
@@ -289,6 +299,19 @@ public class LuaScreen extends ScreenAdapter {
             }
         }
 
+        // Até o Trump aparecer, a Lua repõe americanos constantemente até manter três ativos.
+        if (trumpBoss == null && mission != LuaMission.GO_TO_MARS) {
+            if (americans.size < MAX_ACTIVE_LUA_AMERICANS) {
+                americanSpawnTimer -= delta;
+                if (americanSpawnTimer <= 0f) {
+                    spawnAmericanReinforcement();
+                    americanSpawnTimer = AMERICAN_RESPAWN_INTERVAL;
+                }
+            } else {
+                americanSpawnTimer = Math.min(americanSpawnTimer, AMERICAN_RESPAWN_INTERVAL);
+            }
+        }
+
         if (mission == LuaMission.DEFEAT_TRUMP
                 && trumpAttackPhase == TrumpAttackPhase.AMERICAN_WAVE
                 && americans.size == 0) {
@@ -297,12 +320,31 @@ public class LuaScreen extends ScreenAdapter {
         }
     }
 
+    private void spawnAmericanReinforcement() {
+        float x;
+        float y;
+
+        // Escolhe posições afastadas do jogador e dentro do mapa.
+        for (int attempt = 0; attempt < 20; attempt++) {
+            x = MathUtils.random(160f, WORLD_WIDTH - 220f);
+            y = MathUtils.random(160f, WORLD_HEIGHT - 220f);
+
+            float dx = x - player.getCenterX();
+            float dy = y - player.getCenterY();
+            if (dx * dx + dy * dy >= 450f * 450f) {
+                americans.add(new AmericanEnemy(x, y));
+                return;
+            }
+        }
+
+        americans.add(new AmericanEnemy(WORLD_WIDTH - 300f, WORLD_HEIGHT - 300f));
+    }
+
     private void updatePlayerShooting() {
         if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
             return;
         }
 
-        // A direção do tiro é calculada pelo mouse no mundo, não pela direção do movimento.
         Vector3 mouseWorld = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
         camera.unproject(mouseWorld);
 
@@ -332,7 +374,6 @@ public class LuaScreen extends ScreenAdapter {
 
             boolean hit = false;
 
-            // Americanos podem ser derrotados tanto antes da missão quanto na onda do chefe.
             if (americans.size > 0) {
                 hit = hitAmericanWithLaser(laser);
             }
@@ -396,17 +437,19 @@ public class LuaScreen extends ScreenAdapter {
         mission = LuaMission.DEFEAT_TRUMP;
         trumpBoss = new TrumpBoss(1240f, 850f);
 
-        // Os inimigos da fase normal saem quando o boss aparece.
         americans.clear();
         americanBullets.clear();
         rifleBullets.clear();
         rifleWeapons.clear();
         trumpMissiles.clear();
         missileWarnings.clear();
+        americanSpawnTimer = AMERICAN_RESPAWN_INTERVAL;
 
         bossExplosionTimer = 0f;
         bossDeathSequenceStarted = false;
         portalSpawned = false;
+        portalUnlocked = false;
+        redKeyVisible = false;
         bossAttackCycle = 0;
 
         startBossCooldown(
@@ -468,7 +511,6 @@ public class LuaScreen extends ScreenAdapter {
                 break;
 
             case AMERICAN_WAVE:
-                // A lista dos cinco americanos é atualizada em updateAmericans().
                 break;
 
             default:
@@ -583,7 +625,7 @@ public class LuaScreen extends ScreenAdapter {
             ));
         }
 
-        showMessage("BARREIRA DE AK-47: elas orbitam o Trump e disparam a cada 1 segundo. Destrua todas.");
+        showMessage("BARREIRA DE AK-47: elas orbitam o Trump e apontam para fora. Destrua todas.");
         updateRifleOrbitPositions();
     }
 
@@ -650,6 +692,7 @@ public class LuaScreen extends ScreenAdapter {
             x = MathUtils.clamp(x, 0f, WORLD_WIDTH - rifle.getWidth());
             y = MathUtils.clamp(y, 0f, WORLD_HEIGHT - rifle.getHeight());
             rifle.setPosition(x, y);
+            rifle.setRotationDegrees(angle * MathUtils.radiansToDegrees + RIFLE_OUTWARD_ROTATION_OFFSET);
         }
     }
 
@@ -701,7 +744,7 @@ public class LuaScreen extends ScreenAdapter {
         rifleWeapons.clear();
         missileWarnings.clear();
         trumpMissiles.clear();
-        showMessage("TRUMP DERROTADO! O portal para Marte está sendo aberto.");
+        showMessage("TRUMP DERROTADO! A chave vermelha e o portal para Marte aparecerão.");
     }
 
     private void finishBossDeath(float delta) {
@@ -717,8 +760,25 @@ public class LuaScreen extends ScreenAdapter {
 
     private void spawnMarsPortal() {
         portalSpawned = true;
+        portalUnlocked = false;
+        redKeyVisible = true;
+        // O portal fica no canto inferior-direito da Lua, longe do ponto do boss.
         marsPortal = new MarsPortal(2580f, 1530f);
-        showMessage("PORTAL PARA MARTE ABERTO! Entre no portal azul.");
+        showMessage("A chave vermelha e o portal apareceram. Siga a flecha vermelha até lá!");
+    }
+
+    private void handleMarsPortalInteraction() {
+        if (!portalSpawned || marsPortal == null || mission != LuaMission.GO_TO_MARS) {
+            return;
+        }
+
+        boolean playerAtPortal = player.getHitbox().overlaps(marsPortal.getHitbox());
+
+        if (playerAtPortal && !portalUnlocked && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+            portalUnlocked = true;
+            redKeyVisible = false;
+            showMessage("CHAVE USADA! Portal para Marte aberto. Entre nele.");
+        }
     }
 
     private void openGameOver() {
@@ -809,6 +869,77 @@ public class LuaScreen extends ScreenAdapter {
         shapeRenderer.rect(x, y, width * percent, height);
     }
 
+    private void drawPortalArrow() {
+        if (!portalSpawned || marsPortal == null || portalUnlocked) {
+            return;
+        }
+
+        if (player.getHitbox().overlaps(marsPortal.getHitbox())) {
+            return;
+        }
+
+        Vector3 targetScreen = new Vector3(
+                marsPortal.getHitbox().x + marsPortal.getHitbox().width / 2f,
+                marsPortal.getHitbox().y + marsPortal.getHitbox().height / 2f,
+                0f
+        );
+        Vector3 playerScreen = new Vector3(
+                player.getCenterX(),
+                player.getCenterY(),
+                0f
+        );
+
+        camera.project(targetScreen);
+        camera.project(playerScreen);
+
+        float dx = targetScreen.x - playerScreen.x;
+        float dy = targetScreen.y - playerScreen.y;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+
+        if (length <= 0.001f) {
+            return;
+        }
+
+        dx /= length;
+        dy /= length;
+
+        float centerX = hudViewport.getWorldWidth() / 2f;
+        float centerY = hudViewport.getWorldHeight() - 135f;
+        float tipDistance = 48f;
+        float sideDistance = 18f;
+
+        float tipX = centerX + dx * tipDistance;
+        float tipY = centerY + dy * tipDistance;
+        float baseX = centerX - dx * 12f;
+        float baseY = centerY - dy * 12f;
+
+        float perpX = -dy;
+        float perpY = dx;
+
+        shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.RED);
+
+        shapeRenderer.rectLine(
+                centerX - dx * 15f,
+                centerY - dy * 15f,
+                baseX,
+                baseY,
+                8f
+        );
+
+        shapeRenderer.triangle(
+                tipX,
+                tipY,
+                baseX + perpX * sideDistance,
+                baseY + perpY * sideDistance,
+                baseX - perpX * sideDistance,
+                baseY - perpY * sideDistance
+        );
+
+        shapeRenderer.end();
+    }
+
     private void drawWarningsAndProjectiles() {
         shapeRenderer.setProjectionMatrix(camera.combined);
 
@@ -817,7 +948,6 @@ public class LuaScreen extends ScreenAdapter {
 
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Áreas vermelhas que avisam dois segundos antes dos mísseis.
         shapeRenderer.setColor(new Color(1f, 0f, 0f, 0.34f));
         for (MissileWarning warning : missileWarnings) {
             shapeRenderer.rect(
@@ -828,7 +958,6 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
-        // Mísseis sem sprite são cubos laranja/vermelhos.
         shapeRenderer.setColor(Color.RED);
         for (TrumpMissile missile : trumpMissiles) {
             shapeRenderer.rect(
@@ -839,7 +968,6 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
-        // Tiros inimigos são cubos azuis.
         shapeRenderer.setColor(Color.BLUE);
         for (EnemyBullet bullet : americanBullets) {
             shapeRenderer.rect(
@@ -858,7 +986,6 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
-        // Explosão do boss após os 500 HP chegarem a zero.
         if (bossDeathSequenceStarted && trumpBoss != null && !portalSpawned) {
             float progress = 1f - MathUtils.clamp(
                     bossExplosionTimer / BOSS_EXPLOSION_DURATION,
@@ -878,7 +1005,6 @@ public class LuaScreen extends ScreenAdapter {
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
-        // TileSet ocupa todo o mundo; o background antigo continua disponível como fallback.
         Texture background = assets.getLuaBackgroundTexture();
         batch.draw(background, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
         drawLuaFloor();
@@ -894,7 +1020,6 @@ public class LuaScreen extends ScreenAdapter {
 
         drawLuaItems();
 
-        // Americanos da fase normal/onda do boss.
         Texture americanTexture = assets.getAmericanTexture();
         for (AmericanEnemy enemy : americans) {
             batch.draw(
@@ -906,7 +1031,6 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
-        // Boss.
         if (trumpBoss != null && !trumpBoss.isDead()) {
             Texture trumpTexture = assets.getTrumpTexture();
             batch.draw(
@@ -918,21 +1042,26 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
-        // AK-47 orbitando o Trump.
         Texture rifleTexture = assets.getRifleTexture();
         for (RifleWeapon rifle : rifleWeapons) {
             if (!rifle.isDestroyed()) {
+                float centerX = rifle.getX() + rifle.getWidth() / 2f;
+                float centerY = rifle.getY() + rifle.getHeight() / 2f;
                 batch.draw(
                         rifleTexture,
                         rifle.getX(),
                         rifle.getY(),
+                        rifle.getWidth() / 2f,
+                        rifle.getHeight() / 2f,
                         rifle.getWidth(),
-                        rifle.getHeight()
+                        rifle.getHeight(),
+                        1f,
+                        1f,
+                        rifle.getRotationDegrees()
                 );
             }
         }
 
-        // Portal para Marte.
         if (marsPortal != null && portalSpawned) {
             Texture portalTexture = assets.getPortalTexture();
             batch.draw(
@@ -942,6 +1071,13 @@ public class LuaScreen extends ScreenAdapter {
                     marsPortal.getWidth(),
                     marsPortal.getHeight()
             );
+
+            if (redKeyVisible) {
+                float keyX = marsPortal.getX() - RED_KEY_SIZE - 45f;
+                float keyY = marsPortal.getY() + marsPortal.getHeight() / 2f - RED_KEY_SIZE / 2f;
+                Texture keyTexture = assets.getRedKeyTexture();
+                batch.draw(keyTexture, keyX, keyY, RED_KEY_SIZE, RED_KEY_SIZE);
+            }
         }
 
         Texture laserTexture = assets.getLaserTexture();
@@ -983,6 +1119,8 @@ public class LuaScreen extends ScreenAdapter {
         drawBar(x, firstY - gap * 2f, width, height, stats.getOxygen(), PlayerStats.MAX_OXYGEN, Color.CYAN);
         shapeRenderer.end();
 
+        drawPortalArrow();
+
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
 
@@ -1014,7 +1152,15 @@ public class LuaScreen extends ScreenAdapter {
                 objective = "Derrote Trump: 500 HP";
                 break;
             case GO_TO_MARS:
-                objective = portalSpawned ? "Entre no portal para Marte" : "Portal para Marte abrindo...";
+                if (!portalUnlocked) {
+                    if (marsPortal != null && player.getHitbox().overlaps(marsPortal.getHitbox())) {
+                        objective = "Portal encontrado: pressione E para usar a chave vermelha";
+                    } else {
+                        objective = "Siga a flecha vermelha até o portal para Marte";
+                    }
+                } else {
+                    objective = "Portal aberto: entre nele para continuar";
+                }
                 break;
             default:
                 objective = "";
