@@ -14,6 +14,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
+import com.badlogic.gdx.math.Vector3;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
 import com.badlogic.gdx.utils.viewport.FitViewport;
@@ -35,9 +36,11 @@ import io.github.some_example_name.entities.TrumpBoss;
 import io.github.some_example_name.entities.TrumpMissile;
 import io.github.some_example_name.managers.AssetManager;
 
+/** Complete Lua phase: mission, enemies, Trump boss, weapons and portal to Mars. */
 public class LuaScreen extends ScreenAdapter {
 
     private enum TrumpAttackPhase {
+        COOLDOWN,
         MISSILE_WARNING,
         MISSILE_TRAVEL,
         RIFLE_BARRIER,
@@ -58,10 +61,15 @@ public class LuaScreen extends ScreenAdapter {
     private static final float LUNAR_BASE_HEIGHT = 160f;
 
     private static final float TILE_SIZE = 128f;
+    private static final int REQUIRED_ICE = 5;
     private static final float PLAYER_SHOT_DAMAGE = 10f;
     private static final float ENEMY_BULLET_DAMAGE = 10f;
+    private static final float BOSS_ATTACK_COOLDOWN = 5f;
+    private static final float MISSILE_WARNING_TIME = 2f;
     private static final float MESSAGE_DURATION = 4f;
     private static final float BOSS_EXPLOSION_DURATION = 1.25f;
+    private static final float RIFLE_ORBIT_RADIUS = 410f;
+    private static final float RIFLE_ORBIT_SPEED = 0.55f;
 
     private final Game game;
     private final OrthographicCamera camera;
@@ -73,24 +81,28 @@ public class LuaScreen extends ScreenAdapter {
     private final AssetManager assets;
     private final Player player;
     private final PlayerStats stats;
-    private final Array<Laser> lasers;
-    private final Array<LuaItem> luaItems;
-    private final Array<AmericanEnemy> americans;
-    private final Array<EnemyBullet> americanBullets;
-    private final Array<EnemyBullet> rifleBullets;
-    private final Array<TrumpMissile> trumpMissiles;
-    private final Array<MissileWarning> missileWarnings;
-    private final Array<RifleWeapon> rifleWeapons;
+    private final Array<Laser> lasers = new Array<>();
+    private final Array<LuaItem> luaItems = new Array<>();
+    private final Array<AmericanEnemy> americans = new Array<>();
+    private final Array<EnemyBullet> americanBullets = new Array<>();
+    private final Array<EnemyBullet> rifleBullets = new Array<>();
+    private final Array<TrumpMissile> trumpMissiles = new Array<>();
+    private final Array<MissileWarning> missileWarnings = new Array<>();
+    private final Array<RifleWeapon> rifleWeapons = new Array<>();
 
     private LuaMission mission = LuaMission.COLLECT_ICE;
     private TrumpBoss trumpBoss;
     private TrumpAttackPhase trumpAttackPhase;
+    private TrumpAttackPhase nextTrumpAttack;
     private MarsPortal marsPortal;
 
     private float bossPhaseTimer;
+    private float bossCooldownTimer;
     private float messageTimer;
     private float bossExplosionTimer;
+    private float rifleOrbitAngle;
     private boolean portalSpawned;
+    private boolean bossDeathSequenceStarted;
     private int bossAttackCycle;
     private String missionMessage = "";
     private boolean screenChanged;
@@ -110,27 +122,50 @@ public class LuaScreen extends ScreenAdapter {
 
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
         stats = new PlayerStats();
-        lasers = new Array<>();
-        luaItems = new Array<>();
-        americans = new Array<>();
-        americanBullets = new Array<>();
-        rifleBullets = new Array<>();
-        trumpMissiles = new Array<>();
-        missileWarnings = new Array<>();
-        rifleWeapons = new Array<>();
 
         createLuaResources();
-        showMessage("MISSÃO LUA: encontre e colete 1 gelo.");
+        createStartingAmericans();
+
+        showMessage("MISSÃO LUA: colete 5 gelos e leve os 5 até a base lunar.");
         updateCamera();
     }
 
     private void createLuaResources() {
-        luaItems.add(new LuaItem(LuaItem.Type.FOOD, 780f, 620f, 52f, 52f));
-        luaItems.add(new LuaItem(LuaItem.Type.FOOD, 1540f, 420f, 52f, 52f));
-        luaItems.add(new LuaItem(LuaItem.Type.O2_TANK, 1050f, 920f, 42f, 118f));
-        luaItems.add(new LuaItem(LuaItem.Type.O2_TANK, 2050f, 1320f, 42f, 118f));
-        luaItems.add(new LuaItem(LuaItem.Type.ICE, 1350f, 1300f, 70f, 70f));
-        luaItems.add(new LuaItem(LuaItem.Type.ICE, 2380f, 760f, 70f, 70f));
+        // Mais comida espalhada pela Lua.
+        addItem(LuaItem.Type.FOOD, 780f, 620f, 56f, 56f);
+        addItem(LuaItem.Type.FOOD, 1120f, 430f, 56f, 56f);
+        addItem(LuaItem.Type.FOOD, 1680f, 560f, 56f, 56f);
+        addItem(LuaItem.Type.FOOD, 2240f, 420f, 56f, 56f);
+        addItem(LuaItem.Type.FOOD, 720f, 1510f, 56f, 56f);
+        addItem(LuaItem.Type.FOOD, 1900f, 1560f, 56f, 56f);
+
+        // Mais oxigênio.
+        addItem(LuaItem.Type.O2_TANK, 1050f, 920f, 46f, 125f);
+        addItem(LuaItem.Type.O2_TANK, 2050f, 1320f, 46f, 125f);
+        addItem(LuaItem.Type.O2_TANK, 1450f, 560f, 46f, 125f);
+        addItem(LuaItem.Type.O2_TANK, 2640f, 1150f, 46f, 125f);
+        addItem(LuaItem.Type.O2_TANK, 560f, 1180f, 46f, 125f);
+        addItem(LuaItem.Type.O2_TANK, 2400f, 1540f, 46f, 125f);
+
+        // Oito pontos de gelo. A missão exige cinco.
+        addItem(LuaItem.Type.ICE, 880f, 820f, 74f, 74f);
+        addItem(LuaItem.Type.ICE, 1350f, 1300f, 74f, 74f);
+        addItem(LuaItem.Type.ICE, 2380f, 760f, 74f, 74f);
+        addItem(LuaItem.Type.ICE, 1680f, 1480f, 74f, 74f);
+        addItem(LuaItem.Type.ICE, 620f, 1600f, 74f, 74f);
+        addItem(LuaItem.Type.ICE, 2520f, 480f, 74f, 74f);
+        addItem(LuaItem.Type.ICE, 1130f, 1780f, 74f, 74f);
+        addItem(LuaItem.Type.ICE, 2180f, 1160f, 74f, 74f);
+    }
+
+    private void addItem(LuaItem.Type type, float x, float y, float width, float height) {
+        luaItems.add(new LuaItem(type, x, y, width, height));
+    }
+
+    private void createStartingAmericans() {
+        americans.add(new AmericanEnemy(2380f, 1540f));
+        americans.add(new AmericanEnemy(2200f, 520f));
+        americans.add(new AmericanEnemy(1750f, 1700f));
     }
 
     @Override
@@ -147,20 +182,14 @@ public class LuaScreen extends ScreenAdapter {
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
         collectItems();
         handleMissionInteraction();
-        stats.update(delta);
-
-        if (stats.isDead()) {
-            openGameOver();
-            return false;
-        }
-
-        handlePlayerShooting();
+        updateAmericans(delta);
+        updatePlayerShooting();
         updatePlayerLasers(delta);
-        updateEnemySystems(delta);
         updateMissiles(delta);
         updateRifleBullets(delta);
         updateAmericanBullets(delta);
         updateBoss(delta);
+        stats.update(delta);
 
         if (stats.isDead()) {
             openGameOver();
@@ -172,25 +201,13 @@ public class LuaScreen extends ScreenAdapter {
                 && marsPortal != null
                 && player.getHitbox().overlaps(marsPortal.getHitbox())) {
             screenChanged = true;
+            dispose();
             game.setScreen(new MarteScreen(game));
             return false;
         }
 
         updateCamera();
         return true;
-    }
-
-    private void handlePlayerShooting() {
-        if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
-            return;
-        }
-
-        lasers.add(new Laser(
-                player.getCenterX(),
-                player.getCenterY(),
-                player.getDirectionX(),
-                player.getDirectionY()
-        ));
     }
 
     private void collectItems() {
@@ -204,19 +221,21 @@ public class LuaScreen extends ScreenAdapter {
             switch (item.getType()) {
                 case FOOD:
                     stats.eatFood();
-                    showMessage("Comida coletada: fome restaurada.");
+                    showMessage("Comida coletada: fome e vida restauradas.");
                     break;
                 case O2_TANK:
                     stats.addOxygen(20f);
-                    showMessage("Tanque de O2 coletado: oxigênio restaurado.");
+                    showMessage("O2 coletado: oxigênio restaurado.");
                     break;
                 case ICE:
                     stats.collectIce();
                     if (mission == LuaMission.COLLECT_ICE) {
-                        mission = LuaMission.MELT_ICE;
-                        showMessage("Gelo coletado. Leve-o à base lunar e pressione E para derreter e beber a água.");
-                    } else {
-                        showMessage("Gelo extra coletado.");
+                        if (stats.getIceCollected() >= REQUIRED_ICE) {
+                            mission = LuaMission.MELT_ICE;
+                            showMessage("5 gelos coletados! Leve os 5 à base e pressione E para derreter e beber a água.");
+                        } else {
+                            showMessage("Gelo coletado: " + stats.getIceCollected() + "/" + REQUIRED_ICE + ".");
+                        }
                     }
                     break;
                 default:
@@ -243,76 +262,16 @@ public class LuaScreen extends ScreenAdapter {
             return;
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.E) && stats.consumeIce()) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.E)
+                && stats.consumeIce(REQUIRED_ICE)) {
             stats.drinkWater();
-            mission = LuaMission.DEFEAT_AMERICAN;
-
-            americans.clear();
-            americanBullets.clear();
-            americans.add(new AmericanEnemy(2380f, 1540f));
-
-            showMessage("Água derretida e bebida! Um inimigo estava escondido na Lua. Derrote-o com 2 tiros.");
+            spawnTrumpBoss();
+            showMessage("Os 5 gelos foram derretidos. Água ingerida. O chefe da Lua apareceu!");
         }
     }
 
-    private void updatePlayerLasers(float delta) {
-        for (int i = lasers.size - 1; i >= 0; i--) {
-            Laser laser = lasers.get(i);
-            laser.update(delta);
-
-            boolean hit = false;
-
-            if (mission == LuaMission.DEFEAT_AMERICAN) {
-                hit = hitAmericanWithLaser(laser);
-            } else if (mission == LuaMission.DEFEAT_TRUMP) {
-                hit = hitRifleWithLaser(laser);
-                if (!hit && trumpBoss != null && !trumpBoss.isDead()
-                        && laser.getHitbox().overlaps(trumpBoss.getHitbox())) {
-                    trumpBoss.takeDamage(PLAYER_SHOT_DAMAGE);
-                    hit = true;
-                }
-
-                if (!hit && trumpAttackPhase == TrumpAttackPhase.AMERICAN_WAVE) {
-                    hit = hitAmericanWithLaser(laser);
-                }
-            }
-
-            if (laser.isOutsideWorld(WORLD_WIDTH, WORLD_HEIGHT) || hit) {
-                lasers.removeIndex(i);
-            }
-        }
-    }
-
-    private boolean hitAmericanWithLaser(Laser laser) {
-        for (int i = americans.size - 1; i >= 0; i--) {
-            AmericanEnemy enemy = americans.get(i);
-            if (!enemy.isDead() && laser.getHitbox().overlaps(enemy.getHitbox())) {
-                enemy.takeDamage(PLAYER_SHOT_DAMAGE);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean hitRifleWithLaser(Laser laser) {
-        if (trumpAttackPhase != TrumpAttackPhase.RIFLE_BARRIER) {
-            return false;
-        }
-
-        for (int i = rifleWeapons.size - 1; i >= 0; i--) {
-            RifleWeapon rifle = rifleWeapons.get(i);
-            if (!rifle.isDestroyed() && laser.getHitbox().overlaps(rifle.getHitbox())) {
-                rifle.takeDamage(PLAYER_SHOT_DAMAGE);
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    private void updateEnemySystems(float delta) {
-        if (mission != LuaMission.DEFEAT_AMERICAN
-                && mission != LuaMission.DEFEAT_TRUMP) {
+    private void updateAmericans(float delta) {
+        if (americans.size == 0) {
             return;
         }
 
@@ -330,14 +289,367 @@ public class LuaScreen extends ScreenAdapter {
             }
         }
 
-        if (mission == LuaMission.DEFEAT_AMERICAN && americans.size == 0) {
-            spawnTrumpBoss();
-        }
-
         if (mission == LuaMission.DEFEAT_TRUMP
                 && trumpAttackPhase == TrumpAttackPhase.AMERICAN_WAVE
                 && americans.size == 0) {
+            startBossCooldown(TrumpAttackPhase.MISSILE_WARNING,
+                    "Os 5 americanos foram derrotados. Próximo ataque em 5 segundos.");
+        }
+    }
+
+    private void updatePlayerShooting() {
+        if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
+            return;
+        }
+
+        // A direção do tiro é calculada pelo mouse no mundo, não pela direção do movimento.
+        Vector3 mouseWorld = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
+        camera.unproject(mouseWorld);
+
+        float dx = mouseWorld.x - player.getCenterX();
+        float dy = mouseWorld.y - player.getCenterY();
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+
+        if (length <= 0.001f) {
+            return;
+        }
+
+        dx /= length;
+        dy /= length;
+
+        lasers.add(new Laser(
+                player.getCenterX(),
+                player.getCenterY(),
+                dx,
+                dy
+        ));
+    }
+
+    private void updatePlayerLasers(float delta) {
+        for (int i = lasers.size - 1; i >= 0; i--) {
+            Laser laser = lasers.get(i);
+            laser.update(delta);
+
+            boolean hit = false;
+
+            // Americanos podem ser derrotados tanto antes da missão quanto na onda do chefe.
+            if (americans.size > 0) {
+                hit = hitAmericanWithLaser(laser);
+            }
+
+            if (!hit && mission == LuaMission.DEFEAT_TRUMP) {
+                if (trumpAttackPhase == TrumpAttackPhase.RIFLE_BARRIER) {
+                    hit = hitRifleWithLaser(laser);
+                }
+
+                if (!hit
+                        && trumpBoss != null
+                        && !trumpBoss.isDead()
+                        && laser.getHitbox().overlaps(trumpBoss.getHitbox())) {
+                    trumpBoss.takeDamage(PLAYER_SHOT_DAMAGE);
+                    hit = true;
+
+                    if (trumpBoss.isDead()) {
+                        startBossDeathSequence();
+                    }
+                }
+            }
+
+            if (laser.isOutsideWorld(WORLD_WIDTH, WORLD_HEIGHT) || hit) {
+                lasers.removeIndex(i);
+            }
+        }
+    }
+
+    private boolean hitAmericanWithLaser(Laser laser) {
+        for (int i = americans.size - 1; i >= 0; i--) {
+            AmericanEnemy enemy = americans.get(i);
+
+            if (!enemy.isDead() && laser.getHitbox().overlaps(enemy.getHitbox())) {
+                enemy.takeDamage(PLAYER_SHOT_DAMAGE);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private boolean hitRifleWithLaser(Laser laser) {
+        for (int i = rifleWeapons.size - 1; i >= 0; i--) {
+            RifleWeapon rifle = rifleWeapons.get(i);
+
+            if (!rifle.isDestroyed()
+                    && laser.getHitbox().overlaps(rifle.getHitbox())) {
+                rifle.takeDamage(PLAYER_SHOT_DAMAGE);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void spawnTrumpBoss() {
+        if (trumpBoss != null) {
+            return;
+        }
+
+        mission = LuaMission.DEFEAT_TRUMP;
+        trumpBoss = new TrumpBoss(1240f, 850f);
+
+        // Os inimigos da fase normal saem quando o boss aparece.
+        americans.clear();
+        americanBullets.clear();
+        rifleBullets.clear();
+        rifleWeapons.clear();
+        trumpMissiles.clear();
+        missileWarnings.clear();
+
+        bossExplosionTimer = 0f;
+        bossDeathSequenceStarted = false;
+        portalSpawned = false;
+        bossAttackCycle = 0;
+
+        startBossCooldown(
+                TrumpAttackPhase.MISSILE_WARNING,
+                "TRUMP APARECEU! Primeiro ataque em 5 segundos."
+        );
+    }
+
+    private void startBossCooldown(TrumpAttackPhase nextAttack, String message) {
+        trumpAttackPhase = TrumpAttackPhase.COOLDOWN;
+        nextTrumpAttack = nextAttack;
+        bossCooldownTimer = BOSS_ATTACK_COOLDOWN;
+        bossPhaseTimer = 0f;
+        missileWarnings.clear();
+        trumpMissiles.clear();
+        rifleBullets.clear();
+
+        if (message != null && !message.isEmpty()) {
+            showMessage(message);
+        }
+    }
+
+    private void updateBoss(float delta) {
+        if (trumpBoss == null) {
+            return;
+        }
+
+        if (trumpBoss.isDead()) {
+            finishBossDeath(delta);
+            return;
+        }
+
+        bossPhaseTimer += delta;
+        rifleOrbitAngle += delta * RIFLE_ORBIT_SPEED;
+
+        switch (trumpAttackPhase) {
+            case COOLDOWN:
+                bossCooldownTimer -= delta;
+                if (bossCooldownTimer <= 0f) {
+                    beginNextBossAttack();
+                }
+                break;
+
+            case MISSILE_WARNING:
+                updateMissileWarnings(delta);
+                break;
+
+            case MISSILE_TRAVEL:
+                if (trumpMissiles.size == 0) {
+                    startBossCooldown(
+                            TrumpAttackPhase.RIFLE_BARRIER,
+                            "Mísseis concluídos. Barreira de AK-47 em 5 segundos."
+                    );
+                }
+                break;
+
+            case RIFLE_BARRIER:
+                updateRifleBarrier(delta);
+                break;
+
+            case AMERICAN_WAVE:
+                // A lista dos cinco americanos é atualizada em updateAmericans().
+                break;
+
+            default:
+                break;
+        }
+
+        updateRifleOrbitPositions();
+    }
+
+    private void beginNextBossAttack() {
+        if (nextTrumpAttack == TrumpAttackPhase.MISSILE_WARNING) {
             beginMissileWarning();
+        } else if (nextTrumpAttack == TrumpAttackPhase.RIFLE_BARRIER) {
+            beginRifleBarrier();
+        } else if (nextTrumpAttack == TrumpAttackPhase.AMERICAN_WAVE) {
+            beginAmericanWave();
+        }
+    }
+
+    private void beginMissileWarning() {
+        trumpAttackPhase = TrumpAttackPhase.MISSILE_WARNING;
+        bossPhaseTimer = 0f;
+        bossAttackCycle++;
+        missileWarnings.clear();
+        trumpMissiles.clear();
+        rifleWeapons.clear();
+        rifleBullets.clear();
+
+        float shift = (bossAttackCycle % 3) * 100f;
+
+        addMissileWarning(850f + shift, 650f);
+        addMissileWarning(1500f - shift, 1180f);
+        addMissileWarning(2300f, 720f + shift);
+
+        showMessage("ATAQUE DE MÍSSEIS: áreas vermelhas = impacto em 2 segundos!");
+    }
+
+    private void addMissileWarning(float centerX, float centerY) {
+        float size = TrumpMissile.IMPACT_SIZE;
+        float x = MathUtils.clamp(centerX - size / 2f, 0f, WORLD_WIDTH - size);
+        float y = MathUtils.clamp(centerY - size / 2f, 0f, WORLD_HEIGHT - size);
+        missileWarnings.add(new MissileWarning(
+                x,
+                y,
+                size,
+                size,
+                MISSILE_WARNING_TIME
+        ));
+    }
+
+    private void updateMissileWarnings(float delta) {
+        boolean ready = true;
+
+        for (MissileWarning warning : missileWarnings) {
+            warning.update(delta);
+            if (!warning.isReadyToLaunch()) {
+                ready = false;
+            }
+        }
+
+        if (!ready) {
+            return;
+        }
+
+        trumpMissiles.clear();
+
+        for (MissileWarning warning : missileWarnings) {
+            Rectangle area = warning.getArea();
+            trumpMissiles.add(new TrumpMissile(
+                    trumpBoss.getCenterX(),
+                    trumpBoss.getCenterY(),
+                    area.x + area.width / 2f,
+                    area.y + area.height / 2f
+            ));
+        }
+
+        missileWarnings.clear();
+        trumpAttackPhase = TrumpAttackPhase.MISSILE_TRAVEL;
+        bossPhaseTimer = 0f;
+    }
+
+    private void updateMissiles(float delta) {
+        if (trumpMissiles.size == 0) {
+            return;
+        }
+
+        for (int i = trumpMissiles.size - 1; i >= 0; i--) {
+            TrumpMissile missile = trumpMissiles.get(i);
+            missile.update(delta);
+
+            if (missile.hasArrived()) {
+                if (player.getHitbox().overlaps(missile.getImpactArea())) {
+                    stats.damage(ENEMY_BULLET_DAMAGE * 2f, DeathCause.TRUMP_MISSILE);
+                }
+                trumpMissiles.removeIndex(i);
+            }
+        }
+    }
+
+    private void beginRifleBarrier() {
+        trumpAttackPhase = TrumpAttackPhase.RIFLE_BARRIER;
+        bossPhaseTimer = 0f;
+        rifleOrbitAngle = 0f;
+        rifleWeapons.clear();
+        rifleBullets.clear();
+
+        for (int i = 0; i < RifleWeapon.DEFAULT_NAMES.length; i++) {
+            rifleWeapons.add(new RifleWeapon(
+                    RifleWeapon.DEFAULT_NAMES[i],
+                    trumpBoss.getCenterX(),
+                    trumpBoss.getCenterY()
+            ));
+        }
+
+        showMessage("BARREIRA DE AK-47: elas orbitam o Trump e disparam a cada 1 segundo. Destrua todas.");
+        updateRifleOrbitPositions();
+    }
+
+    private void updateRifleBarrier(float delta) {
+        int alive = 0;
+
+        for (RifleWeapon rifle : rifleWeapons) {
+            if (rifle.isDestroyed()) {
+                continue;
+            }
+
+            alive++;
+            rifle.update(
+                    delta,
+                    player.getCenterX(),
+                    player.getCenterY(),
+                    rifleBullets
+            );
+        }
+
+        if (alive == 0) {
+            rifleBullets.clear();
+            startBossCooldown(
+                    TrumpAttackPhase.AMERICAN_WAVE,
+                    "Todas as AK-47 foram destruídas. Cinco americanos chegam em 5 segundos."
+            );
+        }
+    }
+
+    private void beginAmericanWave() {
+        trumpAttackPhase = TrumpAttackPhase.AMERICAN_WAVE;
+        bossPhaseTimer = 0f;
+        americans.clear();
+        americanBullets.clear();
+
+        americans.add(new AmericanEnemy(520f, 1550f));
+        americans.add(new AmericanEnemy(900f, 1650f));
+        americans.add(new AmericanEnemy(2100f, 1550f));
+        americans.add(new AmericanEnemy(2450f, 520f));
+        americans.add(new AmericanEnemy(1850f, 420f));
+
+        showMessage("ONDA DE REFORÇOS: 5 americanos apareceram!");
+    }
+
+    private void updateRifleOrbitPositions() {
+        if (trumpBoss == null || rifleWeapons.size == 0) {
+            return;
+        }
+
+        float centerX = trumpBoss.getCenterX();
+        float centerY = trumpBoss.getCenterY();
+        int total = rifleWeapons.size;
+
+        for (int i = 0; i < total; i++) {
+            RifleWeapon rifle = rifleWeapons.get(i);
+            if (rifle.isDestroyed()) {
+                continue;
+            }
+
+            float angle = rifleOrbitAngle + MathUtils.PI2 * i / total;
+            float x = centerX + MathUtils.cos(angle) * RIFLE_ORBIT_RADIUS - rifle.getWidth() / 2f;
+            float y = centerY + MathUtils.sin(angle) * RIFLE_ORBIT_RADIUS - rifle.getHeight() / 2f;
+
+            x = MathUtils.clamp(x, 0f, WORLD_WIDTH - rifle.getWidth());
+            y = MathUtils.clamp(y, 0f, WORLD_HEIGHT - rifle.getHeight());
+            rifle.setPosition(x, y);
         }
     }
 
@@ -375,207 +687,26 @@ public class LuaScreen extends ScreenAdapter {
         }
     }
 
-    private void spawnTrumpBoss() {
-        if (trumpBoss != null) {
+    private void startBossDeathSequence() {
+        if (bossDeathSequenceStarted) {
             return;
         }
 
-        mission = LuaMission.DEFEAT_TRUMP;
-        trumpBoss = new TrumpBoss(1240f, 850f);
+        bossDeathSequenceStarted = true;
+        bossExplosionTimer = BOSS_EXPLOSION_DURATION;
+        mission = LuaMission.GO_TO_MARS;
         americans.clear();
         americanBullets.clear();
         rifleBullets.clear();
         rifleWeapons.clear();
-        trumpMissiles.clear();
-        missileWarnings.clear();
-        bossExplosionTimer = 0f;
-        portalSpawned = false;
-        bossAttackCycle = 0;
-
-        showMessage("CHEFE: TRUMP // 500 HP. O dano do seu tiro é 10. Prepare-se.");
-        beginMissileWarning();
-    }
-
-    private void updateBoss(float delta) {
-        if (mission != LuaMission.DEFEAT_TRUMP || trumpBoss == null) {
-            if (bossExplosionTimer > 0f) {
-                bossExplosionTimer -= delta;
-                if (bossExplosionTimer <= 0f && !portalSpawned) {
-                    spawnMarsPortal();
-                }
-            }
-            return;
-        }
-
-        if (trumpBoss.isDead()) {
-            finishBossFight(delta);
-            return;
-        }
-
-        bossPhaseTimer += delta;
-
-        switch (trumpAttackPhase) {
-            case MISSILE_WARNING:
-                updateMissileWarnings();
-                break;
-            case MISSILE_TRAVEL:
-                if (trumpMissiles.size == 0) {
-                    spawnRifleBarrier();
-                }
-                break;
-            case RIFLE_BARRIER:
-                updateRifleBarrier(delta);
-                break;
-            case AMERICAN_WAVE:
-                // Os cinco inimigos são atualizados em updateEnemySystems().
-                break;
-            default:
-                break;
-        }
-    }
-
-    private void beginMissileWarning() {
-        trumpAttackPhase = TrumpAttackPhase.MISSILE_WARNING;
-        bossPhaseTimer = 0f;
-        bossAttackCycle++;
         missileWarnings.clear();
         trumpMissiles.clear();
-        rifleWeapons.clear();
-        rifleBullets.clear();
-
-        float shift = (bossAttackCycle % 3) * 90f;
-
-        addWarning(850f + shift, 650f);
-        addWarning(1480f - shift, 1180f);
-        addWarning(2300f, 730f + shift);
-
-        showMessage("TRUMP: MÍSSEIS INICIADOS — saia das áreas vermelhas! Impacto em 2 segundos.");
+        showMessage("TRUMP DERROTADO! O portal para Marte está sendo aberto.");
     }
 
-    private void addWarning(float centerX, float centerY) {
-        float size = TrumpMissile.IMPACT_SIZE;
-        float x = MathUtils.clamp(centerX - size / 2f, 0f, WORLD_WIDTH - size);
-        float y = MathUtils.clamp(centerY - size / 2f, 0f, WORLD_HEIGHT - size);
-        missileWarnings.add(new MissileWarning(x, y, size, size, 2f));
-    }
-
-    private void updateMissileWarnings() {
-        boolean allReady = true;
-
-        for (MissileWarning warning : missileWarnings) {
-            warning.update(Math.min(Gdx.graphics.getDeltaTime(), 0.05f));
-            if (!warning.isReadyToLaunch()) {
-                allReady = false;
-            }
-        }
-
-        if (!allReady) {
-            return;
-        }
-
-        for (MissileWarning warning : missileWarnings) {
-            Rectangle area = warning.getArea();
-            trumpMissiles.add(new TrumpMissile(
-                    trumpBoss.getCenterX(),
-                    trumpBoss.getCenterY(),
-                    area.x + area.width / 2f,
-                    area.y + area.height / 2f
-            ));
-        }
-
-        missileWarnings.clear();
-        trumpAttackPhase = TrumpAttackPhase.MISSILE_TRAVEL;
-        bossPhaseTimer = 0f;
-        showMessage("MÍSSEIS LANÇADOS! Evite os cubos até o impacto.");
-    }
-
-    private void updateMissiles(float delta) {
-        if (trumpMissiles.size == 0) {
-            return;
-        }
-
-        for (int i = trumpMissiles.size - 1; i >= 0; i--) {
-            TrumpMissile missile = trumpMissiles.get(i);
-            missile.update(delta);
-
-            if (missile.hasArrived()) {
-                if (player.getHitbox().overlaps(missile.getImpactArea())) {
-                    stats.damage(35f, DeathCause.TRUMP_MISSILE);
-                }
-                trumpMissiles.removeIndex(i);
-            }
-        }
-    }
-
-    private void spawnRifleBarrier() {
-        trumpAttackPhase = TrumpAttackPhase.RIFLE_BARRIER;
-        bossPhaseTimer = 0f;
-        rifleWeapons.clear();
-        rifleBullets.clear();
-
-        String[] names = RifleWeapon.DEFAULT_NAMES;
-        float startX = trumpBoss.getX() + 10f;
-        float y = trumpBoss.getY() + trumpBoss.getHeight() + 35f;
-
-        for (int i = 0; i < names.length; i++) {
-            rifleWeapons.add(new RifleWeapon(
-                    names[i],
-                    startX + i * 84f,
-                    y
-            ));
-        }
-
-        showMessage("BARREIRA DE RIFLES: cada arma dispara a cada 1 segundo. Destrua todas!");
-    }
-
-    private void updateRifleBarrier(float delta) {
-        for (int i = rifleWeapons.size - 1; i >= 0; i--) {
-            RifleWeapon rifle = rifleWeapons.get(i);
-            rifle.update(
-                    delta,
-                    player.getCenterX(),
-                    player.getCenterY(),
-                    rifleBullets
-            );
-
-            if (rifle.isDestroyed()) {
-                rifleWeapons.removeIndex(i);
-            }
-        }
-
-        if (rifleWeapons.size == 0) {
-            spawnAmericanWave();
-        }
-    }
-
-    private void spawnAmericanWave() {
-        trumpAttackPhase = TrumpAttackPhase.AMERICAN_WAVE;
-        bossPhaseTimer = 0f;
-        americans.clear();
-        americanBullets.clear();
-
-        americans.add(new AmericanEnemy(820f, 1600f));
-        americans.add(new AmericanEnemy(1180f, 1460f));
-        americans.add(new AmericanEnemy(1510f, 1560f));
-        americans.add(new AmericanEnemy(1840f, 1460f));
-        americans.add(new AmericanEnemy(2200f, 1600f));
-
-        showMessage("REFORÇOS: 5 inimigos apareceram. Elimine todos para a próxima sequência.");
-    }
-
-    private void finishBossFight(float delta) {
-        if (bossExplosionTimer <= 0f && !portalSpawned) {
-            bossExplosionTimer = BOSS_EXPLOSION_DURATION;
-            trumpAttackPhase = null;
-            mission = LuaMission.GO_TO_MARS;
-            missileWarnings.clear();
-            trumpMissiles.clear();
-            rifleWeapons.clear();
-            rifleBullets.clear();
-            americans.clear();
-            americanBullets.clear();
-            lasers.clear();
-            showMessage("TRUMP DERROTADO! A explosão abriu um portal para Marte.");
+    private void finishBossDeath(float delta) {
+        if (!bossDeathSequenceStarted) {
+            startBossDeathSequence();
         }
 
         bossExplosionTimer -= delta;
@@ -586,8 +717,8 @@ public class LuaScreen extends ScreenAdapter {
 
     private void spawnMarsPortal() {
         portalSpawned = true;
-        marsPortal = new MarsPortal(2500f, 1430f);
-        showMessage("PORTAL PARA MARTE ABERTO! Entre no cubo azul para continuar.");
+        marsPortal = new MarsPortal(2580f, 1530f);
+        showMessage("PORTAL PARA MARTE ABERTO! Entre no portal azul.");
     }
 
     private void openGameOver() {
@@ -597,6 +728,7 @@ public class LuaScreen extends ScreenAdapter {
 
         screenChanged = true;
         DeathCause cause = stats.getDeathCause();
+        dispose();
         game.setScreen(new GameOverScreen(game, cause));
     }
 
@@ -650,145 +782,189 @@ public class LuaScreen extends ScreenAdapter {
                     continue;
             }
 
-            batch.draw(texture, item.getX(), item.getY(), item.getWidth(), item.getHeight());
+            batch.draw(
+                    texture,
+                    item.getX(),
+                    item.getY(),
+                    item.getWidth(),
+                    item.getHeight()
+            );
         }
     }
 
-    private void drawWorldCubes() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        drawMissileWarnings();
-        drawAmericans();
-        drawAmericanBullets();
-        drawRifleBarrier();
-        drawRifleBullets();
-        drawTrumpMissiles();
-        drawBoss();
-        drawPortal();
-        drawPlayerLasers();
-
-        shapeRenderer.end();
-
-        if (bossExplosionTimer > 0f && trumpBoss != null) {
-            shapeRenderer.setProjectionMatrix(camera.combined);
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-            float progress = 1f - bossExplosionTimer / BOSS_EXPLOSION_DURATION;
-            float size = 160f + progress * 260f;
-            float x = trumpBoss.getCenterX() - size / 2f;
-            float y = trumpBoss.getCenterY() - size / 2f;
-
-            shapeRenderer.setColor(Color.ORANGE);
-            shapeRenderer.rect(x, y, size, size);
-            shapeRenderer.setColor(Color.YELLOW);
-            shapeRenderer.rect(x + 35f, y + 35f, size - 70f, size - 70f);
-            shapeRenderer.end();
-        }
-    }
-
-    private void drawMissileWarnings() {
-        for (MissileWarning warning : missileWarnings) {
-            Rectangle area = warning.getArea();
-            shapeRenderer.setColor(new Color(0.65f, 0.02f, 0.02f, 1f));
-            shapeRenderer.rect(area.x, area.y, area.width, area.height);
-            shapeRenderer.setColor(new Color(1f, 0.08f, 0.08f, 1f));
-            shapeRenderer.rect(area.x + 12f, area.y + 12f, area.width - 24f, area.height - 24f);
-        }
-    }
-
-    private void drawAmericans() {
-        shapeRenderer.setColor(Color.RED);
-        for (AmericanEnemy enemy : americans) {
-            shapeRenderer.rect(enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
-        }
-    }
-
-    private void drawAmericanBullets() {
-        shapeRenderer.setColor(Color.BLUE);
-        for (EnemyBullet bullet : americanBullets) {
-            shapeRenderer.rect(bullet.getX(), bullet.getY(), bullet.getWidth(), bullet.getHeight());
-        }
-    }
-
-    private void drawRifleBarrier() {
-        for (RifleWeapon rifle : rifleWeapons) {
-            shapeRenderer.setColor(new Color(0.10f, 0.10f, 0.12f, 1f));
-            shapeRenderer.rect(rifle.getX(), rifle.getY(), rifle.getWidth(), rifle.getHeight());
-            shapeRenderer.setColor(Color.ORANGE);
-            shapeRenderer.rect(rifle.getX() + rifle.getWidth() - 9f, rifle.getY() + 8f, 8f, 12f);
-        }
-    }
-
-    private void drawRifleBullets() {
-        shapeRenderer.setColor(Color.BLUE);
-        for (EnemyBullet bullet : rifleBullets) {
-            shapeRenderer.rect(bullet.getX(), bullet.getY(), bullet.getWidth(), bullet.getHeight());
-        }
-    }
-
-    private void drawTrumpMissiles() {
-        shapeRenderer.setColor(new Color(0.55f, 0.55f, 0.60f, 1f));
-        for (TrumpMissile missile : trumpMissiles) {
-            shapeRenderer.rect(missile.getX(), missile.getY(), missile.getWidth(), missile.getHeight());
-        }
-    }
-
-    private void drawBoss() {
-        if (trumpBoss == null || trumpBoss.isDead()) {
-            return;
-        }
-
-        shapeRenderer.setColor(new Color(1f, 0.48f, 0.02f, 1f));
-        shapeRenderer.rect(
-                trumpBoss.getX(),
-                trumpBoss.getY(),
-                trumpBoss.getWidth(),
-                trumpBoss.getHeight()
-        );
-
-        float barWidth = trumpBoss.getWidth();
-        float percent = MathUtils.clamp(
-                trumpBoss.getHealth() / TrumpBoss.MAX_HEALTH,
-                0f,
-                1f
-        );
-        shapeRenderer.setColor(new Color(0.12f, 0.02f, 0.02f, 1f));
-        shapeRenderer.rect(trumpBoss.getX(), trumpBoss.getY() + trumpBoss.getHeight() + 18f, barWidth, 22f);
-        shapeRenderer.setColor(Color.GREEN);
-        shapeRenderer.rect(trumpBoss.getX(), trumpBoss.getY() + trumpBoss.getHeight() + 18f, barWidth * percent, 22f);
-    }
-
-    private void drawPortal() {
-        if (!portalSpawned || marsPortal == null) {
-            return;
-        }
-
-        shapeRenderer.setColor(Color.CYAN);
-        shapeRenderer.rect(marsPortal.getX(), marsPortal.getY(), marsPortal.getWidth(), marsPortal.getHeight());
-        shapeRenderer.setColor(new Color(0.04f, 0.12f, 0.28f, 1f));
-        shapeRenderer.rect(
-                marsPortal.getX() + 18f,
-                marsPortal.getY() + 18f,
-                marsPortal.getWidth() - 36f,
-                marsPortal.getHeight() - 36f
-        );
-    }
-
-    private void drawPlayerLasers() {
-        shapeRenderer.setColor(Color.YELLOW);
-        for (Laser laser : lasers) {
-            shapeRenderer.rect(laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
-        }
-    }
-
-    private void drawBar(float x, float y, float width, float height, float value, float maxValue, Color color) {
-        shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.08f, 1f));
+    private void drawBar(
+            float x,
+            float y,
+            float width,
+            float height,
+            float value,
+            float maxValue,
+            Color color
+    ) {
+        shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.08f, 0.92f));
         shapeRenderer.rect(x, y, width, height);
 
         float percent = MathUtils.clamp(value / maxValue, 0f, 1f);
         shapeRenderer.setColor(color);
         shapeRenderer.rect(x, y, width * percent, height);
+    }
+
+    private void drawWarningsAndProjectiles() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        // Áreas vermelhas que avisam dois segundos antes dos mísseis.
+        shapeRenderer.setColor(new Color(1f, 0f, 0f, 0.34f));
+        for (MissileWarning warning : missileWarnings) {
+            shapeRenderer.rect(
+                    warning.getX(),
+                    warning.getY(),
+                    warning.getWidth(),
+                    warning.getHeight()
+            );
+        }
+
+        // Mísseis sem sprite são cubos laranja/vermelhos.
+        shapeRenderer.setColor(Color.RED);
+        for (TrumpMissile missile : trumpMissiles) {
+            shapeRenderer.rect(
+                    missile.getX(),
+                    missile.getY(),
+                    missile.getWidth(),
+                    missile.getHeight()
+            );
+        }
+
+        // Tiros inimigos são cubos azuis.
+        shapeRenderer.setColor(Color.BLUE);
+        for (EnemyBullet bullet : americanBullets) {
+            shapeRenderer.rect(
+                    bullet.getX(),
+                    bullet.getY(),
+                    bullet.getWidth(),
+                    bullet.getHeight()
+            );
+        }
+        for (EnemyBullet bullet : rifleBullets) {
+            shapeRenderer.rect(
+                    bullet.getX(),
+                    bullet.getY(),
+                    bullet.getWidth(),
+                    bullet.getHeight()
+            );
+        }
+
+        // Explosão do boss após os 500 HP chegarem a zero.
+        if (bossDeathSequenceStarted && trumpBoss != null && !portalSpawned) {
+            float progress = 1f - MathUtils.clamp(
+                    bossExplosionTimer / BOSS_EXPLOSION_DURATION,
+                    0f,
+                    1f
+            );
+            float radius = 60f + progress * 240f;
+            shapeRenderer.setColor(new Color(1f, 0.55f, 0.05f, 0.70f));
+            shapeRenderer.circle(trumpBoss.getCenterX(), trumpBoss.getCenterY(), radius);
+        }
+
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
+
+    private void drawWorld() {
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
+        // TileSet ocupa todo o mundo; o background antigo continua disponível como fallback.
+        Texture background = assets.getLuaBackgroundTexture();
+        batch.draw(background, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
+        drawLuaFloor();
+
+        Texture lunarBase = assets.getLunarBaseTexture();
+        batch.draw(
+                lunarBase,
+                LUNAR_BASE_X,
+                LUNAR_BASE_Y,
+                LUNAR_BASE_WIDTH,
+                LUNAR_BASE_HEIGHT
+        );
+
+        drawLuaItems();
+
+        // Americanos da fase normal/onda do boss.
+        Texture americanTexture = assets.getAmericanTexture();
+        for (AmericanEnemy enemy : americans) {
+            batch.draw(
+                    americanTexture,
+                    enemy.getX(),
+                    enemy.getY(),
+                    enemy.getWidth(),
+                    enemy.getHeight()
+            );
+        }
+
+        // Boss.
+        if (trumpBoss != null && !trumpBoss.isDead()) {
+            Texture trumpTexture = assets.getTrumpTexture();
+            batch.draw(
+                    trumpTexture,
+                    trumpBoss.getX(),
+                    trumpBoss.getY(),
+                    trumpBoss.getWidth(),
+                    trumpBoss.getHeight()
+            );
+        }
+
+        // AK-47 orbitando o Trump.
+        Texture rifleTexture = assets.getRifleTexture();
+        for (RifleWeapon rifle : rifleWeapons) {
+            if (!rifle.isDestroyed()) {
+                batch.draw(
+                        rifleTexture,
+                        rifle.getX(),
+                        rifle.getY(),
+                        rifle.getWidth(),
+                        rifle.getHeight()
+                );
+            }
+        }
+
+        // Portal para Marte.
+        if (marsPortal != null && portalSpawned) {
+            Texture portalTexture = assets.getPortalTexture();
+            batch.draw(
+                    portalTexture,
+                    marsPortal.getX(),
+                    marsPortal.getY(),
+                    marsPortal.getWidth(),
+                    marsPortal.getHeight()
+            );
+        }
+
+        Texture laserTexture = assets.getLaserTexture();
+        for (Laser laser : lasers) {
+            batch.draw(
+                    laserTexture,
+                    laser.getX(),
+                    laser.getY(),
+                    laser.getWidth(),
+                    laser.getHeight()
+            );
+        }
+
+        Texture playerTexture = assets.getPlayerTexture();
+        batch.draw(
+                playerTexture,
+                player.getX(),
+                player.getY(),
+                player.getWidth(),
+                player.getHeight()
+        );
+
+        batch.end();
     }
 
     private void drawHud() {
@@ -798,9 +974,9 @@ public class LuaScreen extends ScreenAdapter {
 
         float x = 28f;
         float width = 330f;
-        float height = 26f;
-        float firstY = hudViewport.getWorldHeight() - 46f;
-        float gap = 43f;
+        float height = 28f;
+        float firstY = hudViewport.getWorldHeight() - 52f;
+        float gap = 48f;
 
         drawBar(x, firstY, width, height, stats.getHealth(), PlayerStats.MAX_HEALTH, Color.RED);
         drawBar(x, firstY - gap, width, height, stats.getHunger(), PlayerStats.MAX_HUNGER, Color.ORANGE);
@@ -810,97 +986,92 @@ public class LuaScreen extends ScreenAdapter {
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
 
-        hudFont.setColor(Color.WHITE);
         hudFont.getData().setScale(1.05f);
-        hudFont.draw(batch, String.format("HP: %.0f / 100", stats.getHealth()), x + 9f, firstY + 19f);
-        hudFont.draw(batch, String.format("FOME: %.0f / 100", stats.getHunger()), x + 9f, firstY - gap + 19f);
-        hudFont.draw(batch, String.format("O2: %.0f / 100", stats.getOxygen()), x + 9f, firstY - gap * 2f + 19f);
-
         hudFont.setColor(Color.WHITE);
-        hudFont.getData().setScale(1.05f);
-        String missionText = getMissionText();
-        hudFont.draw(batch, missionText, 28f, hudViewport.getWorldHeight() - 175f);
+        hudFont.draw(batch, String.format("HP: %.0f / 100", stats.getHealth()), x + 10f, firstY + 20f);
+        hudFont.draw(batch, String.format("FOME: %.0f / 100", stats.getHunger()), x + 10f, firstY - gap + 20f);
+        hudFont.draw(batch, String.format("O2: %.0f / 100", stats.getOxygen()), x + 10f, firstY - gap * 2f + 20f);
 
-        hudFont.getData().setScale(0.9f);
+        hudFont.getData().setScale(1.0f);
+        hudFont.setColor(Color.WHITE);
+        hudFont.draw(batch, "MISSÃO LUA", 28f, hudViewport.getWorldHeight() - 205f);
+
+        hudFont.getData().setScale(0.92f);
         hudFont.setColor(Color.LIGHT_GRAY);
-        String controls = "WASD/SETAS mover | MOUSE esquerdo atirar";
-        hudFont.draw(batch, controls, 28f, 28f);
 
-        if (mission == LuaMission.MELT_ICE) {
-            hudFont.setColor(Color.CYAN);
-            hudFont.draw(batch, "BASE LUNAR: fique dentro dela e pressione E", 28f, hudViewport.getWorldHeight() - 205f);
+        String objective;
+        switch (mission) {
+            case COLLECT_ICE:
+                objective = "Colete 5 gelos: " + Math.min(stats.getIceCollected(), REQUIRED_ICE) + "/5";
+                break;
+            case MELT_ICE:
+                objective = "Base lunar: pressione E para derreter os 5 gelos e beber água";
+                break;
+            case DEFEAT_AMERICAN:
+                objective = "Derrote o inimigo lunar";
+                break;
+            case DEFEAT_TRUMP:
+                objective = "Derrote Trump: 500 HP";
+                break;
+            case GO_TO_MARS:
+                objective = portalSpawned ? "Entre no portal para Marte" : "Portal para Marte abrindo...";
+                break;
+            default:
+                objective = "";
+                break;
         }
 
-        if (mission == LuaMission.DEFEAT_TRUMP && trumpBoss != null) {
-            hudFont.setColor(Color.ORANGE);
-            hudFont.getData().setScale(1.15f);
-            String bossText = String.format("TRUMP — %.0f / 500 HP", trumpBoss.getHealth());
-            hudFont.draw(batch, bossText, hudViewport.getWorldWidth() - 340f, hudViewport.getWorldHeight() - 38f);
+        GlyphLayout objectiveLayout = new GlyphLayout(hudFont, objective);
+        hudFont.draw(batch, objective, 28f, hudViewport.getWorldHeight() - 235f);
 
-            hudFont.getData().setScale(0.88f);
-            hudFont.setColor(Color.WHITE);
-            String phaseText = getBossPhaseText();
-            hudFont.draw(batch, phaseText, hudViewport.getWorldWidth() - 340f, hudViewport.getWorldHeight() - 68f);
+        String iceText = "Gelo: " + stats.getIceCollected() + "/" + REQUIRED_ICE;
+        hudFont.draw(batch, iceText, hudViewport.getWorldWidth() - 190f, hudViewport.getWorldHeight() - 34f);
 
-            if (trumpAttackPhase == TrumpAttackPhase.RIFLE_BARRIER) {
-                String weapons = "ARMAS: M4 | M16 | AR-15 | HK416 | SCAR-L | FAL";
-                hudFont.draw(batch, weapons, 28f, 78f);
+        if (mission == LuaMission.DEFEAT_TRUMP && trumpBoss != null && !trumpBoss.isDead()) {
+            String bossText;
+            if (trumpAttackPhase == TrumpAttackPhase.COOLDOWN) {
+                bossText = String.format("PRÓXIMO ATAQUE: %.1fs", Math.max(0f, bossCooldownTimer));
+            } else if (trumpAttackPhase == TrumpAttackPhase.MISSILE_WARNING) {
+                bossText = "MÍSSEIS: ÁREAS VERMELHAS";
+            } else if (trumpAttackPhase == TrumpAttackPhase.RIFLE_BARRIER) {
+                bossText = "BARREIRA: DESTRUA AS AK-47";
+            } else if (trumpAttackPhase == TrumpAttackPhase.AMERICAN_WAVE) {
+                bossText = "REFORÇOS: " + americans.size + "/5";
+            } else {
+                bossText = "MÍSSEIS EM VOO";
             }
+
+            hudFont.setColor(Color.ORANGE);
+            hudFont.draw(
+                    batch,
+                    String.format("TRUMP: %.0f / %.0f HP", trumpBoss.getHealth(), TrumpBoss.MAX_HEALTH),
+                    hudViewport.getWorldWidth() - 260f,
+                    hudViewport.getWorldHeight() - 78f
+            );
+
+            hudFont.setColor(Color.WHITE);
+            hudFont.draw(batch, bossText, hudViewport.getWorldWidth() - 350f, hudViewport.getWorldHeight() - 108f);
         }
 
         if (messageTimer > 0f) {
-            hudFont.setColor(Color.YELLOW);
             hudFont.getData().setScale(1.0f);
-            GlyphLayout layout = new GlyphLayout(hudFont, missionMessage);
+            hudFont.setColor(Color.WHITE);
+            GlyphLayout messageLayout = new GlyphLayout(hudFont, missionMessage);
             hudFont.draw(
                     batch,
                     missionMessage,
-                    hudViewport.getWorldWidth() / 2f - layout.width / 2f,
-                    92f
+                    hudViewport.getWorldWidth() / 2f - messageLayout.width / 2f,
+                    42f
             );
         }
 
+        hudFont.getData().setScale(0.86f);
+        hudFont.setColor(Color.LIGHT_GRAY);
+        hudFont.draw(batch, "WASD / SETAS = mover | Mouse = mirar | Clique = atirar | E = interagir", 28f, 18f);
+
         batch.end();
 
-        if (messageTimer > 0f) {
-            messageTimer -= Math.min(Gdx.graphics.getDeltaTime(), 0.05f);
-        }
-    }
-
-    private String getMissionText() {
-        switch (mission) {
-            case COLLECT_ICE:
-                return "MISSÃO: colete 1 gelo.";
-            case MELT_ICE:
-                return "MISSÃO: derreta o gelo na base e beba a água.";
-            case DEFEAT_AMERICAN:
-                return "MISSÃO: derrote o inimigo escondido. 2 tiros para matar.";
-            case DEFEAT_TRUMP:
-                return "MISSÃO: derrote TRUMP (500 HP). Sequência: mísseis → rifles → 5 inimigos.";
-            case GO_TO_MARS:
-                return "MISSÃO CONCLUÍDA: entre no portal azul para Marte.";
-            default:
-                return "MISSÃO: continue.";
-        }
-    }
-
-    private String getBossPhaseText() {
-        if (trumpAttackPhase == null) {
-            return "EXPLOSÃO";
-        }
-
-        switch (trumpAttackPhase) {
-            case MISSILE_WARNING:
-                return "FASE: alerta vermelho de mísseis (2s)";
-            case MISSILE_TRAVEL:
-                return "FASE: mísseis em rota";
-            case RIFLE_BARRIER:
-                return "FASE: destrua todas as armas";
-            case AMERICAN_WAVE:
-                return "FASE: 5 inimigos — elimine todos";
-            default:
-                return "FASE: ataque";
-        }
+        messageTimer = Math.max(0f, messageTimer - Gdx.graphics.getDeltaTime());
     }
 
     private void showMessage(String message) {
@@ -910,32 +1081,14 @@ public class LuaScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        if (!update(delta) || screenChanged) {
+        if (!update(delta)) {
             return;
         }
 
         ScreenUtils.clear(0f, 0f, 0f, 1f);
 
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-
-        Texture background = assets.getLuaBackgroundTexture();
-        batch.draw(background, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
-        drawLuaFloor();
-
-        Texture lunarBase = assets.getLunarBaseTexture();
-        batch.draw(lunarBase, LUNAR_BASE_X, LUNAR_BASE_Y, LUNAR_BASE_WIDTH, LUNAR_BASE_HEIGHT);
-        drawLuaItems();
-        batch.end();
-
-        drawWorldCubes();
-
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-        Texture playerTexture = assets.getPlayerTexture();
-        batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
-        batch.end();
-
+        drawWorld();
+        drawWarningsAndProjectiles();
         drawHud();
     }
 
@@ -944,11 +1097,6 @@ public class LuaScreen extends ScreenAdapter {
         viewport.update(width, height, true);
         hudViewport.update(width, height, true);
         updateCamera();
-    }
-
-    @Override
-    public void hide() {
-        dispose();
     }
 
     @Override
