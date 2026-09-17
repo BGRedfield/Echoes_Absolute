@@ -116,3 +116,10 @@ public class LuaMarteScreen extends ScreenAdapter {
         font.dispose();
     }
 }
+
+/** Compatibility class used by LuaScreen without introducing another conflicting filename. */
+class MarteScreen extends LuaMarteScreen {
+    public MarteScreen(Game game) {
+        super(game);
+    }
+}
