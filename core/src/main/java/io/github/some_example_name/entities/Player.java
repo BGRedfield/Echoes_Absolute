@@ -13,10 +13,6 @@ public class Player {
 
     private final Rectangle hitbox;
 
-    // Direção atual/última direção para os tiros automáticos.
-    private float directionX = 0f;
-    private float directionY = 1f;
-
     public Player(float x, float y) {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
     }
@@ -38,7 +34,6 @@ public class Player {
             moveY -= 1f;
         }
 
-        // Setas também continuam funcionando.
         if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
             moveX -= 1f;
         }
@@ -56,10 +51,6 @@ public class Player {
         if (length > 0f) {
             moveX /= length;
             moveY /= length;
-
-            // Guarda a última direção em que o jogador realmente andou.
-            directionX = moveX;
-            directionY = moveY;
         }
 
         hitbox.x += moveX * SPEED * delta;
@@ -105,13 +96,5 @@ public class Player {
 
     public float getCenterY() {
         return hitbox.y + hitbox.height / 2f;
-    }
-
-    public float getDirectionX() {
-        return directionX;
-    }
-
-    public float getDirectionY() {
-        return directionY;
     }
 }
