@@ -25,6 +25,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.some_example_name.entities.AmericanEnemy;
 import io.github.some_example_name.entities.DeathCause;
 import io.github.some_example_name.entities.EnemyBullet;
+import io.github.some_example_name.entities.ExplosionEffect;
 import io.github.some_example_name.entities.Laser;
 import io.github.some_example_name.entities.LuaItem;
 import io.github.some_example_name.entities.LuaMission;
@@ -94,12 +95,14 @@ public class LuaScreen extends ScreenAdapter {
     private final Array<TrumpMissile> trumpMissiles = new Array<>();
     private final Array<MissileWarning> missileWarnings = new Array<>();
     private final Array<RifleWeapon> rifleWeapons = new Array<>();
+    private final Array<ExplosionEffect> missileExplosions = new Array<>();
 
     private LuaMission mission = LuaMission.COLLECT_ICE;
     private TrumpBoss trumpBoss;
     private TrumpAttackPhase trumpAttackPhase;
     private TrumpAttackPhase nextTrumpAttack;
     private MarsPortal marsPortal;
+    private final Rectangle redKeyHitbox = new Rectangle();
 
     private float bossPhaseTimer;
     private float bossCooldownTimer;
@@ -111,6 +114,7 @@ public class LuaScreen extends ScreenAdapter {
     private boolean portalUnlocked;
     private boolean portalEntryArmed;
     private boolean redKeyVisible;
+    private boolean redKeyCollected;
     private boolean bossDeathSequenceStarted;
     private int bossAttackCycle;
     private String missionMessage = "";
@@ -193,6 +197,7 @@ public class LuaScreen extends ScreenAdapter {
         updatePlayerShooting();
         updatePlayerLasers(delta);
         updateMissiles(delta);
+        updateMissileExplosions(delta);
         updateRifleBullets(delta);
         updateAmericanBullets(delta);
         updateBoss(delta);
@@ -440,6 +445,7 @@ public class LuaScreen extends ScreenAdapter {
         rifleWeapons.clear();
         trumpMissiles.clear();
         missileWarnings.clear();
+        missileExplosions.clear();
         americanSpawnTimer = AMERICAN_RESPAWN_INTERVAL;
 
         bossExplosionTimer = 0f;
@@ -448,6 +454,8 @@ public class LuaScreen extends ScreenAdapter {
         portalUnlocked = false;
         portalEntryArmed = false;
         redKeyVisible = false;
+        redKeyCollected = false;
+        redKeyHitbox.set(0f, 0f, RED_KEY_SIZE, RED_KEY_SIZE);
         bossAttackCycle = 0;
 
         startBossCooldown(
@@ -600,10 +608,27 @@ public class LuaScreen extends ScreenAdapter {
             missile.update(delta);
 
             if (missile.hasArrived()) {
-                if (player.getHitbox().overlaps(missile.getImpactArea())) {
+                Rectangle impact = missile.getImpactArea();
+                missileExplosions.add(new ExplosionEffect(
+                        impact.x + impact.width / 2f,
+                        impact.y + impact.height / 2f
+                ));
+
+                if (player.getHitbox().overlaps(impact)) {
                     stats.damage(ENEMY_BULLET_DAMAGE * 2f, DeathCause.TRUMP_MISSILE);
                 }
                 trumpMissiles.removeIndex(i);
+            }
+        }
+    }
+
+    private void updateMissileExplosions(float delta) {
+        for (int i = missileExplosions.size - 1; i >= 0; i--) {
+            ExplosionEffect explosion = missileExplosions.get(i);
+            explosion.update(delta);
+
+            if (explosion.isFinished()) {
+                missileExplosions.removeIndex(i);
             }
         }
     }
@@ -636,12 +661,7 @@ public class LuaScreen extends ScreenAdapter {
             }
 
             alive++;
-            rifle.update(
-                    delta,
-                    player.getCenterX(),
-                    player.getCenterY(),
-                    rifleBullets
-            );
+            rifle.update(delta, rifleBullets);
         }
 
         if (alive == 0) {
@@ -690,6 +710,7 @@ public class LuaScreen extends ScreenAdapter {
             x = MathUtils.clamp(x, 0f, WORLD_WIDTH - rifle.getWidth());
             y = MathUtils.clamp(y, 0f, WORLD_HEIGHT - rifle.getHeight());
             rifle.setPosition(x, y);
+            rifle.setOutwardDirection(MathUtils.cos(angle), MathUtils.sin(angle));
             rifle.setRotationDegrees(angle * MathUtils.radiansToDegrees + RIFLE_OUTWARD_ROTATION_OFFSET);
         }
     }
@@ -742,6 +763,7 @@ public class LuaScreen extends ScreenAdapter {
         rifleWeapons.clear();
         missileWarnings.clear();
         trumpMissiles.clear();
+        missileExplosions.clear();
         showMessage("TRUMP DERROTADO! A chave vermelha e o portal para Marte aparecerão.");
     }
 
@@ -760,9 +782,20 @@ public class LuaScreen extends ScreenAdapter {
         portalSpawned = true;
         portalUnlocked = false;
         portalEntryArmed = false;
+        redKeyCollected = false;
         redKeyVisible = true;
         marsPortal = new MarsPortal(2580f, 1530f);
-        showMessage("A chave vermelha e o portal apareceram. Siga a flecha vermelha até lá!");
+
+        float keyCenterX = trumpBoss.getCenterX();
+        float keyCenterY = trumpBoss.getCenterY();
+        redKeyHitbox.set(
+                keyCenterX - RED_KEY_SIZE / 2f,
+                keyCenterY - RED_KEY_SIZE / 2f,
+                RED_KEY_SIZE,
+                RED_KEY_SIZE
+        );
+
+        showMessage("A chave vermelha apareceu no local do Trump. Toque nela para coletá-la e siga a flecha até o portal!");
     }
 
     private void handleMarsPortalInteraction() {
@@ -772,12 +805,23 @@ public class LuaScreen extends ScreenAdapter {
 
         boolean playerAtPortal = player.getHitbox().overlaps(marsPortal.getHitbox());
 
+        if (redKeyVisible
+                && !redKeyCollected
+                && player.getHitbox().overlaps(redKeyHitbox)) {
+            redKeyCollected = true;
+            redKeyVisible = false;
+            showMessage("CHAVE VERMELHA coletada! Agora chegue ao portal e pressione E.");
+        }
+
         if (!portalUnlocked) {
+            if (!redKeyCollected) {
+                return;
+            }
+
             if (playerAtPortal && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
                 portalUnlocked = true;
                 portalEntryArmed = false;
-                redKeyVisible = false;
-                showMessage("CHAVE USADA! Portal para Marte aberto. Saia e entre no portal novamente.");
+                showMessage("PORTAL DESBLOQUEADO! Saia e entre novamente no portal para viajar a Marte.");
             }
             return;
         }
@@ -974,6 +1018,20 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
+        for (ExplosionEffect explosion : missileExplosions) {
+            float progress = explosion.getProgress();
+            float radius = explosion.getRadius();
+
+            shapeRenderer.setColor(new Color(1f, 0.15f, 0.02f, 0.18f * (1f - progress)));
+            shapeRenderer.circle(explosion.getCenterX(), explosion.getCenterY(), radius);
+
+            shapeRenderer.setColor(new Color(1f, 0.65f, 0.05f, 0.70f * (1f - progress)));
+            shapeRenderer.circle(explosion.getCenterX(), explosion.getCenterY(), radius * 0.58f);
+
+            shapeRenderer.setColor(new Color(1f, 0.92f, 0.30f, 0.88f * (1f - progress)));
+            shapeRenderer.circle(explosion.getCenterX(), explosion.getCenterY(), radius * 0.25f);
+        }
+
         shapeRenderer.setColor(Color.BLUE);
         for (EnemyBullet bullet : americanBullets) {
             shapeRenderer.rect(
@@ -1076,13 +1134,17 @@ public class LuaScreen extends ScreenAdapter {
                     marsPortal.getWidth(),
                     marsPortal.getHeight()
             );
+        }
 
-            if (redKeyVisible) {
-                float keyX = marsPortal.getX() - RED_KEY_SIZE - 45f;
-                float keyY = marsPortal.getY() + marsPortal.getHeight() / 2f - RED_KEY_SIZE / 2f;
-                Texture keyTexture = assets.getRedKeyTexture();
-                batch.draw(keyTexture, keyX, keyY, RED_KEY_SIZE, RED_KEY_SIZE);
-            }
+        if (redKeyVisible && !redKeyCollected) {
+            Texture keyTexture = assets.getRedKeyTexture();
+            batch.draw(
+                    keyTexture,
+                    redKeyHitbox.x,
+                    redKeyHitbox.y,
+                    redKeyHitbox.width,
+                    redKeyHitbox.height
+            );
         }
 
         Texture laserTexture = assets.getLaserTexture();
@@ -1157,7 +1219,9 @@ public class LuaScreen extends ScreenAdapter {
                 objective = "Derrote Trump: 500 HP";
                 break;
             case GO_TO_MARS:
-                if (!portalUnlocked) {
+                if (!redKeyCollected) {
+                    objective = "Colete a chave vermelha que caiu no local do Trump";
+                } else if (!portalUnlocked) {
                     if (marsPortal != null && player.getHitbox().overlaps(marsPortal.getHitbox())) {
                         objective = "Portal encontrado: pressione E para usar a chave vermelha";
                     } else {
@@ -1174,7 +1238,6 @@ public class LuaScreen extends ScreenAdapter {
                 break;
         }
 
-        GlyphLayout objectiveLayout = new GlyphLayout(hudFont, objective);
         hudFont.draw(batch, objective, 28f, hudViewport.getWorldHeight() - 235f);
 
         String iceText = "Gelo: " + stats.getIceCollected() + "/" + REQUIRED_ICE;
@@ -1204,6 +1267,11 @@ public class LuaScreen extends ScreenAdapter {
 
             hudFont.setColor(Color.WHITE);
             hudFont.draw(batch, bossText, hudViewport.getWorldWidth() - 350f, hudViewport.getWorldHeight() - 108f);
+        }
+
+        if (redKeyVisible && !redKeyCollected) {
+            hudFont.setColor(Color.RED);
+            hudFont.draw(batch, "CHAVE VERMELHA", hudViewport.getWorldWidth() - 230f, 62f);
         }
 
         if (messageTimer > 0f) {
