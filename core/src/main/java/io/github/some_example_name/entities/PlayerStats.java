@@ -99,13 +99,22 @@ public class PlayerStats {
         iceCollected++;
     }
 
-    public boolean consumeIce() {
-        if (iceCollected <= 0) {
+    public boolean canConsumeIce(int amount) {
+        return amount > 0 && iceCollected >= amount;
+    }
+
+    public boolean consumeIce(int amount) {
+        if (!canConsumeIce(amount)) {
             return false;
         }
 
-        iceCollected--;
+        iceCollected -= amount;
         return true;
+    }
+
+    /** Keeps compatibility with the old one-ice interaction. */
+    public boolean consumeIce() {
+        return consumeIce(1);
     }
 
     /** Drinks the water produced by melting mission ice. */
@@ -119,9 +128,7 @@ public class PlayerStats {
         health = MathUtils.clamp(health + amount, 0f, MAX_HEALTH);
     }
 
-    /**
-     * Every lethal/non-lethal combat mechanic should call this method.
-     */
+    /** Every lethal/non-lethal combat mechanic should call this method. */
     public void damage(float amount, DeathCause cause) {
         if (isDead() || amount <= 0f) {
             return;
