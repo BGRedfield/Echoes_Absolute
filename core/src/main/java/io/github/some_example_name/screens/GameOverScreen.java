@@ -2,10 +2,12 @@ package io.github.some_example_name.screens;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
@@ -36,7 +38,6 @@ public class GameOverScreen extends ScreenAdapter {
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         font = new BitmapFont();
-        font.getData().setScale(1.6f);
         viewport = new ScreenViewport();
     }
 
@@ -72,13 +73,13 @@ public class GameOverScreen extends ScreenAdapter {
     }
 
     private void handleInput() {
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.R)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.R)) {
             retry();
             return;
         }
 
-        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M)
-                || Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.ESCAPE)) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)
+                || Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             goToMenu();
             return;
         }
@@ -135,6 +136,7 @@ public class GameOverScreen extends ScreenAdapter {
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
 
+        font.getData().setScale(1.6f);
         font.setColor(Color.WHITE);
         drawCentered("VOCÊ MORREU", width, height / 2f + 190f);
 
@@ -147,16 +149,16 @@ public class GameOverScreen extends ScreenAdapter {
         drawCentered("RETRY", width, retryButton.y + 24f);
         drawCentered("VOLTAR AO MENU", width, menuButton.y + 24f);
 
-        font.getData().setScale(1.6f);
+        font.getData().setScale(1.0f);
         font.setColor(Color.GRAY);
-        drawCentered("R = retry   |   M / ESC = menu", width, 45f);
+        drawCentered("R = retry   |   M = menu   |   ESC = menu", width, 45f);
 
         batch.end();
     }
 
     private void drawCentered(String text, float screenWidth, float y) {
-        float textWidth = font.getData().getGlyphLayoutWidth(text);
-        font.draw(batch, text, screenWidth / 2f - textWidth / 2f, y);
+        GlyphLayout layout = new GlyphLayout(font, text);
+        font.draw(batch, text, screenWidth / 2f - layout.width / 2f, y);
     }
 
     @Override
