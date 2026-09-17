@@ -11,12 +11,38 @@ public class TrumpBoss {
     public static final float HEIGHT = 260f;
     public static final float SPEED = 90f;
 
+    private static TrumpBoss activeBoss;
+
     private final Rectangle hitbox;
     private float health = MAX_HEALTH;
     private boolean dead;
 
     public TrumpBoss(float x, float y) {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
+        activeBoss = this;
+    }
+
+    /**
+     * Updates whichever Trump boss is currently active, using the active player.
+     * Kept here so Player does not need to know about boss gameplay details.
+     */
+    public static void updateActive(float delta, float worldWidth, float worldHeight) {
+        if (activeBoss == null || activeBoss.dead) {
+            return;
+        }
+
+        Player player = Player.getActivePlayer();
+        if (player == null) {
+            return;
+        }
+
+        activeBoss.update(
+                delta,
+                player.getCenterX(),
+                player.getCenterY(),
+                worldWidth,
+                worldHeight
+        );
     }
 
     public void update(float delta, float playerX, float playerY,
@@ -46,6 +72,9 @@ public class TrumpBoss {
         health = MathUtils.clamp(health - amount, 0f, MAX_HEALTH);
         if (health <= 0f) {
             dead = true;
+            if (activeBoss == this) {
+                activeBoss = null;
+            }
         }
     }
 
