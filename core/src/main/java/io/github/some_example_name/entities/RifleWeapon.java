@@ -12,7 +12,6 @@ public class RifleWeapon {
     public static final float MAX_HEALTH = 20f;
     private static final float SHOT_INTERVAL = 1f;
 
-    /** Names available for the six barrier weapons. */
     public static final String[] DEFAULT_NAMES = {
             "AK-47 Alpha",
             "AK-47 Bravo",
@@ -27,6 +26,8 @@ public class RifleWeapon {
     private float health = MAX_HEALTH;
     private float shotTimer;
     private float rotationDegrees;
+    private float outwardDirectionX = 1f;
+    private float outwardDirectionY = 0f;
     private boolean destroyed;
 
     public RifleWeapon(String name, float x, float y) {
@@ -34,8 +35,8 @@ public class RifleWeapon {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
     }
 
-    /** Keeps the rifle at its current orbit position and fires toward the player. */
-    public void update(float delta, float playerX, float playerY, Array<EnemyBullet> bullets) {
+    /** Fires radially away from Trump's center instead of tracking the player. */
+    public void update(float delta, Array<EnemyBullet> bullets) {
         if (destroyed) {
             return;
         }
@@ -43,10 +44,12 @@ public class RifleWeapon {
         shotTimer += delta;
         while (shotTimer >= SHOT_INTERVAL) {
             shotTimer -= SHOT_INTERVAL;
-
-            float dx = playerX - getCenterX();
-            float dy = playerY - getCenterY();
-            bullets.add(new EnemyBullet(getCenterX(), getCenterY(), dx, dy));
+            bullets.add(new EnemyBullet(
+                    getCenterX(),
+                    getCenterY(),
+                    outwardDirectionX,
+                    outwardDirectionY
+            ));
         }
     }
 
@@ -55,13 +58,22 @@ public class RifleWeapon {
         hitbox.y = y;
     }
 
-    /** Rotation of the sprite in degrees, used to keep the barrel pointing away from Trump. */
     public void setRotationDegrees(float rotationDegrees) {
         this.rotationDegrees = rotationDegrees;
     }
 
     public float getRotationDegrees() {
         return rotationDegrees;
+    }
+
+    public void setOutwardDirection(float directionX, float directionY) {
+        float length = (float) Math.sqrt(directionX * directionX + directionY * directionY);
+        if (length <= 0.0001f) {
+            return;
+        }
+
+        outwardDirectionX = directionX / length;
+        outwardDirectionY = directionY / length;
     }
 
     public void takeDamage(float amount) {
