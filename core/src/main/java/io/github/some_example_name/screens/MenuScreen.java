@@ -47,6 +47,11 @@ public class MenuScreen extends ScreenAdapter {
     }
 
     private void handleInput() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
+            openPhaseSelect();
+            return;
+        }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
                 || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             startGame();
@@ -74,6 +79,16 @@ public class MenuScreen extends ScreenAdapter {
 
         changingScreen = true;
         game.setScreen(new LuaScreen(game));
+    }
+
+    private void openPhaseSelect() {
+        if (changingScreen) {
+            return;
+        }
+
+        changingScreen = true;
+        dispose();
+        game.setScreen(new PhaseSelectScreen(game));
     }
 
     private void drawCentered(String text, float screenWidth, float y) {
@@ -108,7 +123,8 @@ public class MenuScreen extends ScreenAdapter {
         font.getData().setScale(1.0f);
         font.setColor(Color.LIGHT_GRAY);
         drawCentered("ENTER / SPACE = jogar", width, 60f);
-        drawCentered("ESC = sair", width, 32f);
+        drawCentered("F = selecionar fase", width, 42f);
+        drawCentered("ESC = sair", width, 24f);
 
         batch.end();
     }
