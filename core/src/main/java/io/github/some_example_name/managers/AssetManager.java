@@ -24,6 +24,7 @@ public class AssetManager {
     public static final String TRUMP = "trump.png";
     public static final String RIFLE = "ak47.png";
     public static final String PORTAL = "portal.png";
+    public static final String RED_KEY = "chave.png";
 
     private Texture playerTexture;
     private Texture luaBackgroundTexture;
@@ -37,6 +38,7 @@ public class AssetManager {
     private Texture trumpTexture;
     private Texture rifleTexture;
     private Texture portalTexture;
+    private Texture redKeyTexture;
 
     private boolean playerFallback;
 
@@ -49,7 +51,6 @@ public class AssetManager {
                 new Color(0.08f, 0.08f, 0.13f, 1f)
         );
 
-        // Tiro do jogador: amarelo quando o sprite não existir.
         laserTexture = loadAsset(
                 LASER,
                 new Color(1f, 0.90f, 0.10f, 1f)
@@ -60,13 +61,11 @@ public class AssetManager {
                 new Color(0.45f, 0.45f, 0.50f, 1f)
         );
 
-        // TileSet da Lua.
         luaTileTexture = loadAsset(
                 LUA_TILE,
                 new Color(0.20f, 0.20f, 0.23f, 1f)
         );
 
-        // Recursos.
         foodTexture = loadAsset(
                 FOOD,
                 new Color(1f, 0.55f, 0f, 1f)
@@ -82,28 +81,30 @@ public class AssetManager {
                 new Color(0.20f, 0.55f, 1f, 1f)
         );
 
-        // Inimigo lunar.
         americanTexture = loadAsset(
                 AMERICAN,
                 new Color(0.90f, 0.08f, 0.08f, 1f)
         );
 
-        // Boss.
         trumpTexture = loadAsset(
                 TRUMP,
                 new Color(1f, 0.45f, 0.05f, 1f)
         );
 
-        // AK-47 orbitando o boss.
         rifleTexture = loadAsset(
                 RIFLE,
                 new Color(0.10f, 0.10f, 0.10f, 1f)
         );
 
-        // Portal para Marte.
         portalTexture = loadAsset(
                 PORTAL,
                 new Color(0.15f, 0.85f, 1f, 1f)
+        );
+
+        // Chave vermelha usada para abrir o portal para Marte.
+        redKeyTexture = loadAsset(
+                RED_KEY,
+                Color.RED
         );
     }
 
@@ -186,6 +187,10 @@ public class AssetManager {
         return portalTexture;
     }
 
+    public Texture getRedKeyTexture() {
+        return redKeyTexture;
+    }
+
     public boolean isPlayerFallback() {
         return playerFallback;
     }
@@ -203,6 +208,7 @@ public class AssetManager {
         disposeTexture(trumpTexture);
         disposeTexture(rifleTexture);
         disposeTexture(portalTexture);
+        disposeTexture(redKeyTexture);
     }
 
     private void disposeTexture(Texture texture) {
