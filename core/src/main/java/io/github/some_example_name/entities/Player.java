@@ -8,7 +8,7 @@ public class Player {
 
     public static final float WIDTH = 64f;
     public static final float HEIGHT = 64f;
-    private static final float SPEED = 320f;
+    public static final float SPEED = 320f;
 
     private static Player activePlayer;
     private final Rectangle hitbox;
