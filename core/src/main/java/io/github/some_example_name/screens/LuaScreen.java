@@ -14,8 +14,8 @@ import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.utils.Array;
 import com.badlogic.gdx.utils.ScreenUtils;
-import com.badlogic.gdx.utils.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.FitViewport;
+import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.some_example_name.entities.DeathCause;
@@ -79,56 +79,12 @@ public class LuaScreen extends ScreenAdapter {
     }
 
     private void createLuaResources() {
-        // Comida: +50 fome e +10 HP.
-        luaItems.add(new LuaItem(
-                LuaItem.Type.FOOD,
-                780f,
-                620f,
-                52f,
-                52f
-        ));
-
-        luaItems.add(new LuaItem(
-                LuaItem.Type.FOOD,
-                1540f,
-                420f,
-                52f,
-                52f
-        ));
-
-        // Tanques de O2: +20 oxigenio.
-        luaItems.add(new LuaItem(
-                LuaItem.Type.O2_TANK,
-                1050f,
-                920f,
-                42f,
-                118f
-        ));
-
-        luaItems.add(new LuaItem(
-                LuaItem.Type.O2_TANK,
-                2050f,
-                1320f,
-                42f,
-                118f
-        ));
-
-        // Gelo: coletavel e contabilizado para futuras missoes.
-        luaItems.add(new LuaItem(
-                LuaItem.Type.ICE,
-                1350f,
-                1300f,
-                70f,
-                70f
-        ));
-
-        luaItems.add(new LuaItem(
-                LuaItem.Type.ICE,
-                2380f,
-                760f,
-                70f,
-                70f
-        ));
+        luaItems.add(new LuaItem(LuaItem.Type.FOOD, 780f, 620f, 52f, 52f));
+        luaItems.add(new LuaItem(LuaItem.Type.FOOD, 1540f, 420f, 52f, 52f));
+        luaItems.add(new LuaItem(LuaItem.Type.O2_TANK, 1050f, 920f, 42f, 118f));
+        luaItems.add(new LuaItem(LuaItem.Type.O2_TANK, 2050f, 1320f, 42f, 118f));
+        luaItems.add(new LuaItem(LuaItem.Type.ICE, 1350f, 1300f, 70f, 70f));
+        luaItems.add(new LuaItem(LuaItem.Type.ICE, 2380f, 760f, 70f, 70f));
     }
 
     @Override
@@ -143,8 +99,6 @@ public class LuaScreen extends ScreenAdapter {
 
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
         collectItems();
-
-        // Sobrevivencia: fome e oxigenio sofrem seus descontos por tempo.
         stats.update(delta);
 
         if (stats.isDead()) {
@@ -152,7 +106,6 @@ public class LuaScreen extends ScreenAdapter {
             return;
         }
 
-        // Clique esquerdo dispara exatamente um laser.
         if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) {
             lasers.add(new Laser(
                     player.getCenterX(),
@@ -196,7 +149,6 @@ public class LuaScreen extends ScreenAdapter {
                     break;
             }
 
-            // O item some do mapa ao ser coletado.
             luaItems.removeIndex(i);
         }
     }
@@ -234,7 +186,6 @@ public class LuaScreen extends ScreenAdapter {
             for (float y = 0f; y < WORLD_HEIGHT; y += TILE_SIZE) {
                 float width = Math.min(TILE_SIZE, WORLD_WIDTH - x);
                 float height = Math.min(TILE_SIZE, WORLD_HEIGHT - y);
-
                 batch.draw(tile, x, y, width, height);
             }
         }
@@ -296,35 +247,9 @@ public class LuaScreen extends ScreenAdapter {
         float firstY = hudViewport.getWorldHeight() - 52f;
         float gap = 48f;
 
-        drawBar(
-                x,
-                firstY,
-                width,
-                height,
-                stats.getHealth(),
-                PlayerStats.MAX_HEALTH,
-                Color.RED
-        );
-
-        drawBar(
-                x,
-                firstY - gap,
-                width,
-                height,
-                stats.getHunger(),
-                PlayerStats.MAX_HUNGER,
-                Color.ORANGE
-        );
-
-        drawBar(
-                x,
-                firstY - gap * 2f,
-                width,
-                height,
-                stats.getOxygen(),
-                PlayerStats.MAX_OXYGEN,
-                Color.CYAN
-        );
+        drawBar(x, firstY, width, height, stats.getHealth(), PlayerStats.MAX_HEALTH, Color.RED);
+        drawBar(x, firstY - gap, width, height, stats.getHunger(), PlayerStats.MAX_HUNGER, Color.ORANGE);
+        drawBar(x, firstY - gap * 2f, width, height, stats.getOxygen(), PlayerStats.MAX_OXYGEN, Color.CYAN);
 
         shapeRenderer.end();
 
@@ -333,38 +258,15 @@ public class LuaScreen extends ScreenAdapter {
 
         hudFont.setColor(Color.WHITE);
         hudFont.getData().setScale(1.15f);
-
-        hudFont.draw(
-                batch,
-                String.format("HP: %.0f / 100", stats.getHealth()),
-                x + 10f,
-                firstY + 20f
-        );
-
-        hudFont.draw(
-                batch,
-                String.format("FOME: %.0f / 100", stats.getHunger()),
-                x + 10f,
-                firstY - gap + 20f
-        );
-
-        hudFont.draw(
-                batch,
-                String.format("O2: %.0f / 100", stats.getOxygen()),
-                x + 10f,
-                firstY - gap * 2f + 20f
-        );
+        hudFont.draw(batch, String.format("HP: %.0f / 100", stats.getHealth()), x + 10f, firstY + 20f);
+        hudFont.draw(batch, String.format("FOME: %.0f / 100", stats.getHunger()), x + 10f, firstY - gap + 20f);
+        hudFont.draw(batch, String.format("O2: %.0f / 100", stats.getOxygen()), x + 10f, firstY - gap * 2f + 20f);
 
         hudFont.getData().setScale(0.95f);
         hudFont.setColor(Color.LIGHT_GRAY);
         String iceText = "Gelo coletado: " + stats.getIceCollected();
         GlyphLayout layout = new GlyphLayout(hudFont, iceText);
-        hudFont.draw(
-                batch,
-                iceText,
-                hudViewport.getWorldWidth() - layout.width - 28f,
-                hudViewport.getWorldHeight() - 35f
-        );
+        hudFont.draw(batch, iceText, hudViewport.getWorldWidth() - layout.width - 28f, hudViewport.getWorldHeight() - 35f);
 
         batch.end();
     }
@@ -384,42 +286,21 @@ public class LuaScreen extends ScreenAdapter {
 
         Texture background = assets.getLuaBackgroundTexture();
         batch.draw(background, 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
-
         drawLuaFloor();
 
         Texture lunarBase = assets.getLunarBaseTexture();
-        batch.draw(
-                lunarBase,
-                LUNAR_BASE_X,
-                LUNAR_BASE_Y,
-                LUNAR_BASE_WIDTH,
-                LUNAR_BASE_HEIGHT
-        );
-
+        batch.draw(lunarBase, LUNAR_BASE_X, LUNAR_BASE_Y, LUNAR_BASE_WIDTH, LUNAR_BASE_HEIGHT);
         drawLuaItems();
 
         Texture laserTexture = assets.getLaserTexture();
         for (Laser laser : lasers) {
-            batch.draw(
-                    laserTexture,
-                    laser.getX(),
-                    laser.getY(),
-                    laser.getWidth(),
-                    laser.getHeight()
-            );
+            batch.draw(laserTexture, laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
         }
 
         Texture playerTexture = assets.getPlayerTexture();
-        batch.draw(
-                playerTexture,
-                player.getX(),
-                player.getY(),
-                player.getWidth(),
-                player.getHeight()
-        );
+        batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
 
         batch.end();
-
         drawHud();
     }
 
