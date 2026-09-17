@@ -5,12 +5,15 @@ import com.badlogic.gdx.math.Rectangle;
 /** Cube missile that travels from the boss to a marked impact zone. */
 public class TrumpMissile {
 
+    public static final float IMPACT_SIZE = 180f;
+
     private static final float SPEED = 700f;
     private static final float SIZE = 30f;
 
     private final Rectangle hitbox;
     private final float targetX;
     private final float targetY;
+    private final Rectangle impactArea;
     private boolean arrived;
 
     public TrumpMissile(float startX, float startY, float targetX, float targetY) {
@@ -22,6 +25,12 @@ public class TrumpMissile {
         );
         this.targetX = targetX;
         this.targetY = targetY;
+        impactArea = new Rectangle(
+                targetX - IMPACT_SIZE / 2f,
+                targetY - IMPACT_SIZE / 2f,
+                IMPACT_SIZE,
+                IMPACT_SIZE
+        );
     }
 
     public void update(float delta) {
@@ -52,6 +61,10 @@ public class TrumpMissile {
 
     public Rectangle getHitbox() {
         return hitbox;
+    }
+
+    public Rectangle getImpactArea() {
+        return impactArea;
     }
 
     public float getX() {
