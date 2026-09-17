@@ -24,51 +24,58 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.some_example_name.entities.DeathCause;
 import io.github.some_example_name.entities.Laser;
 import io.github.some_example_name.entities.LuaItem;
+import io.github.some_example_name.entities.MarsEnemy;
 import io.github.some_example_name.entities.MarsOre;
+import io.github.some_example_name.entities.MarsPortalStrike;
+import io.github.some_example_name.entities.MarsPortal;
 import io.github.some_example_name.entities.Player;
 import io.github.some_example_name.entities.PlayerStats;
+import io.github.some_example_name.entities.SupremeAlienBoss;
 import io.github.some_example_name.managers.AssetManager;
 
-/**
- * Mars is intentionally built as a structural clone of the Lua phase.
- * The same player, survival system, food, O2, base and weapon are reused.
- * Enemies and the boss are intentionally not implemented yet.
- */
+/** Mars phase: clone of Lua systems plus mining, weapon upgrade and Martian boss. */
 public class LuaMarteScreen extends ScreenAdapter {
 
     private enum MarsMission {
         COLLECT_ORE,
         REFINE_ORE,
         UPGRADE_WEAPON,
-        COMPLETE
+        DEFEAT_SUPREME_ALIEN,
+        GO_TO_NEXT
+    }
+
+    private enum BossAttack {
+        COOLDOWN,
+        SCREAM,
+        PORTAL,
+        MARTIAN_WAVE
     }
 
     private static final float VIEW_WIDTH = 1280f;
     private static final float VIEW_HEIGHT = 720f;
     private static final float WORLD_WIDTH = 3000f;
     private static final float WORLD_HEIGHT = 2000f;
-
     private static final float PLAYER_SPAWN_X = 400f;
     private static final float PLAYER_SPAWN_Y = 400f;
-
     private static final float BASE_X = 500f;
     private static final float BASE_Y = 390f;
     private static final float BASE_WIDTH = 240f;
     private static final float BASE_HEIGHT = 160f;
-
     private static final float MINE_X = 1980f;
     private static final float MINE_Y = 920f;
     private static final float MINE_WIDTH = BASE_WIDTH;
     private static final float MINE_HEIGHT = BASE_HEIGHT;
-
+    private static final float TILE_SIZE = 128f;
     private static final int REQUIRED_ORE = 5;
-    private static final float MARS_GROUND_R = 0.72f;
-    private static final float MARS_GROUND_G = 0.25f;
-    private static final float MARS_GROUND_B = 0.06f;
-
     private static final float NORMAL_FIRE_INTERVAL = 0.18f;
     private static final float UPGRADED_FIRE_INTERVAL = 0.09f;
     private static final float BURST_SPREAD = 0.045f;
+    private static final float BOSS_COOLDOWN = 3f;
+    private static final float SCREAM_DURATION = 3.0f;
+    private static final float SCREAM_PULL_SPEED = 180f;
+    private static final int MARTIANS_PER_WAVE = 10;
+    private static final float KEY_SIZE = 76f;
+    private static final float BOSS_DEATH_DELAY = 1.0f;
 
     private final Game game;
     private final OrthographicCamera camera;
@@ -80,17 +87,32 @@ public class LuaMarteScreen extends ScreenAdapter {
     private final AssetManager assets;
     private final Player player;
     private final PlayerStats stats;
-
     private final Array<LuaItem> resources = new Array<>();
     private final Array<MarsOre> ores = new Array<>();
     private final Array<Laser> lasers = new Array<>();
+    private final Array<MarsEnemy> martians = new Array<>();
+    private final Array<MarsPortalStrike> portalStrikes = new Array<>();
+    private final Rectangle greenKeyHitbox = new Rectangle();
 
     private MarsMission mission = MarsMission.COLLECT_ORE;
+    private SupremeAlienBoss supremeAlien;
+    private MarsPortal marsPortal;
+    private BossAttack bossAttack = BossAttack.COOLDOWN;
     private int rawOreCount;
     private int refinedOreCount;
     private boolean weaponUpgraded;
+    private boolean portalSpawned;
+    private boolean portalUnlocked;
+    private boolean portalEntryArmed;
+    private boolean greenKeyVisible;
+    private boolean greenKeyCollected;
+    private boolean bossDeathSequenceStarted;
     private float fireTimer;
+    private float bossAttackTimer;
+    private float bossDeathTimer;
     private float messageTimer;
+    private float screamTimer;
+    private int nextBossAttackIndex;
     private String missionMessage = "";
     private boolean changingScreen;
     private boolean disposed;
@@ -100,17 +122,13 @@ public class LuaMarteScreen extends ScreenAdapter {
         camera = new OrthographicCamera();
         viewport = new FitViewport(VIEW_WIDTH, VIEW_HEIGHT, camera);
         hudViewport = new ScreenViewport();
-
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         hudFont = new BitmapFont();
-
         assets = new AssetManager();
         assets.load();
-
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
         stats = new PlayerStats();
-
         createMarsResources();
         createMarsOres();
         showMessage("MISSÃO MARTE: colete 5 minérios verdes e leve-os até a mina para refinar.");
@@ -118,14 +136,12 @@ public class LuaMarteScreen extends ScreenAdapter {
     }
 
     private void createMarsResources() {
-        // Mesmos recursos da Lua.
         addResource(LuaItem.Type.FOOD, 780f, 620f, 56f, 56f);
         addResource(LuaItem.Type.FOOD, 1120f, 430f, 56f, 56f);
         addResource(LuaItem.Type.FOOD, 1680f, 560f, 56f, 56f);
         addResource(LuaItem.Type.FOOD, 2240f, 420f, 56f, 56f);
         addResource(LuaItem.Type.FOOD, 720f, 1510f, 56f, 56f);
         addResource(LuaItem.Type.FOOD, 1900f, 1560f, 56f, 56f);
-
         addResource(LuaItem.Type.O2_TANK, 1050f, 920f, 46f, 125f);
         addResource(LuaItem.Type.O2_TANK, 2050f, 1320f, 46f, 125f);
         addResource(LuaItem.Type.O2_TANK, 1450f, 560f, 46f, 125f);
@@ -159,13 +175,16 @@ public class LuaMarteScreen extends ScreenAdapter {
 
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
-
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
         collectResources();
         collectOres();
         handleMissionInteraction();
+        updateMartians(delta);
         updateShooting(delta);
         updateLasers(delta);
+        updateBoss(delta);
+        updatePortalStrikes(delta);
+        handleExitPortal();
         stats.update(delta);
 
         if (stats.isDead()) {
@@ -190,23 +209,14 @@ public class LuaMarteScreen extends ScreenAdapter {
     private void collectResources() {
         for (int i = resources.size - 1; i >= 0; i--) {
             LuaItem item = resources.get(i);
-            if (!player.getHitbox().overlaps(item.getHitbox())) {
-                continue;
+            if (!player.getHitbox().overlaps(item.getHitbox())) continue;
+            if (item.getType() == LuaItem.Type.FOOD) {
+                stats.eatFood();
+                showMessage("Comida coletada: fome e vida restauradas.");
+            } else if (item.getType() == LuaItem.Type.O2_TANK) {
+                stats.addOxygen(20f);
+                showMessage("O2 coletado: oxigênio restaurado.");
             }
-
-            switch (item.getType()) {
-                case FOOD:
-                    stats.eatFood();
-                    showMessage("Comida coletada: fome e vida restauradas.");
-                    break;
-                case O2_TANK:
-                    stats.addOxygen(20f);
-                    showMessage("O2 coletado: oxigênio restaurado.");
-                    break;
-                default:
-                    break;
-            }
-
             resources.removeIndex(i);
         }
     }
@@ -214,13 +224,9 @@ public class LuaMarteScreen extends ScreenAdapter {
     private void collectOres() {
         for (int i = ores.size - 1; i >= 0; i--) {
             MarsOre ore = ores.get(i);
-            if (!player.getHitbox().overlaps(ore.getHitbox())) {
-                continue;
-            }
-
+            if (!player.getHitbox().overlaps(ore.getHitbox())) continue;
             rawOreCount++;
             ores.removeIndex(i);
-
             if (mission == MarsMission.COLLECT_ORE) {
                 if (rawOreCount >= REQUIRED_ORE) {
                     mission = MarsMission.REFINE_ORE;
@@ -236,43 +242,36 @@ public class LuaMarteScreen extends ScreenAdapter {
         Rectangle mine = new Rectangle(MINE_X, MINE_Y, MINE_WIDTH, MINE_HEIGHT);
         Rectangle base = new Rectangle(BASE_X, BASE_Y, BASE_WIDTH, BASE_HEIGHT);
 
-        if (mission == MarsMission.REFINE_ORE
-                && rawOreCount >= REQUIRED_ORE
+        if (mission == MarsMission.REFINE_ORE && rawOreCount >= REQUIRED_ORE
                 && player.getHitbox().overlaps(mine)
                 && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
             refinedOreCount = rawOreCount;
             rawOreCount = 0;
             mission = MarsMission.UPGRADE_WEAPON;
-            showMessage("Minérios refinados! Agora volte à base e pressione E para melhorar a arma.");
+            showMessage("Minérios refinados! Volte à base e pressione E para melhorar a arma.");
             return;
         }
 
-        if (mission == MarsMission.UPGRADE_WEAPON
-                && refinedOreCount >= REQUIRED_ORE
+        if (mission == MarsMission.UPGRADE_WEAPON && refinedOreCount >= REQUIRED_ORE
                 && player.getHitbox().overlaps(base)
                 && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
             weaponUpgraded = true;
-            mission = MarsMission.COMPLETE;
-            showMessage("ARMA APRIMORADA! Agora ela dispara 2 tiros por rajada e com o dobro da cadência.");
+            mission = MarsMission.DEFEAT_SUPREME_ALIEN;
+            spawnSupremeAlien();
+            showMessage("ARMA APRIMORADA! O ALIEN SUPREMO APARECEU! Derrote-o.");
         }
     }
 
     private void updateShooting(float delta) {
         fireTimer -= delta;
-        if (!Gdx.input.isButtonPressed(Input.Buttons.LEFT) || fireTimer > 0f) {
-            return;
-        }
+        if (!Gdx.input.isButtonPressed(Input.Buttons.LEFT) || fireTimer > 0f) return;
 
         Vector3 mouseWorld = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
         camera.unproject(mouseWorld);
-
         float dx = mouseWorld.x - player.getCenterX();
         float dy = mouseWorld.y - player.getCenterY();
         float length = (float) Math.sqrt(dx * dx + dy * dy);
-        if (length <= 0.001f) {
-            return;
-        }
-
+        if (length <= 0.001f) return;
         dx /= length;
         dy /= length;
 
@@ -281,12 +280,7 @@ public class LuaMarteScreen extends ScreenAdapter {
             addLaserWithAngle(dx, dy, -BURST_SPREAD);
             fireTimer = UPGRADED_FIRE_INTERVAL;
         } else {
-            lasers.add(new Laser(
-                    player.getCenterX(),
-                    player.getCenterY(),
-                    dx,
-                    dy
-            ));
+            lasers.add(new Laser(player.getCenterX(), player.getCenterY(), dx, dy));
             fireTimer = NORMAL_FIRE_INTERVAL;
         }
     }
@@ -296,141 +290,373 @@ public class LuaMarteScreen extends ScreenAdapter {
         float sin = MathUtils.sin(angle);
         float rotatedX = dx * cos - dy * sin;
         float rotatedY = dx * sin + dy * cos;
-
-        lasers.add(new Laser(
-                player.getCenterX(),
-                player.getCenterY(),
-                rotatedX,
-                rotatedY
-        ));
+        lasers.add(new Laser(player.getCenterX(), player.getCenterY(), rotatedX, rotatedY));
     }
 
     private void updateLasers(float delta) {
         for (int i = lasers.size - 1; i >= 0; i--) {
             Laser laser = lasers.get(i);
             laser.update(delta);
-            if (laser.isOutsideWorld(WORLD_WIDTH, WORLD_HEIGHT)) {
-                lasers.removeIndex(i);
+            boolean hit = false;
+
+            for (int j = martians.size - 1; j >= 0; j--) {
+                MarsEnemy enemy = martians.get(j);
+                if (!enemy.isDead() && laser.getHitbox().overlaps(enemy.getHitbox())) {
+                    enemy.takeDamage(10f);
+                    hit = true;
+                    break;
+                }
             }
+
+            if (!hit && mission == MarsMission.DEFEAT_SUPREME_ALIEN
+                    && supremeAlien != null && !supremeAlien.isDead()
+                    && laser.getHitbox().overlaps(supremeAlien.getHitbox())) {
+                supremeAlien.takeDamage(10f);
+                hit = true;
+                if (supremeAlien.isDead()) beginBossDeathSequence();
+            }
+
+            if (hit || laser.isOutsideWorld(WORLD_WIDTH, WORLD_HEIGHT)) lasers.removeIndex(i);
         }
+    }
+
+    private void updateMartians(float delta) {
+        for (int i = martians.size - 1; i >= 0; i--) {
+            MarsEnemy enemy = martians.get(i);
+            enemy.update(delta, player.getCenterX(), player.getCenterY(), stats);
+            if (enemy.isDead()) martians.removeIndex(i);
+        }
+
+        if (supremeAlien != null && !supremeAlien.isDead()
+                && bossAttack == BossAttack.MARTIAN_WAVE
+                && martians.size == 0 && !supremeAlien.isBarrierActive()) {
+            startBossCooldown("Os 10 marcianos foram derrotados. O Alien Supremo prepara outro ataque.");
+        }
+    }
+
+    private void spawnSupremeAlien() {
+        if (supremeAlien != null) return;
+        supremeAlien = new SupremeAlienBoss(2250f, 1350f);
+        bossAttack = BossAttack.COOLDOWN;
+        bossAttackTimer = BOSS_COOLDOWN;
+        nextBossAttackIndex = 0;
+    }
+
+    private void updateBoss(float delta) {
+        if (supremeAlien == null) return;
+
+        if (supremeAlien.isDead()) {
+            if (!bossDeathSequenceStarted) beginBossDeathSequence();
+            bossDeathTimer -= delta;
+            if (bossDeathTimer <= 0f && !portalSpawned) spawnMarsExit();
+            return;
+        }
+
+        supremeAlien.update(delta, player.getCenterX(), player.getCenterY(), WORLD_WIDTH, WORLD_HEIGHT);
+        bossAttackTimer -= delta;
+
+        switch (bossAttack) {
+            case COOLDOWN:
+                if (bossAttackTimer <= 0f) beginNextBossAttack();
+                break;
+            case SCREAM:
+                updateScream(delta);
+                break;
+            case PORTAL:
+                if (portalStrikes.size == 0) startBossCooldown("O ataque de portal acabou.");
+                break;
+            case MARTIAN_WAVE:
+                break;
+            default:
+                break;
+        }
+    }
+
+    private void beginNextBossAttack() {
+        if (nextBossAttackIndex == 0) beginScream();
+        else if (nextBossAttackIndex == 1) beginPortalAttack();
+        else beginMartianWave();
+        nextBossAttackIndex = (nextBossAttackIndex + 1) % 3;
+    }
+
+    private void beginScream() {
+        bossAttack = BossAttack.SCREAM;
+        screamTimer = 0f;
+        showMessage("GRITO: ondas sonoras escuras estão puxando você!");
+    }
+
+    private void updateScream(float delta) {
+        screamTimer += delta;
+        float dx = supremeAlien.getCenterX() - player.getCenterX();
+        float dy = supremeAlien.getCenterY() - player.getCenterY();
+        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+        if (distance > 0.001f) {
+            dx /= distance;
+            dy /= distance;
+            player.getHitbox().x += dx * SCREAM_PULL_SPEED * delta;
+            player.getHitbox().y += dy * SCREAM_PULL_SPEED * delta;
+            clampPlayerToWorld();
+        }
+        if (screamTimer >= SCREAM_DURATION) startBossCooldown("O grito acabou.");
+    }
+
+    private void beginPortalAttack() {
+        bossAttack = BossAttack.PORTAL;
+        portalStrikes.clear();
+        portalStrikes.add(new MarsPortalStrike(player.getCenterX(), player.getCenterY()));
+        showMessage("PORTAL: o Alien Supremo lançou um portal em você!");
+    }
+
+    private void beginMartianWave() {
+        bossAttack = BossAttack.MARTIAN_WAVE;
+        martians.clear();
+        float centerX = supremeAlien.getCenterX();
+        float centerY = supremeAlien.getCenterY();
+
+        for (int i = 0; i < MARTIANS_PER_WAVE; i++) {
+            float angle = MathUtils.PI2 * i / MARTIANS_PER_WAVE;
+            float radius = 520f;
+            float x = MathUtils.clamp(centerX + MathUtils.cos(angle) * radius, 80f, WORLD_WIDTH - 140f);
+            float y = MathUtils.clamp(centerY + MathUtils.sin(angle) * radius, 80f, WORLD_HEIGHT - 140f);
+            martians.add(new MarsEnemy(x, y));
+        }
+
+        supremeAlien.activateBarrier();
+        showMessage("10 MARCIANOS! A barreira está ativa: cause 250 de dano para quebrá-la.");
+    }
+
+    private void startBossCooldown(String message) {
+        bossAttack = BossAttack.COOLDOWN;
+        bossAttackTimer = BOSS_COOLDOWN;
+        showMessage(message);
+    }
+
+    private void updatePortalStrikes(float delta) {
+        for (int i = portalStrikes.size - 1; i >= 0; i--) {
+            MarsPortalStrike strike = portalStrikes.get(i);
+            strike.update(delta);
+            if (strike.shouldDamagePlayer() && player.getHitbox().overlaps(strike.getHitbox())) {
+                stats.damage(MarsPortalStrike.DAMAGE, DeathCause.UNKNOWN);
+            }
+            if (strike.isFinished()) portalStrikes.removeIndex(i);
+        }
+    }
+
+    private void beginBossDeathSequence() {
+        if (bossDeathSequenceStarted) return;
+        bossDeathSequenceStarted = true;
+        bossDeathTimer = BOSS_DEATH_DELAY;
+        mission = MarsMission.GO_TO_NEXT;
+        martians.clear();
+        portalStrikes.clear();
+        showMessage("ALIEN SUPREMO DERROTADO! Uma chave verde apareceu.");
+    }
+
+    private void spawnMarsExit() {
+        portalSpawned = true;
+        portalUnlocked = false;
+        portalEntryArmed = false;
+        greenKeyVisible = true;
+        greenKeyCollected = false;
+        greenKeyHitbox.set(
+                supremeAlien.getCenterX() - KEY_SIZE / 2f,
+                supremeAlien.getCenterY() - KEY_SIZE / 2f,
+                KEY_SIZE,
+                KEY_SIZE
+        );
+        marsPortal = new MarsPortal(2580f, 1530f);
+        showMessage("CHAVE VERDE: toque nela para coletar e siga até o portal.");
+    }
+
+    private void handleExitPortal() {
+        if (!portalSpawned || marsPortal == null || mission != MarsMission.GO_TO_NEXT) return;
+
+        if (greenKeyVisible && player.getHitbox().overlaps(greenKeyHitbox)) {
+            greenKeyVisible = false;
+            greenKeyCollected = true;
+            showMessage("CHAVE VERDE COLETADA! Vá ao portal e pressione E.");
+        }
+
+        boolean atPortal = player.getHitbox().overlaps(marsPortal.getHitbox());
+        if (!portalUnlocked) {
+            if (greenKeyCollected && atPortal && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+                portalUnlocked = true;
+                portalEntryArmed = false;
+                showMessage("PORTAL ABERTO! Saia e entre novamente para concluir Marte.");
+            }
+            return;
+        }
+
+        if (!atPortal) {
+            portalEntryArmed = true;
+            return;
+        }
+
+        if (portalEntryArmed) {
+            float health = stats.getHealth();
+            float hunger = stats.getHunger();
+            float oxygen = stats.getOxygen();
+            changingScreen = true;
+            dispose();
+            game.setScreen(new MarsLevelStatusScreen(game, health, hunger, oxygen));
+        }
+    }
+
+    private void clampPlayerToWorld() {
+        Rectangle box = player.getHitbox();
+        box.x = MathUtils.clamp(box.x, 0f, WORLD_WIDTH - box.width);
+        box.y = MathUtils.clamp(box.y, 0f, WORLD_HEIGHT - box.height);
     }
 
     private void updateCamera() {
         float halfViewportWidth = viewport.getWorldWidth() / 2f;
         float halfViewportHeight = viewport.getWorldHeight() / 2f;
-
-        float cameraX = MathUtils.clamp(
-                player.getCenterX(),
-                halfViewportWidth,
-                WORLD_WIDTH - halfViewportWidth
-        );
-
-        float cameraY = MathUtils.clamp(
-                player.getCenterY(),
-                halfViewportHeight,
-                WORLD_HEIGHT - halfViewportHeight
-        );
-
+        float cameraX = MathUtils.clamp(player.getCenterX(), halfViewportWidth, WORLD_WIDTH - halfViewportWidth);
+        float cameraY = MathUtils.clamp(player.getCenterY(), halfViewportHeight, WORLD_HEIGHT - halfViewportHeight);
         camera.position.set(cameraX, cameraY, 0f);
         camera.update();
     }
 
     private void drawMarsFloor() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
-        shapeRenderer.setColor(new Color(MARS_GROUND_R, MARS_GROUND_G, MARS_GROUND_B, 1f));
-        shapeRenderer.rect(0f, 0f, WORLD_WIDTH, WORLD_HEIGHT);
-
-        // Crateres simples para manter a aparência de terreno, sem substituir os sprites da Lua.
-        shapeRenderer.setColor(new Color(0.48f, 0.13f, 0.035f, 0.75f));
-        shapeRenderer.circle(420f, 1450f, 95f);
-        shapeRenderer.circle(1050f, 520f, 70f);
-        shapeRenderer.circle(1700f, 1450f, 110f);
-        shapeRenderer.circle(2500f, 1200f, 90f);
-        shapeRenderer.circle(2250f, 420f, 62f);
-        shapeRenderer.end();
-    }
-
-    private void drawWorld() {
-        drawMarsFloor();
-
-        batch.setProjectionMatrix(camera.combined);
-        batch.begin();
-
-        Texture baseTexture = assets.getLunarBaseTexture();
-        batch.draw(baseTexture, BASE_X, BASE_Y, BASE_WIDTH, BASE_HEIGHT);
-
-        drawResources();
-
-        Texture laserTexture = assets.getLaserTexture();
-        for (Laser laser : lasers) {
-            batch.draw(
-                    laserTexture,
-                    laser.getX(),
-                    laser.getY(),
-                    laser.getWidth(),
-                    laser.getHeight()
-            );
+        Texture tile = assets.getMarsTileTexture();
+        for (float x = 0f; x < WORLD_WIDTH; x += TILE_SIZE) {
+            for (float y = 0f; y < WORLD_HEIGHT; y += TILE_SIZE) {
+                float width = Math.min(TILE_SIZE, WORLD_WIDTH - x);
+                float height = Math.min(TILE_SIZE, WORLD_HEIGHT - y);
+                batch.draw(tile, x, y, width, height);
+            }
         }
-
-        Texture playerTexture = assets.getPlayerTexture();
-        batch.draw(
-                playerTexture,
-                player.getX(),
-                player.getY(),
-                player.getWidth(),
-                player.getHeight()
-        );
-
-        batch.end();
-
-        // Mina: cubo marrom com o mesmo tamanho da base lunar.
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(new Color(0.28f, 0.10f, 0.035f, 1f));
-        shapeRenderer.rect(MINE_X, MINE_Y, MINE_WIDTH, MINE_HEIGHT);
-        shapeRenderer.setColor(new Color(0.42f, 0.16f, 0.05f, 1f));
-        shapeRenderer.rect(MINE_X + 18f, MINE_Y + 18f, MINE_WIDTH - 36f, MINE_HEIGHT - 36f);
-
-        // Minérios verdes.
-        shapeRenderer.setColor(new Color(0.15f, 0.95f, 0.25f, 1f));
-        for (MarsOre ore : ores) {
-            shapeRenderer.rect(ore.getX(), ore.getY(), ore.getWidth(), ore.getHeight());
-        }
-        shapeRenderer.end();
     }
 
     private void drawResources() {
         for (LuaItem item : resources) {
-            Texture texture;
-            switch (item.getType()) {
-                case FOOD:
-                    texture = assets.getFoodTexture();
-                    break;
-                case O2_TANK:
-                    texture = assets.getO2TankTexture();
-                    break;
-                default:
-                    continue;
-            }
-
+            Texture texture = item.getType() == LuaItem.Type.FOOD
+                    ? assets.getFoodTexture()
+                    : assets.getO2TankTexture();
             batch.draw(texture, item.getX(), item.getY(), item.getWidth(), item.getHeight());
         }
     }
 
-    private void drawBar(
-            float x,
-            float y,
-            float width,
-            float height,
-            float value,
-            float maxValue,
-            Color color
-    ) {
+    private void drawWorld() {
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        drawMarsFloor();
+        Texture baseTexture = assets.getLunarBaseTexture();
+        batch.draw(baseTexture, BASE_X, BASE_Y, BASE_WIDTH, BASE_HEIGHT);
+        Texture mineTexture = assets.getMineTexture();
+        batch.draw(mineTexture, MINE_X, MINE_Y, MINE_WIDTH, MINE_HEIGHT);
+        drawResources();
+
+        Texture oreTexture = assets.getOreTexture();
+        for (MarsOre ore : ores) batch.draw(oreTexture, ore.getX(), ore.getY(), ore.getWidth(), ore.getHeight());
+
+        Texture alienTexture = assets.getAlienTexture();
+        for (MarsEnemy enemy : martians) batch.draw(alienTexture, enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
+
+        if (supremeAlien != null && !supremeAlien.isDead()) {
+            batch.draw(alienTexture, supremeAlien.getX(), supremeAlien.getY(), supremeAlien.getWidth(), supremeAlien.getHeight());
+        }
+
+        Texture portalTexture = assets.getPortalTexture();
+        for (MarsPortalStrike strike : portalStrikes) {
+            if (strike.isActive()) batch.draw(portalTexture, strike.getX(), strike.getY(), strike.getWidth(), strike.getHeight());
+        }
+
+        if (marsPortal != null && portalSpawned) {
+            batch.draw(portalTexture, marsPortal.getX(), marsPortal.getY(), marsPortal.getWidth(), marsPortal.getHeight());
+        }
+
+        if (greenKeyVisible) {
+            Texture keyTexture = assets.getGreenKeyTexture();
+            batch.draw(keyTexture, greenKeyHitbox.x, greenKeyHitbox.y, KEY_SIZE, KEY_SIZE);
+        }
+
+        Texture laserTexture = assets.getLaserTexture();
+        for (Laser laser : lasers) batch.draw(laserTexture, laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
+
+        Texture playerTexture = assets.getPlayerTexture();
+        batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
+        batch.end();
+    }
+
+    private void drawBossEffects() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        if (bossAttack == BossAttack.SCREAM && supremeAlien != null && !supremeAlien.isDead()) {
+            for (int i = 0; i < 4; i++) {
+                float radius = 80f + screamTimer * 180f + i * 75f;
+                float alpha = Math.max(0.03f, 0.20f - i * 0.035f);
+                shapeRenderer.setColor(new Color(0f, 0f, 0f, alpha));
+                shapeRenderer.circle(supremeAlien.getCenterX(), supremeAlien.getCenterY(), radius);
+            }
+        }
+
+        if (supremeAlien != null && supremeAlien.isBarrierActive()) {
+            shapeRenderer.setColor(new Color(0.05f, 0.95f, 0.45f, 0.22f));
+            shapeRenderer.circle(supremeAlien.getCenterX(), supremeAlien.getCenterY(), supremeAlien.getWidth() * 1.15f);
+        }
+
+        for (MarsPortalStrike strike : portalStrikes) {
+            if (!strike.isActive()) {
+                shapeRenderer.setColor(new Color(0.25f, 0f, 0.25f, 0.32f));
+                shapeRenderer.circle(strike.getX() + strike.getWidth() / 2f, strike.getY() + strike.getHeight() / 2f, 75f);
+            }
+        }
+
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
+    }
+
+    private void drawArrow() {
+        if (!portalSpawned) return;
+
+        float targetX;
+        float targetY;
+        if (greenKeyVisible) {
+            targetX = greenKeyHitbox.x + greenKeyHitbox.width / 2f;
+            targetY = greenKeyHitbox.y + greenKeyHitbox.height / 2f;
+        } else if (marsPortal != null && !portalUnlocked) {
+            targetX = marsPortal.getX() + marsPortal.getWidth() / 2f;
+            targetY = marsPortal.getY() + marsPortal.getHeight() / 2f;
+        } else {
+            return;
+        }
+
+        Vector3 targetScreen = new Vector3(targetX, targetY, 0f);
+        Vector3 playerScreen = new Vector3(player.getCenterX(), player.getCenterY(), 0f);
+        camera.project(targetScreen);
+        camera.project(playerScreen);
+
+        float dx = targetScreen.x - playerScreen.x;
+        float dy = targetScreen.y - playerScreen.y;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length <= 0.001f) return;
+        dx /= length;
+        dy /= length;
+
+        float centerX = hudViewport.getWorldWidth() / 2f;
+        float centerY = hudViewport.getWorldHeight() - 140f;
+        float tipX = centerX + dx * 50f;
+        float tipY = centerY + dy * 50f;
+        float baseX = centerX - dx * 12f;
+        float baseY = centerY - dy * 12f;
+        float perpX = -dy;
+        float perpY = dx;
+
+        shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.GREEN);
+        shapeRenderer.rectLine(centerX - dx * 15f, centerY - dy * 15f, baseX, baseY, 8f);
+        shapeRenderer.triangle(tipX, tipY, baseX + perpX * 18f, baseY + perpY * 18f, baseX - perpX * 18f, baseY - perpY * 18f);
+        shapeRenderer.end();
+    }
+
+    private void drawBar(float x, float y, float width, float height, float value, float maxValue, Color color) {
         shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.08f, 0.92f));
         shapeRenderer.rect(x, y, width, height);
-
         float percent = MathUtils.clamp(value / maxValue, 0f, 1f);
         shapeRenderer.setColor(color);
         shapeRenderer.rect(x, y, width * percent, height);
@@ -440,21 +666,20 @@ public class LuaMarteScreen extends ScreenAdapter {
         hudViewport.apply(false);
         shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-
         float x = 28f;
         float width = 330f;
         float height = 28f;
         float firstY = hudViewport.getWorldHeight() - 52f;
         float gap = 48f;
-
         drawBar(x, firstY, width, height, stats.getHealth(), PlayerStats.MAX_HEALTH, Color.RED);
         drawBar(x, firstY - gap, width, height, stats.getHunger(), PlayerStats.MAX_HUNGER, Color.ORANGE);
         drawBar(x, firstY - gap * 2f, width, height, stats.getOxygen(), PlayerStats.MAX_OXYGEN, Color.CYAN);
         shapeRenderer.end();
 
+        drawArrow();
+
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
-
         hudFont.getData().setScale(1.05f);
         hudFont.setColor(Color.WHITE);
         hudFont.draw(batch, String.format("HP: %.0f / 100", stats.getHealth()), x + 10f, firstY + 20f);
@@ -464,7 +689,6 @@ public class LuaMarteScreen extends ScreenAdapter {
         hudFont.getData().setScale(1.0f);
         hudFont.setColor(Color.WHITE);
         hudFont.draw(batch, "MISSÃO MARTE", 28f, hudViewport.getWorldHeight() - 205f);
-
         hudFont.getData().setScale(0.92f);
         hudFont.setColor(Color.LIGHT_GRAY);
 
@@ -474,52 +698,55 @@ public class LuaMarteScreen extends ScreenAdapter {
                 objective = "Colete minérios verdes: " + rawOreCount + "/" + REQUIRED_ORE;
                 break;
             case REFINE_ORE:
-                objective = "Vá à mina marrom e pressione E para refinar " + REQUIRED_ORE + " minérios";
+                objective = "Vá à mina e pressione E para refinar os minérios";
                 break;
             case UPGRADE_WEAPON:
-                objective = "Volte à base e pressione E para melhorar a arma (refinados: " + refinedOreCount + "/" + REQUIRED_ORE + ")";
+                objective = "Volte à base e pressione E para melhorar a arma";
                 break;
-            case COMPLETE:
-                objective = "MISSÃO CONCLUÍDA: arma aprimorada";
+            case DEFEAT_SUPREME_ALIEN:
+                objective = "Derrote o Alien Supremo: 1000 HP";
+                break;
+            case GO_TO_NEXT:
+                if (greenKeyVisible) objective = "Colete a chave verde tocando nela";
+                else if (!portalUnlocked) objective = "Vá ao portal e pressione E para usar a chave verde";
+                else if (!portalEntryArmed) objective = "Portal aberto: saia e entre novamente";
+                else objective = "Entre no portal para concluir Marte";
                 break;
             default:
                 objective = "";
                 break;
         }
-
         hudFont.draw(batch, objective, 28f, hudViewport.getWorldHeight() - 235f);
 
         hudFont.setColor(Color.ORANGE);
-        hudFont.getData().setScale(1.0f);
-        hudFont.draw(batch, "MINA", MINE_X - 5f, MINE_Y + MINE_HEIGHT + 24f);
+        hudFont.draw(batch, "MINA", 1980f, 1110f);
+        hudFont.setColor(Color.GREEN);
+        hudFont.draw(batch, weaponUpgraded ? "ARMA: APRIMORADA | 2 tiros | cadência 2x" : "ARMA: padrão | 1 tiro", 28f, hudViewport.getWorldHeight() - 280f);
 
-        hudFont.setColor(Color.LIME);
-        hudFont.draw(batch, "MINÉRIO", hudViewport.getWorldWidth() - 190f, hudViewport.getWorldHeight() - 34f);
-
-        hudFont.setColor(Color.WHITE);
-        hudFont.getData().setScale(0.95f);
-        if (weaponUpgraded) {
-            hudFont.draw(batch, "ARMA: APRIMORADA | 2 tiros | cadência 2x", 28f, hudViewport.getWorldHeight() - 280f);
-        } else {
-            hudFont.draw(batch, "ARMA: padrão | 1 tiro", 28f, hudViewport.getWorldHeight() - 280f);
+        if (supremeAlien != null && !supremeAlien.isDead()) {
+            hudFont.setColor(Color.LIME);
+            hudFont.draw(batch, String.format("ALIEN SUPREMO: %.0f / %.0f HP", supremeAlien.getHealth(), SupremeAlienBoss.MAX_HEALTH), hudViewport.getWorldWidth() - 315f, hudViewport.getWorldHeight() - 78f);
+            if (supremeAlien.isBarrierActive()) {
+                hudFont.draw(batch, String.format("BARREIRA: %.0f / %.0f", supremeAlien.getBarrierHealth(), SupremeAlienBoss.BARRIER_MAX_HEALTH), hudViewport.getWorldWidth() - 315f, hudViewport.getWorldHeight() - 108f);
+            } else if (bossAttack == BossAttack.SCREAM) {
+                hudFont.draw(batch, "ATAQUE: GRITO", hudViewport.getWorldWidth() - 250f, hudViewport.getWorldHeight() - 108f);
+            } else if (bossAttack == BossAttack.PORTAL) {
+                hudFont.draw(batch, "ATAQUE: PORTAIS", hudViewport.getWorldWidth() - 250f, hudViewport.getWorldHeight() - 108f);
+            } else if (bossAttack == BossAttack.MARTIAN_WAVE) {
+                hudFont.draw(batch, "ATAQUE: 10 MARCIANOS", hudViewport.getWorldWidth() - 300f, hudViewport.getWorldHeight() - 108f);
+            }
         }
 
         if (messageTimer > 0f) {
             hudFont.getData().setScale(1.0f);
             hudFont.setColor(Color.WHITE);
             GlyphLayout layout = new GlyphLayout(hudFont, missionMessage);
-            hudFont.draw(
-                    batch,
-                    missionMessage,
-                    hudViewport.getWorldWidth() / 2f - layout.width / 2f,
-                    42f
-            );
+            hudFont.draw(batch, missionMessage, hudViewport.getWorldWidth() / 2f - layout.width / 2f, 42f);
         }
 
         hudFont.getData().setScale(0.86f);
         hudFont.setColor(Color.LIGHT_GRAY);
         hudFont.draw(batch, "WASD / SETAS = mover | Mouse = mirar + segurar para atirar | E = interagir | ESC = menu", 28f, 18f);
-
         batch.end();
         messageTimer = Math.max(0f, messageTimer - Gdx.graphics.getDeltaTime());
     }
@@ -531,16 +758,11 @@ public class LuaMarteScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        if (changingScreen) {
-            return;
-        }
-
-        if (!update(delta)) {
-            return;
-        }
-
-        ScreenUtils.clear(MARS_GROUND_R, MARS_GROUND_G, MARS_GROUND_B, 1f);
+        if (changingScreen) return;
+        if (!update(delta)) return;
+        ScreenUtils.clear(0.72f, 0.25f, 0.06f, 1f);
         drawWorld();
+        drawBossEffects();
         drawHud();
     }
 
@@ -558,9 +780,7 @@ public class LuaMarteScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
-        if (disposed) {
-            return;
-        }
+        if (disposed) return;
         disposed = true;
         batch.dispose();
         shapeRenderer.dispose();
