@@ -23,6 +23,8 @@ public class PlayerStats {
 
     private static final float FOOD_HUNGER_RESTORE = 50f;
     private static final float FOOD_HEALTH_RESTORE = 10f;
+    private static final float WATER_HUNGER_RESTORE = 25f;
+    private static final float WATER_HEALTH_RESTORE = 5f;
     private static final float O2_RESTORE = 20f;
 
     private float health = MAX_HEALTH;
@@ -47,23 +49,14 @@ public class PlayerStats {
 
         while (oxygenLossTimer >= RESOURCE_INTERVAL) {
             oxygenLossTimer -= RESOURCE_INTERVAL;
-            oxygen = MathUtils.clamp(
-                    oxygen - OXYGEN_LOSS,
-                    0f,
-                    MAX_OXYGEN
-            );
+            oxygen = MathUtils.clamp(oxygen - OXYGEN_LOSS, 0f, MAX_OXYGEN);
         }
 
         while (hungerLossTimer >= RESOURCE_INTERVAL) {
             hungerLossTimer -= RESOURCE_INTERVAL;
-            hunger = MathUtils.clamp(
-                    hunger - HUNGER_LOSS,
-                    0f,
-                    MAX_HUNGER
-            );
+            hunger = MathUtils.clamp(hunger - HUNGER_LOSS, 0f, MAX_HUNGER);
         }
 
-        // O2 zerado: depois de 2 segundos, perde 10 HP a cada 2 segundos.
         if (oxygen <= 0f) {
             oxygenDamageTimer += delta;
             while (oxygenDamageTimer >= OXYGEN_DAMAGE_INTERVAL && !isDead()) {
@@ -78,7 +71,6 @@ public class PlayerStats {
             return;
         }
 
-        // Fome zerada: depois de 5 segundos, perde 5 HP a cada 5 segundos.
         if (hunger <= 0f) {
             starvationDamageTimer += delta;
             while (starvationDamageTimer >= STARVATION_DAMAGE_INTERVAL && !isDead()) {
@@ -91,24 +83,14 @@ public class PlayerStats {
     }
 
     public void addOxygen(float amount) {
-        oxygen = MathUtils.clamp(
-                oxygen + amount,
-                0f,
-                MAX_OXYGEN
-        );
-
+        oxygen = MathUtils.clamp(oxygen + amount, 0f, MAX_OXYGEN);
         if (oxygen > 0f) {
             oxygenDamageTimer = 0f;
         }
     }
 
     public void eatFood() {
-        hunger = MathUtils.clamp(
-                hunger + FOOD_HUNGER_RESTORE,
-                0f,
-                MAX_HUNGER
-        );
-
+        hunger = MathUtils.clamp(hunger + FOOD_HUNGER_RESTORE, 0f, MAX_HUNGER);
         heal(FOOD_HEALTH_RESTORE);
         starvationDamageTimer = 0f;
     }
@@ -117,28 +99,35 @@ public class PlayerStats {
         iceCollected++;
     }
 
+    public boolean consumeIce() {
+        if (iceCollected <= 0) {
+            return false;
+        }
+
+        iceCollected--;
+        return true;
+    }
+
+    /** Drinks the water produced by melting mission ice. */
+    public void drinkWater() {
+        hunger = MathUtils.clamp(hunger + WATER_HUNGER_RESTORE, 0f, MAX_HUNGER);
+        heal(WATER_HEALTH_RESTORE);
+        starvationDamageTimer = 0f;
+    }
+
     public void heal(float amount) {
-        health = MathUtils.clamp(
-                health + amount,
-                0f,
-                MAX_HEALTH
-        );
+        health = MathUtils.clamp(health + amount, 0f, MAX_HEALTH);
     }
 
     /**
-     * Use this method for every future mechanic that deals lethal or non-lethal damage.
-     * If the damage kills the player, the supplied cause is stored for Game Over.
+     * Every lethal/non-lethal combat mechanic should call this method.
      */
     public void damage(float amount, DeathCause cause) {
         if (isDead() || amount <= 0f) {
             return;
         }
 
-        health = MathUtils.clamp(
-                health - amount,
-                0f,
-                MAX_HEALTH
-        );
+        health = MathUtils.clamp(health - amount, 0f, MAX_HEALTH);
 
         if (health <= 0f) {
             deathCause = cause == null ? DeathCause.UNKNOWN : cause;
