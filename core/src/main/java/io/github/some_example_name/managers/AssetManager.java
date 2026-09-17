@@ -21,6 +21,7 @@ public class AssetManager {
     public static final String MINE = "mina.png";
     public static final String AMERICAN = "americano.png";
     public static final String ALIEN = "aliens.png";
+    public static final String BOSS_MARS = "bossmarte.png";
     public static final String TRUMP = "trump.png";
     public static final String RIFLE = "ak47.png";
     public static final String PORTAL = "portal.png";
@@ -40,6 +41,7 @@ public class AssetManager {
     private Texture mineTexture;
     private Texture americanTexture;
     private Texture alienTexture;
+    private Texture bossMarsTexture;
     private Texture trumpTexture;
     private Texture rifleTexture;
     private Texture portalTexture;
@@ -63,6 +65,7 @@ public class AssetManager {
         mineTexture = loadAsset(MINE, new Color(0.28f, 0.10f, 0.035f, 1f));
         americanTexture = loadAsset(AMERICAN, new Color(0.90f, 0.08f, 0.08f, 1f));
         alienTexture = loadAsset(ALIEN, new Color(0.45f, 0.95f, 0.35f, 1f));
+        bossMarsTexture = loadAsset(BOSS_MARS, new Color(0.35f, 0.85f, 0.25f, 1f));
         trumpTexture = loadAsset(TRUMP, new Color(1f, 0.45f, 0.05f, 1f));
         rifleTexture = loadAsset(RIFLE, new Color(0.10f, 0.10f, 0.10f, 1f));
         portalTexture = loadAsset(PORTAL, new Color(0.15f, 0.85f, 1f, 1f));
@@ -108,6 +111,7 @@ public class AssetManager {
     public Texture getMineTexture() { return mineTexture; }
     public Texture getAmericanTexture() { return americanTexture; }
     public Texture getAlienTexture() { return alienTexture; }
+    public Texture getBossMarsTexture() { return bossMarsTexture; }
     public Texture getTrumpTexture() { return trumpTexture; }
     public Texture getRifleTexture() { return rifleTexture; }
     public Texture getPortalTexture() { return portalTexture; }
@@ -129,6 +133,7 @@ public class AssetManager {
         disposeTexture(mineTexture);
         disposeTexture(americanTexture);
         disposeTexture(alienTexture);
+        disposeTexture(bossMarsTexture);
         disposeTexture(trumpTexture);
         disposeTexture(rifleTexture);
         disposeTexture(portalTexture);
