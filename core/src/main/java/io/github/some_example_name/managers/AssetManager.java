@@ -20,7 +20,7 @@ public class AssetManager {
     public static final String ORE = "minerio.png";
     public static final String MINE = "mina.png";
     public static final String AMERICAN = "americano.png";
-    public static final String ALIEN = "aliens.png";
+    public static final String ALIEN = "alien.png";
     public static final String BOSS_MARS = "bossmarte.png";
     public static final String TRUMP = "trump.png";
     public static final String RIFLE = "ak47.png";
