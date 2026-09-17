@@ -3,13 +3,13 @@ package io.github.some_example_name.entities;
 import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 
-/** Fast melee Martian used by the Mars encounter. */
+/** Melee Martian used by the Mars encounter. */
 public class MarsEnemy {
 
     public static final float WIDTH = 54f;
     public static final float HEIGHT = 54f;
     public static final float MAX_HEALTH = 60f;
-    public static final float SPEED = Player.SPEED * 1.01f;
+    public static final float SPEED = Player.SPEED;
     public static final float MELEE_DAMAGE = 10f;
     private static final float ATTACK_COOLDOWN = 0.55f;
 
