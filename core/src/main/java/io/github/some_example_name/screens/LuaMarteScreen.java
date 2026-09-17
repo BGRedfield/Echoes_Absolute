@@ -691,11 +691,21 @@ public class LuaMarteScreen extends ScreenAdapter {
     }
 
     private void drawBar(float x, float y, float width, float height, float value, float maxValue, Color color) {
+        boolean startedHere = false;
+        if (!shapeRenderer.isDrawing()) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            startedHere = true;
+        }
+
         shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.08f, 0.92f));
         shapeRenderer.rect(x, y, width, height);
         float percent = MathUtils.clamp(value / maxValue, 0f, 1f);
         shapeRenderer.setColor(color);
         shapeRenderer.rect(x, y, width * percent, height);
+
+        if (startedHere) {
+            shapeRenderer.end();
+        }
     }
 
     private void drawBossHealthBar() {
