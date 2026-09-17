@@ -21,6 +21,8 @@ public class MenuScreen extends ScreenAdapter {
     private final Viewport viewport;
     private final Rectangle playButton = new Rectangle();
 
+    private boolean changingScreen = false;
+
     public MenuScreen(Game game) {
         this.game = game;
         this.batch = new SpriteBatch();
@@ -34,6 +36,7 @@ public class MenuScreen extends ScreenAdapter {
     public void show() {
         viewport.apply(true);
         layoutButton();
+        changingScreen = false;
     }
 
     private void layoutButton() {
@@ -71,7 +74,11 @@ public class MenuScreen extends ScreenAdapter {
     }
 
     private void startGame() {
-        dispose();
+        if (changingScreen) {
+            return;
+        }
+
+        changingScreen = true;
         game.setScreen(new LuaScreen(game));
     }
 
@@ -83,6 +90,12 @@ public class MenuScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         handleInput();
+
+        // A troca de tela aconteceu durante este render.
+        // Não podemos continuar usando o SpriteBatch desta tela.
+        if (changingScreen) {
+            return;
+        }
 
         Gdx.gl.glClearColor(0.03f, 0.04f, 0.07f, 1f);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
