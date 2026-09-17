@@ -10,8 +10,17 @@ public class Player {
     public static final float HEIGHT = 64f;
     public static final float SPEED = 320f;
 
+    private static final float DASH_SPEED = 1000f;
+    private static final float DASH_DURATION = 0.12f;
+    private static final float DASH_COOLDOWN = 0.65f;
+
     private static Player activePlayer;
     private final Rectangle hitbox;
+
+    private float lastDirectionX = 1f;
+    private float lastDirectionY = 0f;
+    private float dashTimer = 0f;
+    private float dashCooldownTimer = 0f;
 
     public Player(float x, float y) {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
@@ -35,10 +44,29 @@ public class Player {
         if (length > 0f) {
             moveX /= length;
             moveY /= length;
+            lastDirectionX = moveX;
+            lastDirectionY = moveY;
         }
 
-        hitbox.x += moveX * SPEED * delta;
-        hitbox.y += moveY * SPEED * delta;
+        if (dashCooldownTimer > 0f) {
+            dashCooldownTimer -= delta;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.SPACE)
+                && dashCooldownTimer <= 0f
+                && dashTimer <= 0f) {
+            dashTimer = DASH_DURATION;
+            dashCooldownTimer = DASH_COOLDOWN;
+        }
+
+        if (dashTimer > 0f) {
+            hitbox.x += lastDirectionX * DASH_SPEED * delta;
+            hitbox.y += lastDirectionY * DASH_SPEED * delta;
+            dashTimer -= delta;
+        } else {
+            hitbox.x += moveX * SPEED * delta;
+            hitbox.y += moveY * SPEED * delta;
+        }
 
         if (hitbox.x < 0f) hitbox.x = 0f;
         if (hitbox.y < 0f) hitbox.y = 0f;
@@ -48,6 +76,14 @@ public class Player {
 
     public static Player getActivePlayer() {
         return activePlayer;
+    }
+
+    public boolean isDashing() {
+        return dashTimer > 0f;
+    }
+
+    public float getDashCooldownRemaining() {
+        return Math.max(0f, dashCooldownTimer);
     }
 
     public Rectangle getHitbox() { return hitbox; }
