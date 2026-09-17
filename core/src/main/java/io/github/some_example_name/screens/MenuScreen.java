@@ -7,8 +7,8 @@ import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
+import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
-import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
@@ -17,18 +17,17 @@ public class MenuScreen extends ScreenAdapter {
 
     private final Game game;
     private final SpriteBatch batch;
-    private final ShapeRenderer shapeRenderer;
     private final BitmapFont font;
     private final Viewport viewport;
     private final Rectangle playButton = new Rectangle();
 
     public MenuScreen(Game game) {
         this.game = game;
-        batch = new SpriteBatch();
-        shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
-        font.getData().setScale(1.6f);
-        viewport = new ScreenViewport();
+        this.batch = new SpriteBatch();
+        this.font = new BitmapFont();
+        this.viewport = new ScreenViewport();
+
+        font.setColor(Color.WHITE);
     }
 
     @Override
@@ -38,9 +37,12 @@ public class MenuScreen extends ScreenAdapter {
     }
 
     private void layoutButton() {
+        float width = viewport.getWorldWidth();
+        float height = viewport.getWorldHeight();
+
         playButton.set(
-                viewport.getWorldWidth() / 2f - 170f,
-                viewport.getWorldHeight() / 2f - 55f,
+                width / 2f - 170f,
+                height / 2f - 55f,
                 340f,
                 80f
         );
@@ -73,6 +75,11 @@ public class MenuScreen extends ScreenAdapter {
         game.setScreen(new LuaScreen(game));
     }
 
+    private void drawCentered(String text, float screenWidth, float y) {
+        GlyphLayout layout = new GlyphLayout(font, text);
+        font.draw(batch, text, screenWidth / 2f - layout.width / 2f, y);
+    }
+
     @Override
     public void render(float delta) {
         handleInput();
@@ -83,37 +90,22 @@ public class MenuScreen extends ScreenAdapter {
         float width = viewport.getWorldWidth();
         float height = viewport.getWorldHeight();
 
-        shapeRenderer.setProjectionMatrix(viewport.getCamera().combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(new Color(0.12f, 0.14f, 0.19f, 1f));
-        shapeRenderer.rect(
-                playButton.x,
-                playButton.y,
-                playButton.width,
-                playButton.height
-        );
-        shapeRenderer.end();
-
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
 
+        font.getData().setScale(1.6f);
         font.setColor(Color.WHITE);
         drawCentered("ECHOES ABSOLUTE", width, height / 2f + 120f);
 
-        font.getData().setScale(1.5f);
-        drawCentered("JOGAR", width, playButton.y + 27f);
+        font.getData().setScale(1.15f);
+        drawCentered("[ JOGAR ]", width, playButton.y + 27f);
 
         font.getData().setScale(1.0f);
         font.setColor(Color.LIGHT_GRAY);
-        drawCentered("ENTER / SPACE = jogar   |   ESC = sair", width, 45f);
+        drawCentered("ENTER / SPACE = jogar", width, 60f);
+        drawCentered("ESC = sair", width, 32f);
 
         batch.end();
-    }
-
-    private void drawCentered(String text, float screenWidth, float y) {
-        com.badlogic.gdx.graphics.g2d.GlyphLayout layout =
-                new com.badlogic.gdx.graphics.g2d.GlyphLayout(font, text);
-        font.draw(batch, text, screenWidth / 2f - layout.width / 2f, y);
     }
 
     @Override
@@ -125,7 +117,6 @@ public class MenuScreen extends ScreenAdapter {
     @Override
     public void dispose() {
         batch.dispose();
-        shapeRenderer.dispose();
         font.dispose();
     }
 }
