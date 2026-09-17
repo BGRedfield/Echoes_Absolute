@@ -5,20 +5,25 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 
+/**
+ * Centraliza todos os assets da fase Lua.
+ * Cada asset tenta primeiro assets/textures/nome.png e depois assets/nome.png.
+ * Se nenhum existir, entra uma textura de fallback.
+ */
 public class AssetManager {
 
-    public static final String PLAYER = "textures/astronauta.png";
-    public static final String LUA_BACKGROUND = "textures/lua_background.png";
-    public static final String LASER = "textures/laser.png";
-    public static final String LUNAR_BASE = "textures/baselunar.png";
-    public static final String LUA_TILE = "textures/tileset_lua.png";
-    public static final String FOOD = "textures/comida.png";
-    public static final String O2_TANK = "textures/O2.png";
-    public static final String ICE = "textures/gelo.png";
-    public static final String AMERICAN = "textures/americano.png";
-    public static final String TRUMP = "textures/trump.png";
-    public static final String RIFLE = "textures/ak47.png";
-    public static final String PORTAL = "textures/portal.png";
+    public static final String PLAYER = "astronauta.png";
+    public static final String LUA_BACKGROUND = "lua_background.png";
+    public static final String LASER = "laser.png";
+    public static final String LUNAR_BASE = "baselunar.png";
+    public static final String LUA_TILE = "tileset_lua.png";
+    public static final String FOOD = "comida.png";
+    public static final String O2_TANK = "O2.png";
+    public static final String ICE = "gelo.png";
+    public static final String AMERICAN = "americano.png";
+    public static final String TRUMP = "trump.png";
+    public static final String RIFLE = "ak47.png";
+    public static final String PORTAL = "portal.png";
 
     private Texture playerTexture;
     private Texture luaBackgroundTexture;
@@ -36,72 +41,90 @@ public class AssetManager {
     private boolean playerFallback;
 
     public void load() {
-        playerTexture = loadOrFallback(PLAYER, Color.CYAN);
-        playerFallback = !Gdx.files.internal(PLAYER).exists();
+        playerTexture = loadAsset(PLAYER, Color.CYAN);
+        playerFallback = !assetExists(PLAYER);
 
-        luaBackgroundTexture = loadOrFallback(
+        luaBackgroundTexture = loadAsset(
                 LUA_BACKGROUND,
                 new Color(0.08f, 0.08f, 0.13f, 1f)
         );
 
-        // Projétil do jogador: amarelo quando o asset ainda não existir.
-        laserTexture = loadOrFallback(
+        // Tiro do jogador: amarelo quando o sprite não existir.
+        laserTexture = loadAsset(
                 LASER,
                 new Color(1f, 0.90f, 0.10f, 1f)
         );
 
-        lunarBaseTexture = loadOrFallback(
+        lunarBaseTexture = loadAsset(
                 LUNAR_BASE,
                 new Color(0.45f, 0.45f, 0.50f, 1f)
         );
 
-        luaTileTexture = loadOrFallback(
+        // TileSet da Lua.
+        luaTileTexture = loadAsset(
                 LUA_TILE,
                 new Color(0.20f, 0.20f, 0.23f, 1f)
         );
 
-        foodTexture = loadOrFallback(
+        // Recursos.
+        foodTexture = loadAsset(
                 FOOD,
                 new Color(1f, 0.55f, 0f, 1f)
         );
 
-        o2TankTexture = loadOrFallback(
+        o2TankTexture = loadAsset(
                 O2_TANK,
                 new Color(0.70f, 0.78f, 0.86f, 1f)
         );
 
-        iceTexture = loadOrFallback(
+        iceTexture = loadAsset(
                 ICE,
                 new Color(0.20f, 0.55f, 1f, 1f)
         );
 
-        americanTexture = loadOrFallback(
+        // Inimigo lunar.
+        americanTexture = loadAsset(
                 AMERICAN,
                 new Color(0.90f, 0.08f, 0.08f, 1f)
         );
 
-        trumpTexture = loadOrFallback(
+        // Boss.
+        trumpTexture = loadAsset(
                 TRUMP,
                 new Color(1f, 0.45f, 0.05f, 1f)
         );
 
-        rifleTexture = loadOrFallback(
+        // AK-47 orbitando o boss.
+        rifleTexture = loadAsset(
                 RIFLE,
                 new Color(0.10f, 0.10f, 0.10f, 1f)
         );
 
-        portalTexture = loadOrFallback(
+        // Portal para Marte.
+        portalTexture = loadAsset(
                 PORTAL,
                 new Color(0.15f, 0.85f, 1f, 1f)
         );
     }
 
-    private Texture loadOrFallback(String path, Color fallbackColor) {
-        if (Gdx.files.internal(path).exists()) {
-            return new Texture(Gdx.files.internal(path));
+    /** Procura primeiro em assets/textures e depois diretamente em assets. */
+    private Texture loadAsset(String fileName, Color fallbackColor) {
+        String texturePath = "textures/" + fileName;
+
+        if (Gdx.files.internal(texturePath).exists()) {
+            return new Texture(Gdx.files.internal(texturePath));
+        }
+
+        if (Gdx.files.internal(fileName).exists()) {
+            return new Texture(Gdx.files.internal(fileName));
         }
 
         return createFallbackTexture(fallbackColor);
+    }
+
+    private boolean assetExists(String fileName) {
+        return Gdx.files.internal("textures/" + fileName).exists()
+                || Gdx.files.internal(fileName).exists();
     }
 
     private Texture createFallbackTexture(Color color) {
