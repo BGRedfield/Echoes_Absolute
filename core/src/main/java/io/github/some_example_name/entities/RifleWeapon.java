@@ -4,22 +4,22 @@ import com.badlogic.gdx.math.MathUtils;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
 
-/** A destroyable rifle in the boss barrier. */
+/** A destroyable rifle floating in the boss barrier. */
 public class RifleWeapon {
 
-    public static final float WIDTH = 76f;
-    public static final float HEIGHT = 28f;
+    public static final float WIDTH = 92f;
+    public static final float HEIGHT = 34f;
     public static final float MAX_HEALTH = 20f;
     private static final float SHOT_INTERVAL = 1f;
 
     /** Names available for the six barrier weapons. */
     public static final String[] DEFAULT_NAMES = {
-            "M4",
-            "M16",
-            "AR-15",
-            "HK416",
-            "SCAR-L",
-            "FAL"
+            "AK-47 Alpha",
+            "AK-47 Bravo",
+            "AK-47 Charlie",
+            "AK-47 Delta",
+            "AK-47 Echo",
+            "AK-47 Foxtrot"
     };
 
     private final String name;
@@ -33,6 +33,7 @@ public class RifleWeapon {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
     }
 
+    /** Keeps the rifle at its current orbit position. */
     public void update(float delta, float playerX, float playerY, Array<EnemyBullet> bullets) {
         if (destroyed) {
             return;
@@ -46,6 +47,11 @@ public class RifleWeapon {
             float dy = playerY - getCenterY();
             bullets.add(new EnemyBullet(getCenterX(), getCenterY(), dx, dy));
         }
+    }
+
+    public void setPosition(float x, float y) {
+        hitbox.x = x;
+        hitbox.y = y;
     }
 
     public void takeDamage(float amount) {
