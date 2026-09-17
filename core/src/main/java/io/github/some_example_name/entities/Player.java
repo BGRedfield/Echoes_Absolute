@@ -13,6 +13,10 @@ public class Player {
 
     private final Rectangle hitbox;
 
+    // Direção atual/última direção para os tiros automáticos.
+    private float directionX = 0f;
+    private float directionY = 1f;
+
     public Player(float x, float y) {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
     }
@@ -21,16 +25,30 @@ public class Player {
         float moveX = 0f;
         float moveY = 0f;
 
-        if (Gdx.input.isKeyPressed(Input.Keys.A) || Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.A)) {
             moveX -= 1f;
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.D) || Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.D)) {
             moveX += 1f;
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.W) || Gdx.input.isKeyPressed(Input.Keys.UP)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.W)) {
             moveY += 1f;
         }
-        if (Gdx.input.isKeyPressed(Input.Keys.S) || Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
+        if (Gdx.input.isKeyPressed(Input.Keys.S)) {
+            moveY -= 1f;
+        }
+
+        // Setas também continuam funcionando.
+        if (Gdx.input.isKeyPressed(Input.Keys.LEFT)) {
+            moveX -= 1f;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.RIGHT)) {
+            moveX += 1f;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.UP)) {
+            moveY += 1f;
+        }
+        if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) {
             moveY -= 1f;
         }
 
@@ -38,6 +56,10 @@ public class Player {
         if (length > 0f) {
             moveX /= length;
             moveY /= length;
+
+            // Guarda a última direção em que o jogador realmente andou.
+            directionX = moveX;
+            directionY = moveY;
         }
 
         hitbox.x += moveX * SPEED * delta;
@@ -83,5 +105,13 @@ public class Player {
 
     public float getCenterY() {
         return hitbox.y + hitbox.height / 2f;
+    }
+
+    public float getDirectionX() {
+        return directionX;
+    }
+
+    public float getDirectionY() {
+        return directionY;
     }
 }
