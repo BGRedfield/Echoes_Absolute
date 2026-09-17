@@ -17,10 +17,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.some_example_name.entities.Player;
 
-/**
- * Simple destination screen so the Lua portal has a working target immediately.
- * Art can be replaced with assets later without changing the progression.
- */
+/** Simple destination screen for the Lua portal. */
 public class MarteScreen extends ScreenAdapter {
 
     private final Game game;
@@ -31,6 +28,8 @@ public class MarteScreen extends ScreenAdapter {
     private final Player player;
     private final Vector2 worldSize = new Vector2(2400f, 1400f);
     private final Rectangle exitBox = new Rectangle(1100f, 500f, 200f, 180f);
+    private boolean disposed;
+    private boolean changingScreen;
 
     public MarteScreen(Game game) {
         this.game = game;
@@ -44,14 +43,20 @@ public class MarteScreen extends ScreenAdapter {
     @Override
     public void show() {
         viewport.apply(true);
+        changingScreen = false;
     }
 
     @Override
     public void render(float delta) {
+        if (changingScreen) {
+            return;
+        }
+
         delta = Math.min(delta, 0.05f);
         player.update(delta, worldSize.x, worldSize.y);
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            changingScreen = true;
             game.setScreen(new MenuScreen(game));
             return;
         }
@@ -96,7 +101,16 @@ public class MarteScreen extends ScreenAdapter {
     }
 
     @Override
+    public void hide() {
+        dispose();
+    }
+
+    @Override
     public void dispose() {
+        if (disposed) {
+            return;
+        }
+        disposed = true;
         batch.dispose();
         shapeRenderer.dispose();
         font.dispose();
