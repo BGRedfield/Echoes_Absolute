@@ -9,7 +9,7 @@ public class MarsEnemy {
     public static final float WIDTH = 54f;
     public static final float HEIGHT = 54f;
     public static final float MAX_HEALTH = 60f;
-    public static final float SPEED = Player.SPEED * 1.05f;
+    public static final float SPEED = Player.SPEED * 1.01f;
     public static final float MELEE_DAMAGE = 10f;
     private static final float ATTACK_COOLDOWN = 0.55f;
 
