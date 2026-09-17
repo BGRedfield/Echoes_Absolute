@@ -7,14 +7,18 @@ import com.badlogic.gdx.graphics.Texture;
 
 public class AssetManager {
 
-    public static final String PLAYER = "textures/player.png";
+    public static final String PLAYER = "textures/astronauta.png";
     public static final String LUA_BACKGROUND = "textures/lua_background.png";
     public static final String LASER = "textures/laser.png";
-    public static final String LUNAR_BASE = "textures/lunar_base.png";
-    public static final String LUA_TILE = "textures/lua_tile.png";
+    public static final String LUNAR_BASE = "textures/baselunar.png";
+    public static final String LUA_TILE = "textures/tileset_lua.png";
     public static final String FOOD = "textures/comida.png";
-    public static final String O2_TANK = "textures/tanquedeO2.png";
+    public static final String O2_TANK = "textures/O2.png";
     public static final String ICE = "textures/gelo.png";
+    public static final String AMERICAN = "textures/americano.png";
+    public static final String TRUMP = "textures/trump.png";
+    public static final String RIFLE = "textures/ak47.png";
+    public static final String PORTAL = "textures/portal.png";
 
     private Texture playerTexture;
     private Texture luaBackgroundTexture;
@@ -24,6 +28,10 @@ public class AssetManager {
     private Texture foodTexture;
     private Texture o2TankTexture;
     private Texture iceTexture;
+    private Texture americanTexture;
+    private Texture trumpTexture;
+    private Texture rifleTexture;
+    private Texture portalTexture;
 
     private boolean playerFallback;
 
@@ -36,9 +44,10 @@ public class AssetManager {
                 new Color(0.08f, 0.08f, 0.13f, 1f)
         );
 
+        // Projétil do jogador: amarelo quando o asset ainda não existir.
         laserTexture = loadOrFallback(
                 LASER,
-                new Color(0.95f, 0.95f, 1f, 1f)
+                new Color(1f, 0.90f, 0.10f, 1f)
         );
 
         lunarBaseTexture = loadOrFallback(
@@ -46,14 +55,11 @@ public class AssetManager {
                 new Color(0.45f, 0.45f, 0.50f, 1f)
         );
 
-        // Tile provisório cinza: quando lua_tile.png existir,
-        // ele passa automaticamente a ser usado no chão.
         luaTileTexture = loadOrFallback(
                 LUA_TILE,
                 new Color(0.20f, 0.20f, 0.23f, 1f)
         );
 
-        // Recursos da Lua: cada um tem seu próprio fallback.
         foodTexture = loadOrFallback(
                 FOOD,
                 new Color(1f, 0.55f, 0f, 1f)
@@ -67,6 +73,26 @@ public class AssetManager {
         iceTexture = loadOrFallback(
                 ICE,
                 new Color(0.20f, 0.55f, 1f, 1f)
+        );
+
+        americanTexture = loadOrFallback(
+                AMERICAN,
+                new Color(0.90f, 0.08f, 0.08f, 1f)
+        );
+
+        trumpTexture = loadOrFallback(
+                TRUMP,
+                new Color(1f, 0.45f, 0.05f, 1f)
+        );
+
+        rifleTexture = loadOrFallback(
+                RIFLE,
+                new Color(0.10f, 0.10f, 0.10f, 1f)
+        );
+
+        portalTexture = loadOrFallback(
+                PORTAL,
+                new Color(0.15f, 0.85f, 1f, 1f)
         );
     }
 
@@ -121,34 +147,44 @@ public class AssetManager {
         return iceTexture;
     }
 
+    public Texture getAmericanTexture() {
+        return americanTexture;
+    }
+
+    public Texture getTrumpTexture() {
+        return trumpTexture;
+    }
+
+    public Texture getRifleTexture() {
+        return rifleTexture;
+    }
+
+    public Texture getPortalTexture() {
+        return portalTexture;
+    }
+
     public boolean isPlayerFallback() {
         return playerFallback;
     }
 
     public void dispose() {
-        if (playerTexture != null) {
-            playerTexture.dispose();
-        }
-        if (luaBackgroundTexture != null) {
-            luaBackgroundTexture.dispose();
-        }
-        if (laserTexture != null) {
-            laserTexture.dispose();
-        }
-        if (lunarBaseTexture != null) {
-            lunarBaseTexture.dispose();
-        }
-        if (luaTileTexture != null) {
-            luaTileTexture.dispose();
-        }
-        if (foodTexture != null) {
-            foodTexture.dispose();
-        }
-        if (o2TankTexture != null) {
-            o2TankTexture.dispose();
-        }
-        if (iceTexture != null) {
-            iceTexture.dispose();
+        disposeTexture(playerTexture);
+        disposeTexture(luaBackgroundTexture);
+        disposeTexture(laserTexture);
+        disposeTexture(lunarBaseTexture);
+        disposeTexture(luaTileTexture);
+        disposeTexture(foodTexture);
+        disposeTexture(o2TankTexture);
+        disposeTexture(iceTexture);
+        disposeTexture(americanTexture);
+        disposeTexture(trumpTexture);
+        disposeTexture(rifleTexture);
+        disposeTexture(portalTexture);
+    }
+
+    private void disposeTexture(Texture texture) {
+        if (texture != null) {
+            texture.dispose();
         }
     }
 }
