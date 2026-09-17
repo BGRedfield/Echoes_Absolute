@@ -1,0 +1,62 @@
+name: Fix Mars HUD
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply one-time ShapeRenderer fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('core/src/main/java/io/github/some_example_name/screens/LuaMarteScreen.java')
+          text = path.read_text(encoding='utf-8')
+
+          old = '''    private void drawBar(float x, float y, float width, float height, float value, float maxValue, Color color) {
+        shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.08f, 0.92f));
+        shapeRenderer.rect(x, y, width, height);
+        float percent = MathUtils.clamp(value / maxValue, 0f, 1f);
+        shapeRenderer.setColor(color);
+        shapeRenderer.rect(x, y, width * percent, height);
+    }
+'''
+
+          new = '''    private void drawBar(float x, float y, float width, float height, float value, float maxValue, Color color) {
+        boolean startedHere = false;
+        if (!shapeRenderer.isDrawing()) {
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            startedHere = true;
+        }
+
+        shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.08f, 0.92f));
+        shapeRenderer.rect(x, y, width, height);
+        float percent = MathUtils.clamp(value / maxValue, 0f, 1f);
+        shapeRenderer.setColor(color);
+        shapeRenderer.rect(x, y, width * percent, height);
+
+        if (startedHere) {
+            shapeRenderer.end();
+        }
+    }
+'''
+
+          if old not in text:
+              raise SystemExit('Expected drawBar method was not found; no changes made.')
+
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add core/src/main/java/io/github/some_example_name/screens/LuaMarteScreen.java .github/workflows/fix-mars-hud.yml
+          git commit -m "Fix Mars ShapeRenderer HUD crash"
+          git push
