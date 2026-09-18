@@ -691,21 +691,11 @@ public class LuaMarteScreen extends ScreenAdapter {
     }
 
     private void drawBar(float x, float y, float width, float height, float value, float maxValue, Color color) {
-        boolean startedHere = false;
-        if (!shapeRenderer.isDrawing()) {
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            startedHere = true;
-        }
-
         shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.08f, 0.92f));
         shapeRenderer.rect(x, y, width, height);
         float percent = MathUtils.clamp(value / maxValue, 0f, 1f);
         shapeRenderer.setColor(color);
         shapeRenderer.rect(x, y, width * percent, height);
-
-        if (startedHere) {
-            shapeRenderer.end();
-        }
     }
 
     private void drawBossHealthBar() {
@@ -717,10 +707,15 @@ public class LuaMarteScreen extends ScreenAdapter {
         float barX = (worldWidth - barWidth) / 2f;
         float barY = 34f;
 
+        shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
         drawBar(barX, barY, barWidth, barHeight, supremeAlien.getHealth(), SupremeAlienBoss.MAX_HEALTH, Color.GREEN);
         if (supremeAlien.isBarrierActive()) {
             drawBar(barX, barY, barWidth, barHeight, supremeAlien.getBarrierHealth(), SupremeAlienBoss.BARRIER_MAX_HEALTH, Color.CYAN);
         }
+
+        shapeRenderer.end();
 
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
