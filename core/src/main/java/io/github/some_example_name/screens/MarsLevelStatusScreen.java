@@ -18,11 +18,17 @@ public class MarsLevelStatusScreen extends ScreenAdapter {
     private final SpriteBatch batch;
     private final BitmapFont font;
     private final Viewport viewport;
+    private final float health;
+    private final float hunger;
+    private final float oxygen;
     private boolean changingScreen;
     private boolean disposed;
 
     public MarsLevelStatusScreen(Game game, float health, float hunger, float oxygen) {
         this.game = game;
+        this.health = health;
+        this.hunger = hunger;
+        this.oxygen = oxygen;
         batch = new SpriteBatch();
         font = new BitmapFont();
         viewport = new ScreenViewport();
@@ -43,6 +49,13 @@ public class MarsLevelStatusScreen extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             changingScreen = true;
             dispose();
+            game.setScreen(new TitaIntroScreen(game));
+            return;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            changingScreen = true;
+            dispose();
             game.setScreen(new MenuScreen(game));
             return;
         }
@@ -60,14 +73,17 @@ public class MarsLevelStatusScreen extends ScreenAdapter {
         font.getData().setScale(2.5f);
         font.draw(batch, "MARTE CONCLUÍDA", centerX - 215f, centerY + 105f);
 
-        font.getData().setScale(1.25f);
+        font.getData().setScale(1.15f);
         font.setColor(Color.LIGHT_GRAY);
-        font.draw(batch, "O Alien Supremo foi derrotado.", centerX - 165f, centerY + 35f);
-        font.draw(batch, "A jornada continuará na próxima fase.", centerX - 185f, centerY - 15f);
+        font.draw(batch, "O Alien Supremo foi derrotado.", centerX - 165f, centerY + 55f);
+        font.draw(batch, String.format("HP %.0f/100 | Fome %.0f/100 | O2 %.0f/100", health, hunger, oxygen),
+                centerX - 215f, centerY + 15f);
+        font.draw(batch, "Próxima fase: TITÃ — mundo vermelho-escuro.", centerX - 220f, centerY - 30f);
+        font.draw(batch, "Quatro fortalezas aguardam: Obama, Authentic, Verity e CR7.", centerX - 255f, centerY - 70f);
 
         font.getData().setScale(1.15f);
         font.setColor(Color.ORANGE);
-        font.draw(batch, "ENTER = voltar ao menu", centerX - 130f, centerY - 115f);
+        font.draw(batch, "ENTER = ver o status e a descrição de TITÃ", centerX - 225f, centerY - 135f);
         batch.end();
     }
 
