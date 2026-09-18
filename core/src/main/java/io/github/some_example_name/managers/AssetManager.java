@@ -38,7 +38,7 @@ public class AssetManager {
     public static final String TITA_RED_CRYSTAL = "cristal_vermelho.png";
     public static final String TITA_BLUE_CRYSTAL = "cristal_azul.png";
     public static final String TITA_YELLOW_CRYSTAL = "cristal_amarelo.png";
-    public static final String TITA_OBAMA = "obama.png";
+    public static final String TITA_OBAMA = "barackobama.png";
     public static final String TITA_AUTHENTIC = "authentic_games.png";
     public static final String TITA_VERITY = "verity.png";
     public static final String TITA_CR7 = "cr7.png";
