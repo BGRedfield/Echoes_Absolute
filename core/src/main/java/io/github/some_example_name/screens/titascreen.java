@@ -174,6 +174,9 @@ public class titascreen extends ScreenAdapter {
 
             updateBossProjectiles(delta);
             updateLasers(delta);
+            if (changingScreen) {
+                return false;
+            }
             handleCastleCrystalPickup();
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)
