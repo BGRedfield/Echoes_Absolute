@@ -89,6 +89,13 @@ public class PlayerStats {
         }
     }
 
+    public void addHunger(float amount) {
+        hunger = MathUtils.clamp(hunger + amount, 0f, MAX_HUNGER);
+        if (hunger > 0f) {
+            starvationDamageTimer = 0f;
+        }
+    }
+
     /** Restores the player's health and oxygen completely while at a base. */
     public void restoreAtBase() {
         health = MAX_HEALTH;
