@@ -89,7 +89,7 @@ public class titascreen extends ScreenAdapter {
             new Rectangle(TOP_CASTLE_X + CASTLE_WIDTH / 2f - 45f, TOP_CASTLE_Y - 10f, 90f, 55f),
             new Rectangle(BOTTOM_CASTLE_X + CASTLE_WIDTH / 2f - 45f, BOTTOM_CASTLE_Y - 10f, 90f, 55f),
             new Rectangle(LEFT_CASTLE_X + CASTLE_WIDTH - 10f, LEFT_CASTLE_Y + CASTLE_HEIGHT / 2f - 45f, 55f, 90f),
-            new Rectangle(FINAL_CASTLE_X + CASTLE_WIDTH / 2f - 55f, FINAL_CASTLE_Y - 10f, 110f, 60f)
+            new Rectangle(FINAL_CASTLE_X + 250f - 55f, FINAL_CASTLE_Y - 10f, 110f, 60f)
     };
 
     private final Rectangle[] altars = {
