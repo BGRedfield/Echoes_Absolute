@@ -84,6 +84,7 @@ public class LuaScreen extends ScreenAdapter {
     private final AssetManager assets;
     private final Player player;
     private final PlayerStats stats;
+    private final PauseMenu pauseMenu;
     private final Array<Laser> lasers = new Array<>();
     private final Array<LuaItem> luaItems = new Array<>();
     private final Array<AmericanEnemy> americans = new Array<>();
@@ -129,6 +130,7 @@ public class LuaScreen extends ScreenAdapter {
         assets.load();
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
         stats = new PlayerStats();
+        pauseMenu = new PauseMenu(game);
         createLuaResources();
         createStartingAmericans();
         showMessage("MISSÃO LUA: colete 5 gelos e leve os 5 até a base lunar.");
@@ -856,17 +858,38 @@ public class LuaScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
-        if (!update(delta)) return;
+        PauseMenu.Action pauseAction = pauseMenu.handleInput();
+
+        if (pauseAction == PauseMenu.Action.PHASES) {
+            screenChanged = true;
+            dispose();
+            game.setScreen(new PhaseSelectScreen(game));
+            return;
+        }
+
+        if (pauseAction == PauseMenu.Action.MENU) {
+            screenChanged = true;
+            dispose();
+            game.setScreen(new MenuScreen(game));
+            return;
+        }
+
+        if (!pauseMenu.isOpen()) {
+            if (!update(delta)) return;
+        }
+
         ScreenUtils.clear(0f, 0f, 0f, 1f);
         drawWorld();
         drawWarningsAndProjectiles();
         drawHud();
+        pauseMenu.render();
     }
 
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
         hudViewport.update(width, height, true);
+        pauseMenu.resize(width, height);
         updateCamera();
     }
 
@@ -876,5 +899,6 @@ public class LuaScreen extends ScreenAdapter {
         shapeRenderer.dispose();
         hudFont.dispose();
         assets.dispose();
+        pauseMenu.dispose();
     }
 }
