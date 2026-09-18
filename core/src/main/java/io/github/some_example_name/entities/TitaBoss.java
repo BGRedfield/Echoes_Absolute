@@ -34,10 +34,10 @@ public class TitaBoss {
         switch (type) {
             case OBAMA:
                 name = "BARACK OBAMA";
-                maxHealth = 700f;
-                speed = 105f;
-                contactDamage = 12f;
-                attackInterval = 2.4f;
+                maxHealth = 1100f;
+                speed = 115f;
+                contactDamage = 22f;
+                attackInterval = 2.0f;
                 projectileCount = 8;
                 projectileDamage = 18f;
                 break;
