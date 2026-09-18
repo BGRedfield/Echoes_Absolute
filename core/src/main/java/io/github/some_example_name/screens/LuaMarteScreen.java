@@ -89,6 +89,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private final AssetManager assets;
     private final Player player;
     private final PlayerStats stats;
+    private final PauseMenu pauseMenu;
 
     private final Array<LuaItem> resources = new Array<>();
     private final Array<MarsOre> ores = new Array<>();
@@ -135,6 +136,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         assets.load();
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
         stats = new PlayerStats();
+        pauseMenu = new PauseMenu(game);
         createMarsResources();
         createMarsOres();
         createStartingMartians();
@@ -822,17 +824,39 @@ public class LuaMarteScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         if (changingScreen) return;
-        if (!update(delta)) return;
+
+        PauseMenu.Action pauseAction = pauseMenu.handleInput();
+
+        if (pauseAction == PauseMenu.Action.PHASES) {
+            changingScreen = true;
+            dispose();
+            game.setScreen(new PhaseSelectScreen(game));
+            return;
+        }
+
+        if (pauseAction == PauseMenu.Action.MENU) {
+            changingScreen = true;
+            dispose();
+            game.setScreen(new MenuScreen(game));
+            return;
+        }
+
+        if (!pauseMenu.isOpen()) {
+            if (!update(delta)) return;
+        }
+
         ScreenUtils.clear(0.72f, 0.25f, 0.06f, 1f);
         drawWorld();
         drawBossEffects();
         drawHud();
+        pauseMenu.render();
     }
 
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
         hudViewport.update(width, height, true);
+        pauseMenu.resize(width, height);
         updateCamera();
     }
 
@@ -849,6 +873,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         shapeRenderer.dispose();
         hudFont.dispose();
         assets.dispose();
+        pauseMenu.dispose();
     }
 }
 
