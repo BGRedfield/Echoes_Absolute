@@ -54,7 +54,9 @@ public class PhaseSelectScreen extends ScreenAdapter {
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) {
-            // TitanScreen is not implemented in the current repository yet.
+            changingScreen = true;
+            dispose();
+            game.setScreen(new titascreen(game));
             return;
         }
 
@@ -93,12 +95,12 @@ public class PhaseSelectScreen extends ScreenAdapter {
         drawCentered("1 - LUA", width, height / 2f + 80f);
         drawCentered("2 - MARTE", width, height / 2f + 20f);
 
-        font.setColor(Color.GRAY);
-        drawCentered("3 - TITÃ (ainda não implementado)", width, height / 2f - 40f);
+        font.setColor(Color.WHITE);
+        drawCentered("3 - TITÃ", width, height / 2f - 40f);
 
         font.getData().setScale(0.95f);
         font.setColor(Color.LIGHT_GRAY);
-        drawCentered("1/2 = entrar direto na fase", width, 70f);
+        drawCentered("1/2/3 = entrar direto na fase", width, 70f);
         drawCentered("ESC = voltar ao menu", width, 38f);
 
         batch.end();
