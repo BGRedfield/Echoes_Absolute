@@ -225,13 +225,6 @@ public class LuaMarteScreen extends ScreenAdapter {
             return false;
         }
 
-        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
-            changingScreen = true;
-            dispose();
-            game.setScreen(new MenuScreen(game));
-            return false;
-        }
-
         updateCamera();
         return true;
     }
