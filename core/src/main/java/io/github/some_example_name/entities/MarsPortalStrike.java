@@ -9,7 +9,7 @@ public class MarsPortalStrike {
     public static final float SIZE = 150f;
     public static final float WARNING_TIME = 0.75f;
     public static final float ACTIVE_TIME = 0.65f;
-    public static final float DAMAGE = 30f;
+    public static final float DAMAGE = 50f;
     public static final float SPEED = 520f;
 
     private final Rectangle hitbox;
@@ -66,6 +66,21 @@ public class MarsPortalStrike {
 
     public boolean hasArrived() {
         return arrived;
+    }
+
+    public boolean isExploding() {
+        return arrived && timer >= WARNING_TIME;
+    }
+
+    public float getExplosionProgress() {
+        if (!arrived || timer < WARNING_TIME) {
+            return 0f;
+        }
+        return MathUtils.clamp(
+                (timer - WARNING_TIME) / ACTIVE_TIME,
+                0f,
+                1f
+        );
     }
 
     public Rectangle getHitbox() { return hitbox; }
