@@ -90,11 +90,18 @@ public class AmericanEnemy {
             shotTimer += delta;
             while (shotTimer >= SHOT_INTERVAL) {
                 shotTimer -= SHOT_INTERVAL;
+
+                // A direção do tiro é recalculada aqui porque o americano
+                // pode estar na fase de espalhamento e não tem dx/dy
+                // definidos naquele bloco de movimento.
+                float shotDx = playerX - getCenterX();
+                float shotDy = playerY - getCenterY();
+
                 bullets.add(new EnemyBullet(
                         getCenterX(),
                         getCenterY(),
-                        dx,
-                        dy
+                        shotDx,
+                        shotDy
                 ));
             }
         } else if (cycleTimer >= BURST_DURATION + PAUSE_DURATION) {
