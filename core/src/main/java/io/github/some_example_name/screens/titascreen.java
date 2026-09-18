@@ -201,6 +201,9 @@ public class titascreen extends ScreenAdapter {
         delta = Math.min(delta, 0.05f);
 
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+        // A invulnerabilidade precisa continuar contando durante os bosses,
+        // mesmo quando fome/O2 não estão sendo atualizados.
+        stats.updateInvulnerability(delta);
 
         if (insideCastle) {
             clampPlayerToArena();
@@ -867,11 +870,18 @@ public class titascreen extends ScreenAdapter {
         float centerY = boss.getCenterY();
 
         for (int i = 0; i < OBAMA_AMERICAN_COUNT; i++) {
-            // Os americanos aparecem diretamente em cima do Obama.
-            // Eles começam sobre o boss e depois avançam contra o jogador.
-            float x = centerX;
-            float y = centerY;
-            obamaAmericans.add(new AmericanEnemy(x, y));
+            // Todos nascem dentro do Obama, mas cada um recebe
+            // uma direção de espalhamento diferente.
+            float angle = MathUtils.PI2 * i / OBAMA_AMERICAN_COUNT
+                    + MathUtils.random(-0.18f, 0.18f);
+            float lateralSign = (i % 2 == 0) ? 1f : -1f;
+
+            obamaAmericans.add(new AmericanEnemy(
+                    centerX - AmericanEnemy.WIDTH / 2f,
+                    centerY - AmericanEnemy.HEIGHT / 2f,
+                    angle,
+                    lateralSign
+            ));
         }
 
         showMessage("OBAMA: 10 AMERICANOS DE REFORÇO!");
