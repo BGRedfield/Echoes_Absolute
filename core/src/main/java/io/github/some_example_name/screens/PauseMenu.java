@@ -140,8 +140,6 @@ public class PauseMenu {
             return;
         }
 
-        viewport.apply(false);
-
         float width = viewport.getWorldWidth();
         float height = viewport.getWorldHeight();
 
