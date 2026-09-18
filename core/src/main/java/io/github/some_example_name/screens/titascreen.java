@@ -132,7 +132,7 @@ public class titascreen extends ScreenAdapter {
             new Rectangle(TOP_CASTLE_X + CASTLE_WIDTH / 2f - 45f, TOP_CASTLE_Y - 10f, 90f, 55f),
             new Rectangle(BOTTOM_CASTLE_X + CASTLE_WIDTH / 2f - 45f, BOTTOM_CASTLE_Y - 10f, 90f, 55f),
             new Rectangle(LEFT_CASTLE_X + CASTLE_WIDTH - 10f, LEFT_CASTLE_Y + CASTLE_HEIGHT / 2f - 45f, 55f, 90f),
-            new Rectangle(FINAL_CASTLE_X + 250f - 55f, FINAL_CASTLE_Y - 10f, 110f, 60f)
+            new Rectangle(FINAL_CASTLE_X + 350f - 70f, FINAL_CASTLE_Y - 10f, 140f, 70f)
     };
 
     private final Rectangle[] altars = {
@@ -867,19 +867,10 @@ public class titascreen extends ScreenAdapter {
         float centerY = boss.getCenterY();
 
         for (int i = 0; i < OBAMA_AMERICAN_COUNT; i++) {
-            float angle = MathUtils.PI2 * i / OBAMA_AMERICAN_COUNT;
-            float radius = 430f;
-            float x = MathUtils.clamp(
-                    centerX + MathUtils.cos(angle) * radius,
-                    ARENA_MIN_X + 40f,
-                    ARENA_MAX_X - 100f
-            );
-            float y = MathUtils.clamp(
-                    centerY + MathUtils.sin(angle) * radius,
-                    ARENA_MIN_Y + 40f,
-                    ARENA_MAX_Y - 100f
-            );
-
+            // Os americanos aparecem diretamente em cima do Obama.
+            // Eles começam sobre o boss e depois avançam contra o jogador.
+            float x = centerX;
+            float y = centerY;
             obamaAmericans.add(new AmericanEnemy(x, y));
         }
 
@@ -1253,28 +1244,15 @@ public class titascreen extends ScreenAdapter {
     }
 
     private void drawCastle(float x, float y, String label) {
+        // A entrada é invisível: a interação usa apenas castleDoors[].
         batch.draw(assets.getTitaCastleTexture(), x, y, CASTLE_WIDTH, CASTLE_HEIGHT);
-        batch.draw(assets.getTitaDoorTexture(),
-                x + CASTLE_WIDTH / 2f - 45f,
-                y - 10f,
-                90f,
-                75f);
     }
 
     private void drawFinalCastle() {
-        float width = 500f;
-        float height = 390f;
+        // Bastião final maior; a porta também é invisível e funciona só por hitbox.
+        float width = 700f;
+        float height = 520f;
         batch.draw(assets.getTitaFinalCastleTexture(), FINAL_CASTLE_X, FINAL_CASTLE_Y, width, height);
-
-        if (finalCastleUnlocked) {
-            batch.draw(
-                    assets.getTitaDoorTexture(),
-                    FINAL_CASTLE_X + width / 2f - 55f,
-                    FINAL_CASTLE_Y - 10f,
-                    110f,
-                    80f
-            );
-        }
     }
 
     private void drawExteriorResources() {
