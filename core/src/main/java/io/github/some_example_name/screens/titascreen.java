@@ -23,6 +23,7 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 
 import io.github.some_example_name.entities.DeathCause;
 import io.github.some_example_name.entities.Laser;
+import io.github.some_example_name.entities.LuaItem;
 import io.github.some_example_name.entities.Player;
 import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.entities.TitaBoss;
