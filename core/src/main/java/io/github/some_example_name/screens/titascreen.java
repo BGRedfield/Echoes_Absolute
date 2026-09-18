@@ -6,6 +6,7 @@ import com.badlogic.gdx.Input;
 import com.badlogic.gdx.ScreenAdapter;
 import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
+import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
@@ -492,17 +493,30 @@ public class titascreen extends ScreenAdapter {
 
         if (insideCastle) {
             drawArenaFloor();
-            drawArena();
             drawBoss();
-            drawLasers();
-            drawBossProjectiles();
         } else {
             drawExteriorFloor();
             drawExteriorBuildings();
-            drawLasers();
         }
 
+        drawLasers();
         batch.end();
+
+        if (insideCastle) {
+            drawArenaEffects();
+        }
+    }
+
+    private void drawArenaEffects() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(new Color(0.78f, 0.78f, 0.80f, 1f));
+        shapeRenderer.rect(ARENA_MIN_X, ARENA_MIN_Y,
+                ARENA_MAX_X - ARENA_MIN_X,
+                ARENA_MAX_Y - ARENA_MIN_Y);
+        shapeRenderer.end();
+
+        drawBossProjectiles();
     }
 
     private void drawExteriorFloor() {
@@ -575,22 +589,6 @@ public class titascreen extends ScreenAdapter {
                     80f
             );
         }
-    }
-
-    private void drawArena() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(new Color(0.78f, 0.78f, 0.80f, 1f));
-        shapeRenderer.rect(ARENA_MIN_X, ARENA_MIN_Y, ARENA_MAX_X - ARENA_MIN_X, ARENA_MAX_Y - ARENA_MIN_Y);
-        shapeRenderer.end();
-
-        batch.draw(
-                assets.getTitaDoorTexture(),
-                ARENA_MIN_X + 480f,
-                ARENA_MIN_Y,
-                320f,
-                100f
-        );
     }
 
     private void drawBoss() {
