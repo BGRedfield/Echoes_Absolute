@@ -21,13 +21,19 @@ import com.badlogic.gdx.utils.viewport.FitViewport;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import io.github.some_example_name.entities.AmericanEnemy;
 import io.github.some_example_name.entities.DeathCause;
+import io.github.some_example_name.entities.EnemyBullet;
+import io.github.some_example_name.entities.ExplosionEffect;
 import io.github.some_example_name.entities.Laser;
 import io.github.some_example_name.entities.LuaItem;
+import io.github.some_example_name.entities.MissileWarning;
 import io.github.some_example_name.entities.Player;
 import io.github.some_example_name.entities.PlayerStats;
+import io.github.some_example_name.entities.RifleWeapon;
 import io.github.some_example_name.entities.TitaBoss;
 import io.github.some_example_name.entities.TitaBossProjectile;
+import io.github.some_example_name.entities.TrumpMissile;
 import io.github.some_example_name.managers.AssetManager;
 
 /**
@@ -71,6 +77,31 @@ public class titascreen extends ScreenAdapter {
     private static final float ARENA_MAX_X = 2240f;
     private static final float ARENA_MAX_Y = 1480f;
 
+    // Barack Obama usa a mesma sequência de ataques do Trump,
+    // porém em uma versão muito mais pesada.
+    private enum ObamaAttackPhase {
+        COOLDOWN,
+        MISSILE_WARNING,
+        MISSILE_TRAVEL,
+        RIFLE_BARRIER,
+        AMERICAN_WAVE
+    }
+
+    private static final int OBAMA_MISSILE_COUNT = 14;
+    private static final int OBAMA_RIFLE_COUNT = 12;
+    private static final int OBAMA_AMERICAN_COUNT = 10;
+    private static final float OBAMA_ATTACK_COOLDOWN = 3.5f;
+    private static final float OBAMA_MISSILE_WARNING_TIME = 2f;
+    private static final float OBAMA_MISSILE_DAMAGE = 35f;
+    private static final float OBAMA_RIFLE_DAMAGE = 18f;
+    private static final float OBAMA_AMERICAN_DAMAGE = 15f;
+    private static final float OBAMA_RIFLE_ORBIT_RADIUS = 500f;
+    private static final float OBAMA_RIFLE_ORBIT_SPEED = 0.8f;
+
+    // Titã sempre entra com a arma aprimorada do Marte.
+    private static final float EVOLVED_FIRE_INTERVAL = 0.09f;
+    private static final float EVOLVED_BURST_SPREAD = 0.045f;
+
     private final Game game;
     private final OrthographicCamera camera;
     private final Viewport viewport;
@@ -85,6 +116,14 @@ public class titascreen extends ScreenAdapter {
 
     private final Array<Laser> lasers = new Array<>();
     private final Array<TitaBossProjectile> bossProjectiles = new Array<>();
+
+    private final Array<TrumpMissile> obamaMissiles = new Array<>();
+    private final Array<MissileWarning> obamaMissileWarnings = new Array<>();
+    private final Array<RifleWeapon> obamaRifles = new Array<>();
+    private final Array<EnemyBullet> obamaRifleBullets = new Array<>();
+    private final Array<AmericanEnemy> obamaAmericans = new Array<>();
+    private final Array<EnemyBullet> obamaAmericanBullets = new Array<>();
+    private final Array<ExplosionEffect> obamaMissileExplosions = new Array<>();
 
     private final Rectangle[] castleDoors = {
             new Rectangle(TOP_CASTLE_X + CASTLE_WIDTH / 2f - 45f, TOP_CASTLE_Y - 10f, 90f, 55f),
@@ -116,6 +155,11 @@ public class titascreen extends ScreenAdapter {
     private float fireTimer;
     private float baseRecoveryTimer;
     private float messageTimer;
+    private float obamaAttackTimer;
+    private float obamaRifleOrbitAngle;
+    private int obamaAttackCycle;
+    private ObamaAttackPhase obamaAttackPhase = ObamaAttackPhase.COOLDOWN;
+    private ObamaAttackPhase nextObamaAttack = ObamaAttackPhase.MISSILE_WARNING;
     private String message = "";
 
     public titascreen(Game game) {
@@ -171,7 +215,9 @@ public class titascreen extends ScreenAdapter {
                         ARENA_MAX_Y
                 );
 
-                if (boss.canShoot()) {
+                if (currentCastle == 0) {
+                    updateObamaAttack(delta, boss);
+                } else if (boss.canShoot()) {
                     spawnBossProjectiles(boss);
                     boss.resetAttackTimer();
                 }
@@ -335,6 +381,10 @@ public class titascreen extends ScreenAdapter {
         bossProjectiles.clear();
         lasers.clear();
 
+        if (castleIndex == 0) {
+            clearObamaAttackObjects();
+        }
+
         if (bosses[castleIndex] == null) {
             TitaBoss.Type type;
             switch (castleIndex) {
@@ -364,7 +414,12 @@ public class titascreen extends ScreenAdapter {
         if (bosses[castleIndex].isDead()) {
             showMessage(title + " já foi derrotado. Volte pela porta.");
         } else {
-            showMessage("Você entrou no castelo: " + title + ". Derrote o chefe!");
+            if (castleIndex == 0) {
+                startObamaCooldown(ObamaAttackPhase.MISSILE_WARNING,
+                        "OBAMA APARECEU! Mísseis, AK-47 e 10 americanos estão vindo.");
+            } else {
+                showMessage("Você entrou no castelo: " + title + ". Derrote o chefe!");
+            }
         }
     }
 
@@ -374,6 +429,10 @@ public class titascreen extends ScreenAdapter {
         currentCastle = -1;
         bossProjectiles.clear();
         lasers.clear();
+
+        if (index == 0) {
+            clearObamaAttackObjects();
+        }
 
         switch (index) {
             case 0:
@@ -481,8 +540,11 @@ public class titascreen extends ScreenAdapter {
                 dx /= length;
                 dy /= length;
 
-                lasers.add(new Laser(player.getCenterX(), player.getCenterY(), dx, dy));
-                fireTimer = FIRE_INTERVAL;
+                // Titã sempre usa a arma aprimorada do Marte:
+                // dois tiros levemente espalhados a cada disparo.
+                addLaserWithAngle(dx, dy, EVOLVED_BURST_SPREAD);
+                addLaserWithAngle(dx, dy, -EVOLVED_BURST_SPREAD);
+                fireTimer = EVOLVED_FIRE_INTERVAL;
             }
         }
 
@@ -491,7 +553,13 @@ public class titascreen extends ScreenAdapter {
             laser.update(delta);
             boolean hit = false;
 
-            if (insideCastle && currentCastle >= 0 && currentCastle < bosses.length) {
+            if (insideCastle && currentCastle == 0) {
+                if (hitObamaRifleOrAmerican(laser)) {
+                    hit = true;
+                }
+            }
+
+            if (!hit && insideCastle && currentCastle >= 0 && currentCastle < bosses.length) {
                 TitaBoss boss = bosses[currentCastle];
                 if (boss != null && !boss.isDead()
                         && laser.getHitbox().overlaps(boss.getHitbox())) {
@@ -502,6 +570,10 @@ public class titascreen extends ScreenAdapter {
                         bossDefeated[currentCastle] = true;
 
                         if (currentCastle <= 2) {
+                            if (currentCastle == 0) {
+                                clearObamaAttackObjects();
+                            }
+
                             crystalDrops[currentCastle].set(
                                     boss.getCenterX() - 32f,
                                     boss.getCenterY() - 32f,
@@ -527,6 +599,415 @@ public class titascreen extends ScreenAdapter {
         }
     }
 
+    private void addLaserWithAngle(float dx, float dy, float angle) {
+        float cos = MathUtils.cos(angle);
+        float sin = MathUtils.sin(angle);
+        float rotatedX = dx * cos - dy * sin;
+        float rotatedY = dx * sin + dy * cos;
+        lasers.add(new Laser(
+                player.getCenterX(),
+                player.getCenterY(),
+                rotatedX,
+                rotatedY
+        ));
+    }
+
+    private boolean isObamaBoss(TitaBoss boss) {
+        return currentCastle == 0
+                && boss != null
+                && !boss.isDead();
+    }
+
+    private void clearObamaAttackObjects() {
+        obamaMissiles.clear();
+        obamaMissileWarnings.clear();
+        obamaRifles.clear();
+        obamaRifleBullets.clear();
+        obamaAmericans.clear();
+        obamaAmericanBullets.clear();
+        obamaMissileExplosions.clear();
+        obamaAttackPhase = ObamaAttackPhase.COOLDOWN;
+        obamaAttackTimer = 0f;
+        obamaRifleOrbitAngle = 0f;
+        obamaAttackCycle = 0;
+        nextObamaAttack = ObamaAttackPhase.MISSILE_WARNING;
+    }
+
+    private void startObamaCooldown(ObamaAttackPhase nextAttack, String text) {
+        obamaAttackPhase = ObamaAttackPhase.COOLDOWN;
+        nextObamaAttack = nextAttack;
+        obamaAttackTimer = OBAMA_ATTACK_COOLDOWN;
+        showMessage(text);
+    }
+
+    private void beginObamaMissileWarning(TitaBoss boss) {
+        obamaAttackPhase = ObamaAttackPhase.MISSILE_WARNING;
+        obamaAttackCycle++;
+        obamaMissileWarnings.clear();
+        obamaMissiles.clear();
+        obamaRifles.clear();
+        obamaRifleBullets.clear();
+
+        float centerX = boss.getCenterX();
+        float centerY = boss.getCenterY();
+        float phaseOffset = (obamaAttackCycle % 2) * 0.18f;
+
+        for (int i = 0; i < OBAMA_MISSILE_COUNT; i++) {
+            float angle = MathUtils.PI2 * i / OBAMA_MISSILE_COUNT + phaseOffset;
+            float targetX = MathUtils.clamp(
+                    centerX + MathUtils.cos(angle) * 560f,
+                    ARENA_MIN_X + 100f,
+                    ARENA_MAX_X - 100f
+            );
+            float targetY = MathUtils.clamp(
+                    centerY + MathUtils.sin(angle) * 340f,
+                    ARENA_MIN_Y + 100f,
+                    ARENA_MAX_Y - 100f
+            );
+
+            float size = TrumpMissile.IMPACT_SIZE;
+            obamaMissileWarnings.add(new MissileWarning(
+                    targetX - size / 2f,
+                    targetY - size / 2f,
+                    size,
+                    size,
+                    OBAMA_MISSILE_WARNING_TIME
+            ));
+        }
+
+        showMessage("OBAMA: CHUVA DE 14 MÍSSEIS! Áreas vermelhas = impacto.");
+    }
+
+    private void updateObamaMissileWarnings(TitaBoss boss, float delta) {
+        boolean ready = true;
+
+        for (MissileWarning warning : obamaMissileWarnings) {
+            warning.update(delta);
+            if (!warning.isReadyToLaunch()) {
+                ready = false;
+            }
+        }
+
+        if (!ready) {
+            return;
+        }
+
+        obamaMissiles.clear();
+
+        for (MissileWarning warning : obamaMissileWarnings) {
+            Rectangle area = warning.getArea();
+            obamaMissiles.add(new TrumpMissile(
+                    boss.getCenterX(),
+                    boss.getCenterY(),
+                    area.x + area.width / 2f,
+                    area.y + area.height / 2f
+            ));
+        }
+
+        obamaMissileWarnings.clear();
+        obamaAttackPhase = ObamaAttackPhase.MISSILE_TRAVEL;
+    }
+
+    private void updateObamaMissiles(float delta) {
+        for (int i = obamaMissiles.size - 1; i >= 0; i--) {
+            TrumpMissile missile = obamaMissiles.get(i);
+            missile.update(delta);
+
+            if (!missile.hasArrived()) {
+                continue;
+            }
+
+            Rectangle impact = missile.getImpactArea();
+            obamaMissileExplosions.add(
+                    new ExplosionEffect(
+                            impact.x + impact.width / 2f,
+                            impact.y + impact.height / 2f
+                    )
+            );
+
+            if (player.getHitbox().overlaps(impact)) {
+                stats.damage(OBAMA_MISSILE_DAMAGE, DeathCause.UNKNOWN);
+            }
+
+            obamaMissiles.removeIndex(i);
+        }
+    }
+
+    private void beginObamaRifleBarrier(TitaBoss boss) {
+        obamaAttackPhase = ObamaAttackPhase.RIFLE_BARRIER;
+        obamaRifleOrbitAngle = 0f;
+        obamaRifles.clear();
+        obamaRifleBullets.clear();
+
+        for (int i = 0; i < OBAMA_RIFLE_COUNT; i++) {
+            obamaRifles.add(new RifleWeapon(
+                    "OBAMA-RIFLE-" + (i + 1),
+                    boss.getCenterX(),
+                    boss.getCenterY()
+            ));
+        }
+
+        updateObamaRifleOrbitPositions(boss);
+        showMessage("OBAMA: 12 ARMAS ORBITANDO! Destrua todas.");
+    }
+
+    private void updateObamaRifleBarrier(TitaBoss boss, float delta) {
+        int alive = 0;
+
+        for (RifleWeapon rifle : obamaRifles) {
+            if (rifle.isDestroyed()) {
+                continue;
+            }
+
+            alive++;
+            rifle.update(delta, obamaRifleBullets);
+        }
+
+        if (alive == 0) {
+            obamaRifleBullets.clear();
+            startObamaCooldown(
+                    ObamaAttackPhase.AMERICAN_WAVE,
+                    "As 12 armas foram destruídas. Obama chama 10 americanos."
+            );
+            return;
+        }
+
+        obamaRifleOrbitAngle += delta * OBAMA_RIFLE_ORBIT_SPEED;
+        updateObamaRifleOrbitPositions(boss);
+    }
+
+    private void updateObamaRifleOrbitPositions(TitaBoss boss) {
+        if (obamaRifles.size == 0) {
+            return;
+        }
+
+        float centerX = boss.getCenterX();
+        float centerY = boss.getCenterY();
+        int total = obamaRifles.size;
+
+        for (int i = 0; i < total; i++) {
+            RifleWeapon rifle = obamaRifles.get(i);
+            if (rifle.isDestroyed()) {
+                continue;
+            }
+
+            float angle = obamaRifleOrbitAngle + MathUtils.PI2 * i / total;
+            float x = centerX
+                    + MathUtils.cos(angle) * OBAMA_RIFLE_ORBIT_RADIUS
+                    - rifle.getWidth() / 2f;
+            float y = centerY
+                    + MathUtils.sin(angle) * OBAMA_RIFLE_ORBIT_RADIUS
+                    - rifle.getHeight() / 2f;
+
+            x = MathUtils.clamp(x, ARENA_MIN_X, ARENA_MAX_X - rifle.getWidth());
+            y = MathUtils.clamp(y, ARENA_MIN_Y, ARENA_MAX_Y - rifle.getHeight());
+
+            rifle.setPosition(x, y);
+            rifle.setOutwardDirection(
+                    MathUtils.cos(angle),
+                    MathUtils.sin(angle)
+            );
+            rifle.setRotationDegrees(angle * MathUtils.radiansToDegrees);
+        }
+    }
+
+    private void beginObamaAmericanWave(TitaBoss boss) {
+        obamaAttackPhase = ObamaAttackPhase.AMERICAN_WAVE;
+        obamaAmericans.clear();
+        obamaAmericanBullets.clear();
+
+        float centerX = boss.getCenterX();
+        float centerY = boss.getCenterY();
+
+        for (int i = 0; i < OBAMA_AMERICAN_COUNT; i++) {
+            float angle = MathUtils.PI2 * i / OBAMA_AMERICAN_COUNT;
+            float radius = 430f;
+            float x = MathUtils.clamp(
+                    centerX + MathUtils.cos(angle) * radius,
+                    ARENA_MIN_X + 40f,
+                    ARENA_MAX_X - 100f
+            );
+            float y = MathUtils.clamp(
+                    centerY + MathUtils.sin(angle) * radius,
+                    ARENA_MIN_Y + 40f,
+                    ARENA_MAX_Y - 100f
+            );
+
+            obamaAmericans.add(new AmericanEnemy(x, y));
+        }
+
+        showMessage("OBAMA: 10 AMERICANOS DE REFORÇO!");
+    }
+
+    private void updateObamaAmericans(float delta) {
+        for (int i = obamaAmericans.size - 1; i >= 0; i--) {
+            AmericanEnemy enemy = obamaAmericans.get(i);
+            enemy.update(
+                    delta,
+                    player.getCenterX(),
+                    player.getCenterY(),
+                    obamaAmericanBullets
+            );
+
+            if (enemy.isDead()) {
+                obamaAmericans.removeIndex(i);
+            }
+        }
+
+        if (obamaAmericans.size == 0) {
+            startObamaCooldown(
+                    ObamaAttackPhase.MISSILE_WARNING,
+                    "Os 10 americanos foram derrotados. Próxima chuva de mísseis."
+            );
+        }
+    }
+
+    private void updateObamaBullets(float delta) {
+        for (int i = obamaRifleBullets.size - 1; i >= 0; i--) {
+            EnemyBullet bullet = obamaRifleBullets.get(i);
+            bullet.update(delta);
+
+            if (bullet.getHitbox().overlaps(player.getHitbox())) {
+                stats.damage(OBAMA_RIFLE_DAMAGE, DeathCause.UNKNOWN);
+                obamaRifleBullets.removeIndex(i);
+                continue;
+            }
+
+            if (bullet.getX() < ARENA_MIN_X - 100f
+                    || bullet.getX() > ARENA_MAX_X + 100f
+                    || bullet.getY() < ARENA_MIN_Y - 100f
+                    || bullet.getY() > ARENA_MAX_Y + 100f) {
+                obamaRifleBullets.removeIndex(i);
+            }
+        }
+
+        for (int i = obamaAmericanBullets.size - 1; i >= 0; i--) {
+            EnemyBullet bullet = obamaAmericanBullets.get(i);
+            bullet.update(delta);
+
+            if (bullet.getHitbox().overlaps(player.getHitbox())) {
+                stats.damage(OBAMA_AMERICAN_DAMAGE, DeathCause.AMERICAN_BULLET);
+                obamaAmericanBullets.removeIndex(i);
+                continue;
+            }
+
+            if (bullet.getX() < ARENA_MIN_X - 100f
+                    || bullet.getX() > ARENA_MAX_X + 100f
+                    || bullet.getY() < ARENA_MIN_Y - 100f
+                    || bullet.getY() > ARENA_MAX_Y + 100f) {
+                obamaAmericanBullets.removeIndex(i);
+            }
+        }
+
+        for (int i = obamaMissileExplosions.size - 1; i >= 0; i--) {
+            ExplosionEffect explosion = obamaMissileExplosions.get(i);
+            explosion.update(delta);
+
+            if (explosion.isFinished()) {
+                obamaMissileExplosions.removeIndex(i);
+            }
+        }
+    }
+
+    private void updateObamaAttack(float delta, TitaBoss boss) {
+        if (!isObamaBoss(boss)) {
+            return;
+        }
+
+        updateObamaMissiles(delta);
+        updateObamaBullets(delta);
+
+        switch (obamaAttackPhase) {
+            case COOLDOWN:
+                obamaAttackTimer -= delta;
+                if (obamaAttackTimer <= 0f) {
+                    if (nextObamaAttack == ObamaAttackPhase.MISSILE_WARNING) {
+                        beginObamaMissileWarning(boss);
+                    } else if (nextObamaAttack == ObamaAttackPhase.RIFLE_BARRIER) {
+                        beginObamaRifleBarrier(boss);
+                    } else {
+                        beginObamaAmericanWave(boss);
+                    }
+                }
+                break;
+
+            case MISSILE_WARNING:
+                updateObamaMissileWarnings(boss, delta);
+                break;
+
+            case MISSILE_TRAVEL:
+                if (obamaMissiles.size == 0) {
+                    startObamaCooldown(
+                            ObamaAttackPhase.RIFLE_BARRIER,
+                            "Mísseis concluídos. 12 armas vão cercar Obama."
+                    );
+                }
+                break;
+
+            case RIFLE_BARRIER:
+                updateObamaRifleBarrier(boss, delta);
+                break;
+
+            case AMERICAN_WAVE:
+                updateObamaAmericans(delta);
+                break;
+
+            default:
+                break;
+        }
+    }
+
+    private boolean hitObamaRifleOrAmerican(Laser laser) {
+        if (obamaAttackPhase == ObamaAttackPhase.RIFLE_BARRIER) {
+            for (RifleWeapon rifle : obamaRifles) {
+                if (!rifle.isDestroyed()
+                        && laser.getHitbox().overlaps(rifle.getHitbox())) {
+                    rifle.takeDamage(10f);
+                    return true;
+                }
+            }
+        }
+
+        if (obamaAttackPhase == ObamaAttackPhase.AMERICAN_WAVE) {
+            for (int i = obamaAmericans.size - 1; i >= 0; i--) {
+                AmericanEnemy enemy = obamaAmericans.get(i);
+                if (!enemy.isDead()
+                        && laser.getHitbox().overlaps(enemy.getHitbox())) {
+                    enemy.takeDamage(10f);
+                    return true;
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void drawObamaSupportUnits() {
+        Texture americanTexture = assets.getAmericanTexture();
+        for (AmericanEnemy enemy : obamaAmericans) {
+            batch.draw(
+                    americanTexture,
+                    enemy.getX(),
+                    enemy.getY(),
+                    enemy.getWidth(),
+                    enemy.getHeight()
+            );
+        }
+
+        Texture rifleTexture = assets.getRifleTexture();
+        for (RifleWeapon rifle : obamaRifles) {
+            if (!rifle.isDestroyed()) {
+                batch.draw(
+                        rifleTexture,
+                        rifle.getX(),
+                        rifle.getY(),
+                        rifle.getWidth(),
+                        rifle.getHeight()
+                );
+            }
+        }
+    }
+
     private String crystalName(int index) {
         switch (index) {
             case 0:
@@ -547,6 +1028,9 @@ public class titascreen extends ScreenAdapter {
         if (insideCastle) {
             drawArenaFloor();
             drawBoss();
+            if (currentCastle == 0) {
+                drawObamaSupportUnits();
+            }
         } else {
             drawExteriorFloor();
             drawExteriorBuildings();
@@ -575,6 +1059,96 @@ public class titascreen extends ScreenAdapter {
         shapeRenderer.end();
 
         drawBossProjectiles();
+        drawObamaAttackEffects();
+    }
+
+    private void drawObamaAttackEffects() {
+        if (currentCastle != 0) {
+            return;
+        }
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        shapeRenderer.setColor(new Color(1f, 0f, 0f, 0.32f));
+        for (MissileWarning warning : obamaMissileWarnings) {
+            shapeRenderer.rect(
+                    warning.getX(),
+                    warning.getY(),
+                    warning.getWidth(),
+                    warning.getHeight()
+            );
+        }
+
+        shapeRenderer.setColor(Color.RED);
+        for (TrumpMissile missile : obamaMissiles) {
+            shapeRenderer.rect(
+                    missile.getX(),
+                    missile.getY(),
+                    missile.getWidth(),
+                    missile.getHeight()
+            );
+        }
+
+        for (ExplosionEffect explosion : obamaMissileExplosions) {
+            float progress = explosion.getProgress();
+            float radius = explosion.getRadius();
+
+            shapeRenderer.setColor(new Color(
+                    1f, 0.10f, 0.02f,
+                    0.18f * (1f - progress)
+            ));
+            shapeRenderer.circle(
+                    explosion.getCenterX(),
+                    explosion.getCenterY(),
+                    radius
+            );
+
+            shapeRenderer.setColor(new Color(
+                    1f, 0.70f, 0.05f,
+                    0.70f * (1f - progress)
+            ));
+            shapeRenderer.circle(
+                    explosion.getCenterX(),
+                    explosion.getCenterY(),
+                    radius * 0.58f
+            );
+
+            shapeRenderer.setColor(new Color(
+                    1f, 0.95f, 0.30f,
+                    0.88f * (1f - progress)
+            ));
+            shapeRenderer.circle(
+                    explosion.getCenterX(),
+                    explosion.getCenterY(),
+                    radius * 0.25f
+            );
+        }
+
+        shapeRenderer.setColor(Color.BLUE);
+        for (EnemyBullet bullet : obamaRifleBullets) {
+            shapeRenderer.rect(
+                    bullet.getX(),
+                    bullet.getY(),
+                    bullet.getWidth(),
+                    bullet.getHeight()
+            );
+        }
+
+        shapeRenderer.setColor(Color.BLUE);
+        for (EnemyBullet bullet : obamaAmericanBullets) {
+            shapeRenderer.rect(
+                    bullet.getX(),
+                    bullet.getY(),
+                    bullet.getWidth(),
+                    bullet.getHeight()
+            );
+        }
+
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
     }
 
     private void drawExteriorFloor() {
@@ -770,6 +1344,11 @@ public class titascreen extends ScreenAdapter {
         font.draw(batch, "TITÃ // VERMELHO-ESCURO", 28f, hudViewport.getWorldHeight() - 205f);
 
         font.getData().setScale(0.90f);
+        font.setColor(Color.GREEN);
+        font.draw(batch, "ARMA: APRIMORADA | 2 tiros | cadência 2x",
+                28f, hudViewport.getWorldHeight() - 225f);
+
+        font.getData().setScale(0.90f);
         font.setColor(Color.LIGHT_GRAY);
 
         if (insideCastle && currentCastle >= 0) {
@@ -782,8 +1361,14 @@ public class titascreen extends ScreenAdapter {
                 font.draw(batch, "Derrote o chefe | Clique/segure = atirar", 28f,
                         hudViewport.getWorldHeight() - 270f);
                 font.setColor(Color.CYAN);
-                font.draw(batch, "CASTELO: sem comida/O2 | O2 e fome não diminuem durante o boss.",
-                        28f, hudViewport.getWorldHeight() - 302f);
+                if (currentCastle == 0) {
+                    font.draw(batch,
+                            "OBAMA: 14 mísseis | 12 armas orbitais | 10 americanos | ataques mais fortes",
+                            28f, hudViewport.getWorldHeight() - 302f);
+                } else {
+                    font.draw(batch, "CASTELO: sem comida/O2 | O2 e fome não diminuem durante o boss.",
+                            28f, hudViewport.getWorldHeight() - 302f);
+                }
             }
         } else {
             font.draw(batch, "EXTERIOR: comida e O2 ficam no mapa | Base: recupera +5 O2 e +5 fome por segundo", 28f,
