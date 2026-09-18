@@ -26,6 +26,7 @@ public class PlayerStats {
     private static final float WATER_HUNGER_RESTORE = 25f;
     private static final float WATER_HEALTH_RESTORE = 5f;
     private static final float O2_RESTORE = 20f;
+    public static final float DAMAGE_INVULNERABILITY_TIME = 1.2f;
 
     private float health = MAX_HEALTH;
     private float hunger = MAX_HUNGER;
@@ -35,11 +36,14 @@ public class PlayerStats {
     private float hungerLossTimer;
     private float oxygenDamageTimer;
     private float starvationDamageTimer;
+    private float invulnerabilityTimer;
 
     private int iceCollected;
     private DeathCause deathCause = DeathCause.NONE;
 
     public void update(float delta) {
+        updateInvulnerability(delta);
+
         if (isDead()) {
             return;
         }
@@ -144,15 +148,29 @@ public class PlayerStats {
 
     /** Every lethal/non-lethal combat mechanic should call this method. */
     public void damage(float amount, DeathCause cause) {
-        if (isDead() || amount <= 0f) {
+        if (isDead() || amount <= 0f || isInvulnerable()) {
             return;
         }
 
         health = MathUtils.clamp(health - amount, 0f, MAX_HEALTH);
+        invulnerabilityTimer = DAMAGE_INVULNERABILITY_TIME;
 
         if (health <= 0f) {
             deathCause = cause == null ? DeathCause.UNKNOWN : cause;
         }
+    }
+
+    /** Advances the post-hit invulnerability timer. Safe to call every frame. */
+    public void updateInvulnerability(float delta) {
+        invulnerabilityTimer = Math.max(0f, invulnerabilityTimer - Math.max(0f, delta));
+    }
+
+    public boolean isInvulnerable() {
+        return invulnerabilityTimer > 0f;
+    }
+
+    public float getInvulnerabilityTimer() {
+        return invulnerabilityTimer;
     }
 
     public float getHealth() {
