@@ -79,25 +79,22 @@ public class AssetManager {
     private boolean playerFallback;
 
     public void load() {
-        playerTexture = loadAsset(PLAYER, Color.CYAN);
-        if (!assetExists(PLAYER)) {
-            playerTexture = createAstronautFallback();
-        }
         playerFallback = !assetExists(PLAYER);
+        playerTexture = playerFallback
+                ? createAstronautFallback()
+                : loadAsset(PLAYER, Color.CYAN);
         luaBackgroundTexture = loadAsset(LUA_BACKGROUND, new Color(0.08f, 0.08f, 0.13f, 1f));
         laserTexture = loadAsset(LASER, new Color(1f, 0.90f, 0.10f, 1f));
         lunarBaseTexture = loadAsset(LUNAR_BASE, new Color(0.45f, 0.45f, 0.50f, 1f));
         luaTileTexture = loadAsset(LUA_TILE, new Color(0.20f, 0.20f, 0.23f, 1f));
         marsTileTexture = loadAsset(MARS_TILE, new Color(0.72f, 0.25f, 0.06f, 1f));
-        foodTexture = loadAsset(FOOD, new Color(1f, 0.55f, 0f, 1f));
-        if (!assetExists(FOOD)) {
-            foodTexture = createFoodFallback();
-        }
+        foodTexture = assetExists(FOOD)
+                ? loadAsset(FOOD, new Color(1f, 0.55f, 0f, 1f))
+                : createFoodFallback();
 
-        o2TankTexture = loadAsset(O2_TANK, new Color(0.70f, 0.78f, 0.86f, 1f));
-        if (!assetExists(O2_TANK)) {
-            o2TankTexture = createO2Fallback();
-        }
+        o2TankTexture = assetExists(O2_TANK)
+                ? loadAsset(O2_TANK, new Color(0.70f, 0.78f, 0.86f, 1f))
+                : createO2Fallback();
         iceTexture = loadAsset(ICE, new Color(0.20f, 0.55f, 1f, 1f));
         oreTexture = loadAsset(ORE, new Color(0.15f, 0.95f, 0.25f, 1f));
         mineTexture = loadAsset(MINE, new Color(0.28f, 0.10f, 0.035f, 1f));
