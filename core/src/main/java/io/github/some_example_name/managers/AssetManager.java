@@ -29,10 +29,10 @@ public class AssetManager {
     public static final String GREEN_KEY = "chave_verde.png";
 
     // TITÃ — substitua estes PNGs pelos seus sprites/mapas quando criar as imagens.
-    public static final String TITA_TILE = "tita_tilemap.png";
-    public static final String TITA_INTERIOR_TILE = "tita_interior_tilemap.png";
-    public static final String TITA_CASTLE = "tita_castelo.png";
-    public static final String TITA_FINAL_CASTLE = "tita_castelo_final.png";
+    public static final String TITA_TILE = "tilemap_tita.png";
+    public static final String TITA_INTERIOR_TILE = "tilemap_tita.png";
+    public static final String TITA_CASTLE = "castelo.png";
+    public static final String TITA_FINAL_CASTLE = "bastiao.png";
     public static final String TITA_DOOR = "tita_porta.png";
     public static final String TITA_ALTAR = "tita_altar_pedra.png";
     public static final String TITA_RED_CRYSTAL = "cristal_vermelho.png";
