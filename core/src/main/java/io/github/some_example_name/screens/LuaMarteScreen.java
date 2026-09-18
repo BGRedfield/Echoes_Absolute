@@ -811,7 +811,7 @@ public class LuaMarteScreen extends ScreenAdapter {
 
         hudFont.getData().setScale(0.86f);
         hudFont.setColor(Color.LIGHT_GRAY);
-        hudFont.draw(batch, "WASD / SETAS = mover | Mouse = mirar + segurar para atirar | E = interagir | ESC = menu", 28f, 18f);
+        hudFont.draw(batch, "WASD / SETAS = mover | Mouse = mirar + segurar para atirar | E = interagir | ESC = pausar", 28f, 18f);
         batch.end();
         messageTimer = Math.max(0f, messageTimer - Gdx.graphics.getDeltaTime());
     }
