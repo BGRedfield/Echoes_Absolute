@@ -117,6 +117,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private float bossAttackTimer;
     private float bossDeathTimer;
     private float martianSpawnTimer;
+    private float baseRecoveryTimer;
     private float messageTimer;
     private float screamTimer;
     private int nextBossAttackIndex;
@@ -209,6 +210,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         collectResources();
         collectOres();
         handleMissionInteraction();
+        recoverAtLunarBase(delta);
         updateMartians(delta);
         updateShooting(delta);
         updateLasers(delta);
@@ -227,6 +229,22 @@ public class LuaMarteScreen extends ScreenAdapter {
 
         updateCamera();
         return true;
+    }
+
+    private void recoverAtLunarBase(float delta) {
+        Rectangle base = new Rectangle(BASE_X, BASE_Y, BASE_WIDTH, BASE_HEIGHT);
+
+        if (!player.getHitbox().overlaps(base)) {
+            baseRecoveryTimer = 0f;
+            return;
+        }
+
+        baseRecoveryTimer += delta;
+        while (baseRecoveryTimer >= 1f) {
+            baseRecoveryTimer -= 1f;
+            stats.addOxygen(5f);
+            stats.addHunger(5f);
+        }
     }
 
     private void collectResources() {
@@ -636,6 +654,24 @@ public class LuaMarteScreen extends ScreenAdapter {
             float radius = supremeAlien.getWidth() * 1.15f + 24f * ratio;
             shapeRenderer.setColor(new Color(0.05f, 0.95f, 0.45f, 0.24f));
             shapeRenderer.circle(supremeAlien.getCenterX(), supremeAlien.getCenterY(), radius);
+        }
+
+        for (MarsPortalStrike strike : portalStrikes) {
+            if (!strike.isExploding()) {
+                continue;
+            }
+
+            float progress = strike.getExplosionProgress();
+            float centerX = strike.getX() + strike.getWidth() / 2f;
+            float centerY = strike.getY() + strike.getHeight() / 2f;
+            float outerRadius = 70f + 130f * progress;
+            float alpha = Math.max(0.04f, 0.35f * (1f - progress));
+
+            shapeRenderer.setColor(new Color(0.05f, 0.45f, 1f, alpha));
+            shapeRenderer.circle(centerX, centerY, outerRadius);
+
+            shapeRenderer.setColor(new Color(0.40f, 0.82f, 1f, Math.max(0.05f, 0.50f * (1f - progress))));
+            shapeRenderer.circle(centerX, centerY, 38f + 55f * progress);
         }
 
         shapeRenderer.end();
