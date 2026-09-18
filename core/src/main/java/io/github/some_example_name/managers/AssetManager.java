@@ -123,13 +123,25 @@ public class AssetManager {
     }
 
     private Texture loadAsset(String fileName, Color fallbackColor) {
-        String texturePath = "textures/" + fileName;
-        if (Gdx.files.internal(texturePath).exists()) {
-            return new Texture(Gdx.files.internal(texturePath));
+        String[] candidates = {
+                "textures/" + fileName,
+                "textures/tita/" + fileName,
+                "tita/" + fileName,
+                fileName
+        };
+
+        for (String path : candidates) {
+            if (Gdx.files.internal(path).exists()) {
+                Gdx.app.log("AssetManager", "Carregando textura: " + path);
+                return new Texture(Gdx.files.internal(path));
+            }
         }
-        if (Gdx.files.internal(fileName).exists()) {
-            return new Texture(Gdx.files.internal(fileName));
-        }
+
+        Gdx.app.error(
+                "AssetManager",
+                "Textura não encontrada: " + fileName
+                        + " | procurei em textures/, textures/tita/, tita/ e raiz."
+        );
         return createFallbackTexture(fallbackColor);
     }
 
