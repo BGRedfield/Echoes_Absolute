@@ -28,6 +28,21 @@ public class AssetManager {
     public static final String RED_KEY = "chave.png";
     public static final String GREEN_KEY = "chave_verde.png";
 
+    // TITÃ — substitua estes PNGs pelos seus sprites/mapas quando criar as imagens.
+    public static final String TITA_TILE = "tita_tilemap.png";
+    public static final String TITA_INTERIOR_TILE = "tita_interior_tilemap.png";
+    public static final String TITA_CASTLE = "tita_castelo.png";
+    public static final String TITA_FINAL_CASTLE = "tita_castelo_final.png";
+    public static final String TITA_DOOR = "tita_porta.png";
+    public static final String TITA_ALTAR = "tita_altar_pedra.png";
+    public static final String TITA_RED_CRYSTAL = "cristal_vermelho.png";
+    public static final String TITA_BLUE_CRYSTAL = "cristal_azul.png";
+    public static final String TITA_YELLOW_CRYSTAL = "cristal_amarelo.png";
+    public static final String TITA_OBAMA = "obama.png";
+    public static final String TITA_AUTHENTIC = "authentic_games.png";
+    public static final String TITA_VERITY = "verity.png";
+    public static final String TITA_CR7 = "cr7.png";
+
     private Texture playerTexture;
     private Texture luaBackgroundTexture;
     private Texture laserTexture;
@@ -47,6 +62,19 @@ public class AssetManager {
     private Texture portalTexture;
     private Texture redKeyTexture;
     private Texture greenKeyTexture;
+    private Texture titaTileTexture;
+    private Texture titaInteriorTileTexture;
+    private Texture titaCastleTexture;
+    private Texture titaFinalCastleTexture;
+    private Texture titaDoorTexture;
+    private Texture titaAltarTexture;
+    private Texture redCrystalTexture;
+    private Texture blueCrystalTexture;
+    private Texture yellowCrystalTexture;
+    private Texture obamaTexture;
+    private Texture authenticGamesTexture;
+    private Texture verityTexture;
+    private Texture cr7Texture;
 
     private boolean playerFallback;
 
@@ -71,6 +99,20 @@ public class AssetManager {
         portalTexture = loadAsset(PORTAL, new Color(0.15f, 0.85f, 1f, 1f));
         redKeyTexture = loadAsset(RED_KEY, Color.RED);
         greenKeyTexture = loadAsset(GREEN_KEY, Color.GREEN);
+
+        titaTileTexture = loadAsset(TITA_TILE, new Color(0.26f, 0.02f, 0.03f, 1f));
+        titaInteriorTileTexture = loadAsset(TITA_INTERIOR_TILE, new Color(0.16f, 0.16f, 0.18f, 1f));
+        titaCastleTexture = loadAsset(TITA_CASTLE, new Color(0.43f, 0.44f, 0.47f, 1f));
+        titaFinalCastleTexture = loadAsset(TITA_FINAL_CASTLE, new Color(0.32f, 0.33f, 0.36f, 1f));
+        titaDoorTexture = loadAsset(TITA_DOOR, new Color(0.12f, 0.10f, 0.10f, 1f));
+        titaAltarTexture = loadAsset(TITA_ALTAR, new Color(0.38f, 0.37f, 0.34f, 1f));
+        redCrystalTexture = loadAsset(TITA_RED_CRYSTAL, Color.RED);
+        blueCrystalTexture = loadAsset(TITA_BLUE_CRYSTAL, Color.BLUE);
+        yellowCrystalTexture = loadAsset(TITA_YELLOW_CRYSTAL, Color.YELLOW);
+        obamaTexture = loadAsset(TITA_OBAMA, new Color(0.25f, 0.55f, 0.95f, 1f));
+        authenticGamesTexture = loadAsset(TITA_AUTHENTIC, new Color(0.10f, 0.75f, 0.35f, 1f));
+        verityTexture = loadAsset(TITA_VERITY, new Color(0.85f, 0.25f, 0.75f, 1f));
+        cr7Texture = loadAsset(TITA_CR7, new Color(0.95f, 0.75f, 0.10f, 1f));
     }
 
     private Texture loadAsset(String fileName, Color fallbackColor) {
@@ -117,6 +159,19 @@ public class AssetManager {
     public Texture getPortalTexture() { return portalTexture; }
     public Texture getRedKeyTexture() { return redKeyTexture; }
     public Texture getGreenKeyTexture() { return greenKeyTexture; }
+    public Texture getTitaTileTexture() { return titaTileTexture; }
+    public Texture getTitaInteriorTileTexture() { return titaInteriorTileTexture; }
+    public Texture getTitaCastleTexture() { return titaCastleTexture; }
+    public Texture getTitaFinalCastleTexture() { return titaFinalCastleTexture; }
+    public Texture getTitaDoorTexture() { return titaDoorTexture; }
+    public Texture getTitaAltarTexture() { return titaAltarTexture; }
+    public Texture getRedCrystalTexture() { return redCrystalTexture; }
+    public Texture getBlueCrystalTexture() { return blueCrystalTexture; }
+    public Texture getYellowCrystalTexture() { return yellowCrystalTexture; }
+    public Texture getObamaTexture() { return obamaTexture; }
+    public Texture getAuthenticGamesTexture() { return authenticGamesTexture; }
+    public Texture getVerityTexture() { return verityTexture; }
+    public Texture getCr7Texture() { return cr7Texture; }
     public boolean isPlayerFallback() { return playerFallback; }
 
     public void dispose() {
@@ -139,6 +194,19 @@ public class AssetManager {
         disposeTexture(portalTexture);
         disposeTexture(redKeyTexture);
         disposeTexture(greenKeyTexture);
+        disposeTexture(titaTileTexture);
+        disposeTexture(titaInteriorTileTexture);
+        disposeTexture(titaCastleTexture);
+        disposeTexture(titaFinalCastleTexture);
+        disposeTexture(titaDoorTexture);
+        disposeTexture(titaAltarTexture);
+        disposeTexture(redCrystalTexture);
+        disposeTexture(blueCrystalTexture);
+        disposeTexture(yellowCrystalTexture);
+        disposeTexture(obamaTexture);
+        disposeTexture(authenticGamesTexture);
+        disposeTexture(verityTexture);
+        disposeTexture(cr7Texture);
     }
 
     private void disposeTexture(Texture texture) {
