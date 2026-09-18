@@ -80,6 +80,9 @@ public class AssetManager {
 
     public void load() {
         playerTexture = loadAsset(PLAYER, Color.CYAN);
+        if (!assetExists(PLAYER)) {
+            playerTexture = createAstronautFallback();
+        }
         playerFallback = !assetExists(PLAYER);
         luaBackgroundTexture = loadAsset(LUA_BACKGROUND, new Color(0.08f, 0.08f, 0.13f, 1f));
         laserTexture = loadAsset(LASER, new Color(1f, 0.90f, 0.10f, 1f));
@@ -87,7 +90,14 @@ public class AssetManager {
         luaTileTexture = loadAsset(LUA_TILE, new Color(0.20f, 0.20f, 0.23f, 1f));
         marsTileTexture = loadAsset(MARS_TILE, new Color(0.72f, 0.25f, 0.06f, 1f));
         foodTexture = loadAsset(FOOD, new Color(1f, 0.55f, 0f, 1f));
+        if (!assetExists(FOOD)) {
+            foodTexture = createFoodFallback();
+        }
+
         o2TankTexture = loadAsset(O2_TANK, new Color(0.70f, 0.78f, 0.86f, 1f));
+        if (!assetExists(O2_TANK)) {
+            o2TankTexture = createO2Fallback();
+        }
         iceTexture = loadAsset(ICE, new Color(0.20f, 0.55f, 1f, 1f));
         oreTexture = loadAsset(ORE, new Color(0.15f, 0.95f, 0.25f, 1f));
         mineTexture = loadAsset(MINE, new Color(0.28f, 0.10f, 0.035f, 1f));
@@ -135,6 +145,48 @@ public class AssetManager {
         Pixmap pixmap = new Pixmap(1, 1, Pixmap.Format.RGBA8888);
         pixmap.setColor(color);
         pixmap.fill();
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private Texture createAstronautFallback() {
+        Pixmap pixmap = new Pixmap(64, 64, Pixmap.Format.RGBA8888);
+        pixmap.setColor(new Color(0.05f, 0.25f, 0.35f, 1f));
+        pixmap.fill();
+        pixmap.setColor(Color.WHITE);
+        pixmap.fillCircle(32, 40, 18);
+        pixmap.setColor(new Color(0.15f, 0.65f, 0.95f, 1f));
+        pixmap.fillRectangle(18, 20, 28, 22);
+        pixmap.setColor(Color.LIGHT_GRAY);
+        pixmap.fillRectangle(20, 10, 24, 10);
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private Texture createFoodFallback() {
+        Pixmap pixmap = new Pixmap(72, 72, Pixmap.Format.RGBA8888);
+        pixmap.setColor(new Color(1f, 0.55f, 0.05f, 1f));
+        pixmap.fillCircle(36, 36, 30);
+        pixmap.setColor(Color.YELLOW);
+        pixmap.fillCircle(28, 43, 7);
+        pixmap.fillCircle(44, 43, 7);
+        pixmap.setColor(new Color(0.75f, 0.12f, 0.04f, 1f));
+        pixmap.fillCircle(36, 25, 8);
+        Texture texture = new Texture(pixmap);
+        pixmap.dispose();
+        return texture;
+    }
+
+    private Texture createO2Fallback() {
+        Pixmap pixmap = new Pixmap(46, 110, Pixmap.Format.RGBA8888);
+        pixmap.setColor(new Color(0.15f, 0.35f, 0.90f, 1f));
+        pixmap.fillRectangle(7, 12, 32, 82);
+        pixmap.setColor(Color.WHITE);
+        pixmap.fillRectangle(11, 95, 24, 7);
+        pixmap.setColor(new Color(0.55f, 0.90f, 1f, 1f));
+        pixmap.fillRectangle(13, 22, 20, 52);
         Texture texture = new Texture(pixmap);
         pixmap.dispose();
         return texture;
