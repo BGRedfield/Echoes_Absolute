@@ -201,11 +201,11 @@ public class titascreen extends ScreenAdapter {
         delta = Math.min(delta, 0.05f);
 
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
-        // A invulnerabilidade precisa continuar contando durante os bosses,
-        // mesmo quando fome/O2 não estão sendo atualizados.
-        stats.updateInvulnerability(delta);
-
+        // Dentro dos bosses, PlayerStats.update() não roda porque fome/O2
+        // ficam congelados; por isso o timer é atualizado aqui.
         if (insideCastle) {
+            stats.updateInvulnerability(delta);
+        }
             clampPlayerToArena();
 
             TitaBoss boss = bosses[currentCastle];
