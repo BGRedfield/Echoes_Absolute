@@ -18,16 +18,30 @@ public class AmericanEnemy {
     private static final float BURST_DURATION = 1f;
     private static final float PAUSE_DURATION = 2f;
     private static final float SHOT_INTERVAL = 0.14f;
+    private static final float SPREAD_DURATION = 1.35f;
+    private static final float SPREAD_SPEED = 180f;
 
     private final Rectangle hitbox;
+    private final float spreadAngle;
+    private final float lateralSign;
+
     private float health = MAX_HEALTH;
     private float cycleTimer;
     private float shotTimer;
+    private float spreadTimer;
     private boolean dead;
 
     public AmericanEnemy(float x, float y) {
+        this(x, y, MathUtils.random(0f, MathUtils.PI2), MathUtils.randomBoolean() ? 1f : -1f);
+    }
+
+    public AmericanEnemy(float x, float y, float spreadAngle, float lateralSign) {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
-        // Começa a atirar imediatamente quando aparece.
+        this.spreadAngle = spreadAngle;
+        this.lateralSign = lateralSign >= 0f ? 1f : -1f;
+
+        // Começa a se espalhar a partir do centro do Obama.
+        spreadTimer = SPREAD_DURATION;
         cycleTimer = 0f;
         shotTimer = SHOT_INTERVAL;
     }
@@ -37,13 +51,37 @@ public class AmericanEnemy {
             return;
         }
 
-        float dx = playerX - getCenterX();
-        float dy = playerY - getCenterY();
-        float distance = (float) Math.sqrt(dx * dx + dy * dy);
+        if (spreadTimer > 0f) {
+            spreadTimer -= delta;
 
-        if (distance > 1f) {
-            hitbox.x += dx / distance * MOVE_SPEED * delta;
-            hitbox.y += dy / distance * MOVE_SPEED * delta;
+            float forwardX = MathUtils.cos(spreadAngle);
+            float forwardY = MathUtils.sin(spreadAngle);
+
+            // Cada americano tem uma direção radial e uma pequena
+            // componente lateral diferente, evitando que todos sigam a mesma rota.
+            float sideX = -forwardY * lateralSign;
+            float sideY = forwardX * lateralSign;
+            float sideWave = MathUtils.sin((SPREAD_DURATION - spreadTimer) * 4.5f);
+
+            hitbox.x += (forwardX + sideX * 0.30f * sideWave) * SPREAD_SPEED * delta;
+            hitbox.y += (forwardY + sideY * 0.30f * sideWave) * SPREAD_SPEED * delta;
+        } else {
+            float dx = playerX - getCenterX();
+            float dy = playerY - getCenterY();
+            float distance = (float) Math.sqrt(dx * dx + dy * dy);
+
+            if (distance > 1f) {
+                float dirX = dx / distance;
+                float dirY = dy / distance;
+
+                // Depois de se espalharem, cada um mantém uma deriva lateral
+                // própria enquanto se aproxima do jogador.
+                float sideX = -dirY * lateralSign;
+                float sideY = dirX * lateralSign;
+
+                hitbox.x += (dirX + sideX * 0.22f) * MOVE_SPEED * delta;
+                hitbox.y += (dirY + sideY * 0.22f) * MOVE_SPEED * delta;
+            }
         }
 
         cycleTimer += delta;
