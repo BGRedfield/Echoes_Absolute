@@ -20,6 +20,7 @@ public class GameOverScreen extends ScreenAdapter {
 
     private final Game game;
     private final DeathCause deathCause;
+    private final int retryPhase;
     private final SpriteBatch batch;
     private final ShapeRenderer shapeRenderer;
     private final BitmapFont font;
@@ -31,8 +32,13 @@ public class GameOverScreen extends ScreenAdapter {
     private boolean disposed;
 
     public GameOverScreen(Game game, DeathCause deathCause) {
+        this(game, deathCause, 1);
+    }
+
+    public GameOverScreen(Game game, DeathCause deathCause, int retryPhase) {
         this.game = game;
         this.deathCause = deathCause == null ? DeathCause.UNKNOWN : deathCause;
+        this.retryPhase = retryPhase;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         font = new BitmapFont();
@@ -92,8 +98,21 @@ public class GameOverScreen extends ScreenAdapter {
         if (changingScreen) {
             return;
         }
+
         changingScreen = true;
-        game.setScreen(new LuaScreen(game));
+
+        switch (retryPhase) {
+            case 2:
+                game.setScreen(new LuaMarteScreen(game));
+                break;
+            case 3:
+                game.setScreen(new titascreen(game));
+                break;
+            case 1:
+            default:
+                game.setScreen(new LuaScreen(game));
+                break;
+        }
     }
 
     private void goToMenu() {
