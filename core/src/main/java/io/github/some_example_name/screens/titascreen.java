@@ -201,11 +201,11 @@ public class titascreen extends ScreenAdapter {
         delta = Math.min(delta, 0.05f);
 
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
-        // Dentro dos bosses, PlayerStats.update() não roda porque fome/O2
-        // ficam congelados; por isso o timer é atualizado aqui.
+
         if (insideCastle) {
+            // Fome/O2 ficam congelados dentro dos bosses, mas a invulnerabilidade
+            // continua contando normalmente.
             stats.updateInvulnerability(delta);
-        }
             clampPlayerToArena();
 
             TitaBoss boss = bosses[currentCastle];
@@ -231,9 +231,11 @@ public class titascreen extends ScreenAdapter {
 
             updateBossProjectiles(delta);
             updateLasers(delta);
+
             if (changingScreen) {
                 return false;
             }
+
             handleCastleCrystalPickup();
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)
@@ -246,9 +248,9 @@ public class titascreen extends ScreenAdapter {
             updateLasers(delta);
             collectExteriorResources();
             recoverAtBase(delta);
-        }
 
-        if (!insideCastle) {
+            // Fora dos bosses, PlayerStats.update() cuida de recursos
+            // e também do timer de invulnerabilidade.
             stats.update(delta);
         }
 
