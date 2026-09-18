@@ -104,6 +104,9 @@ public class titascreen extends ScreenAdapter {
     private final TitaBoss[] bosses = new TitaBoss[4];
     private final Rectangle[] crystalDrops = new Rectangle[3];
 
+    @SuppressWarnings("unchecked")
+    private final Array<LuaItem>[] castleResources = new Array[4];
+
     private int currentCastle = -1;
     private boolean insideCastle;
     private boolean changingScreen;
@@ -131,6 +134,11 @@ public class titascreen extends ScreenAdapter {
 
         for (int i = 0; i < crystalDrops.length; i++) {
             crystalDrops[i] = new Rectangle();
+        }
+
+        for (int i = 0; i < castleResources.length; i++) {
+            castleResources[i] = new Array<>();
+            createCastleResources(i);
         }
 
         showMessage("TITÃ: derrote os 3 chefes, pegue os cristais e abra o castelo final.");
@@ -177,6 +185,7 @@ public class titascreen extends ScreenAdapter {
             if (changingScreen) {
                 return false;
             }
+            collectCastleResources();
             handleCastleCrystalPickup();
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)
@@ -190,7 +199,9 @@ public class titascreen extends ScreenAdapter {
             recoverAtBase(delta);
         }
 
-        stats.update(delta);
+        if (!insideCastle) {
+            stats.update(delta);
+        }
 
         if (stats.isDead()) {
             changingScreen = true;
@@ -202,6 +213,52 @@ public class titascreen extends ScreenAdapter {
 
         updateCamera();
         return true;
+    }
+
+    private void createCastleResources(int castleIndex) {
+        float left = ARENA_MIN_X + 130f;
+        float right = ARENA_MAX_X - 190f;
+        float bottom = ARENA_MIN_Y + 140f;
+        float top = ARENA_MAX_Y - 190f;
+
+        castleResources[castleIndex].add(
+                new LuaItem(LuaItem.Type.FOOD, left, top, 58f, 58f)
+        );
+        castleResources[castleIndex].add(
+                new LuaItem(LuaItem.Type.FOOD, right, bottom, 58f, 58f)
+        );
+        castleResources[castleIndex].add(
+                new LuaItem(LuaItem.Type.O2_TANK, right, top, 46f, 110f)
+        );
+        castleResources[castleIndex].add(
+                new LuaItem(LuaItem.Type.O2_TANK, left, bottom, 46f, 110f)
+        );
+    }
+
+    private void collectCastleResources() {
+        if (currentCastle < 0 || currentCastle >= castleResources.length) {
+            return;
+        }
+
+        Array<LuaItem> resources = castleResources[currentCastle];
+
+        for (int i = resources.size - 1; i >= 0; i--) {
+            LuaItem item = resources.get(i);
+
+            if (!player.getHitbox().overlaps(item.getHitbox())) {
+                continue;
+            }
+
+            if (item.getType() == LuaItem.Type.FOOD) {
+                stats.eatFood();
+                showMessage("COMIDA COLETADA: fome recuperada.");
+            } else if (item.getType() == LuaItem.Type.O2_TANK) {
+                stats.addOxygen(20f);
+                showMessage("O2 COLETADO: oxigênio recuperado.");
+            }
+
+            resources.removeIndex(i);
+        }
     }
 
     private void recoverAtBase(float delta) {
@@ -496,6 +553,7 @@ public class titascreen extends ScreenAdapter {
 
         if (insideCastle) {
             drawArenaFloor();
+            drawCastleResources();
             drawBoss();
         } else {
             drawExteriorFloor();
@@ -503,6 +561,10 @@ public class titascreen extends ScreenAdapter {
         }
 
         drawLasers();
+
+        Texture playerTexture = assets.getPlayerTexture();
+        batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
+
         batch.end();
 
         if (insideCastle) {
@@ -590,6 +652,26 @@ public class titascreen extends ScreenAdapter {
                     FINAL_CASTLE_Y - 10f,
                     110f,
                     80f
+            );
+        }
+    }
+
+    private void drawCastleResources() {
+        if (currentCastle < 0 || currentCastle >= castleResources.length) {
+            return;
+        }
+
+        for (LuaItem item : castleResources[currentCastle]) {
+            Texture texture = item.getType() == LuaItem.Type.FOOD
+                    ? assets.getFoodTexture()
+                    : assets.getO2TankTexture();
+
+            batch.draw(
+                    texture,
+                    item.getX(),
+                    item.getY(),
+                    item.getWidth(),
+                    item.getHeight()
             );
         }
     }
@@ -710,6 +792,9 @@ public class titascreen extends ScreenAdapter {
             } else {
                 font.draw(batch, "Derrote o chefe | Clique/segure = atirar", 28f,
                         hudViewport.getWorldHeight() - 270f);
+                font.setColor(Color.CYAN);
+                font.draw(batch, "CASTELO: O2 e comida não diminuem aqui | toque nos itens para coletar.",
+                        28f, hudViewport.getWorldHeight() - 302f);
             }
         } else {
             font.draw(batch, "Base: recupera +5 O2 e +5 fome por segundo", 28f,
