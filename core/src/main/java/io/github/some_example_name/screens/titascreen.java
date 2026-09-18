@@ -72,10 +72,11 @@ public class titascreen extends ScreenAdapter {
     private static final float FIRE_INTERVAL = 0.12f;
     private static final float BASE_RECOVERY_INTERVAL = 1f;
 
-    private static final float ARENA_MIN_X = 760f;
-    private static final float ARENA_MIN_Y = 520f;
-    private static final float ARENA_MAX_X = 2240f;
-    private static final float ARENA_MAX_Y = 1480f;
+    // Arena ampliada para as boss fights.
+    private static final float ARENA_MIN_X = 450f;
+    private static final float ARENA_MIN_Y = 250f;
+    private static final float ARENA_MAX_X = 2550f;
+    private static final float ARENA_MAX_Y = 1750f;
 
     // Barack Obama usa a mesma sequência de ataques do Trump,
     // porém em uma versão muito mais pesada.
@@ -95,8 +96,9 @@ public class titascreen extends ScreenAdapter {
     private static final float OBAMA_MISSILE_DAMAGE = 35f;
     private static final float OBAMA_RIFLE_DAMAGE = 18f;
     private static final float OBAMA_AMERICAN_DAMAGE = 15f;
-    private static final float OBAMA_RIFLE_ORBIT_RADIUS = 500f;
-    private static final float OBAMA_RIFLE_ORBIT_SPEED = 0.8f;
+    // As armas ficam bem próximas, praticamente contornando o tamanho do boss.
+    private static final float OBAMA_RIFLE_ORBIT_RADIUS = 145f;
+    private static final float OBAMA_RIFLE_ORBIT_SPEED = 0.95f;
 
     // Titã sempre entra com a arma aprimorada do Marte.
     private static final float EVOLVED_FIRE_INTERVAL = 0.09f;
@@ -650,32 +652,76 @@ public class titascreen extends ScreenAdapter {
 
         float centerX = boss.getCenterX();
         float centerY = boss.getCenterY();
-        float phaseOffset = (obamaAttackCycle % 2) * 0.18f;
 
         for (int i = 0; i < OBAMA_MISSILE_COUNT; i++) {
-            float angle = MathUtils.PI2 * i / OBAMA_MISSILE_COUNT + phaseOffset;
-            float targetX = MathUtils.clamp(
-                    centerX + MathUtils.cos(angle) * 560f,
-                    ARENA_MIN_X + 100f,
-                    ARENA_MAX_X - 100f
-            );
-            float targetY = MathUtils.clamp(
-                    centerY + MathUtils.sin(angle) * 340f,
-                    ARENA_MIN_Y + 100f,
-                    ARENA_MAX_Y - 100f
-            );
-
-            float size = TrumpMissile.IMPACT_SIZE;
-            obamaMissileWarnings.add(new MissileWarning(
-                    targetX - size / 2f,
-                    targetY - size / 2f,
-                    size,
-                    size,
-                    OBAMA_MISSILE_WARNING_TIME
-            ));
+            addRandomObamaMissileWarning(centerX, centerY);
         }
 
         showMessage("OBAMA: CHUVA DE 14 MÍSSEIS! Áreas vermelhas = impacto.");
+    }
+
+    private void addRandomObamaMissileWarning(float centerX, float centerY) {
+        float angle = MathUtils.random(0f, MathUtils.PI2);
+        float dx = MathUtils.cos(angle);
+        float dy = MathUtils.sin(angle);
+
+        // Distância máxima naquela direção até a borda interna da arena.
+        float maxDistanceX;
+        float maxDistanceY;
+
+        if (dx > 0.001f) {
+            maxDistanceX = (ARENA_MAX_X - 100f - centerX) / dx;
+        } else if (dx < -0.001f) {
+            maxDistanceX = (ARENA_MIN_X + 100f - centerX) / dx;
+        } else {
+            maxDistanceX = Float.POSITIVE_INFINITY;
+        }
+
+        if (dy > 0.001f) {
+            maxDistanceY = (ARENA_MAX_Y - 100f - centerY) / dy;
+        } else if (dy < -0.001f) {
+            maxDistanceY = (ARENA_MIN_Y + 100f - centerY) / dy;
+        } else {
+            maxDistanceY = Float.POSITIVE_INFINITY;
+        }
+
+        float maxDistance = Math.min(
+                Math.abs(maxDistanceX),
+                Math.abs(maxDistanceY)
+        );
+
+        float minDistance = 280f;
+        float distance = MathUtils.random(
+                minDistance,
+                Math.max(minDistance, maxDistance)
+        );
+
+        float targetX = centerX + dx * distance;
+        float targetY = centerY + dy * distance;
+
+        float size = TrumpMissile.IMPACT_SIZE;
+
+        targetX = MathUtils.clamp(
+                targetX,
+                ARENA_MIN_X + size / 2f,
+                ARENA_MAX_X - size / 2f
+        );
+
+        targetY = MathUtils.clamp(
+                targetY,
+                ARENA_MIN_Y + size / 2f,
+                ARENA_MAX_Y - size / 2f
+        );
+
+        obamaMissileWarnings.add(
+                new MissileWarning(
+                        targetX - size / 2f,
+                        targetY - size / 2f,
+                        size,
+                        size,
+                        OBAMA_MISSILE_WARNING_TIME
+                )
+        );
     }
 
     private void updateObamaMissileWarnings(TitaBoss boss, float delta) {
