@@ -108,6 +108,7 @@ public class LuaScreen extends ScreenAdapter {
     private float bossExplosionTimer;
     private float rifleOrbitAngle;
     private float americanSpawnTimer;
+    private float baseRecoveryTimer;
     private boolean portalSpawned;
     private boolean portalUnlocked;
     private boolean portalEntryArmed;
@@ -184,6 +185,7 @@ public class LuaScreen extends ScreenAdapter {
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
         collectItems();
         handleMissionInteraction();
+        recoverAtLunarBase(delta);
         updateAmericans(delta);
         updatePlayerShooting();
         updatePlayerLasers(delta);
@@ -230,6 +232,27 @@ public class LuaScreen extends ScreenAdapter {
                 default: break;
             }
             luaItems.removeIndex(i);
+        }
+    }
+
+    private void recoverAtLunarBase(float delta) {
+        Rectangle base = new Rectangle(
+                LUNAR_BASE_X,
+                LUNAR_BASE_Y,
+                LUNAR_BASE_WIDTH,
+                LUNAR_BASE_HEIGHT
+        );
+
+        if (!player.getHitbox().overlaps(base)) {
+            baseRecoveryTimer = 0f;
+            return;
+        }
+
+        baseRecoveryTimer += delta;
+        while (baseRecoveryTimer >= 1f) {
+            baseRecoveryTimer -= 1f;
+            stats.addOxygen(5f);
+            stats.addHunger(5f);
         }
     }
 
