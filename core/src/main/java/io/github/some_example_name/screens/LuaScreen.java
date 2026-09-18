@@ -846,7 +846,7 @@ public class LuaScreen extends ScreenAdapter {
 
         hudFont.getData().setScale(0.86f);
         hudFont.setColor(Color.LIGHT_GRAY);
-        hudFont.draw(batch, "WASD / SETAS = mover | Mouse = mirar | Clique = atirar | E = interagir", 28f, 18f);
+        hudFont.draw(batch, "WASD / SETAS = mover | Mouse = mirar | Clique = atirar | E = interagir | ESC = pausar", 28f, 18f);
         batch.end();
         messageTimer = Math.max(0f, messageTimer - Gdx.graphics.getDeltaTime());
     }
