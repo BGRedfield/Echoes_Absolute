@@ -33,6 +33,7 @@ import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.entities.SupremeAlienBoss;
 import io.github.some_example_name.managers.AssetManager;
 import io.github.some_example_name.managers.SaveManager;
+import io.github.some_example_name.systems.BossStorm;
 
 /** Mars phase: Lua clone plus mining, upgraded weapon, Martians and Supreme Alien boss. */
 public class LuaMarteScreen extends ScreenAdapter {
@@ -98,6 +99,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private final Array<MarsEnemy> martians = new Array<>();
     private final Array<MarsPortalStrike> portalStrikes = new Array<>();
     private final Rectangle greenKeyHitbox = new Rectangle();
+    private final BossStorm bossStorm = new BossStorm();
 
     private MarsMission mission = MarsMission.COLLECT_ORE;
     private SupremeAlienBoss supremeAlien;
@@ -191,6 +193,13 @@ public class LuaMarteScreen extends ScreenAdapter {
                 );
             }
         }
+
+        if (!portalSpawned && bossDeathSequenceStarted) {
+            float remaining = data.marsStormRemaining > 0f
+                    ? data.marsStormRemaining
+                    : BossStorm.DURATION;
+            bossStorm.restore(remaining, 2580f, 1530f);
+        }
     }
 
     private void saveGame() {
@@ -215,6 +224,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         data.supremeAlienHealth = supremeAlien == null
                 ? SupremeAlienBoss.MAX_HEALTH
                 : supremeAlien.getHealth();
+        data.marsStormRemaining = bossStorm.getRemaining();
 
         SaveManager.save(data);
         showMessage("JOGO SALVO! O save permanece mesmo fechando o jogo.");
@@ -290,6 +300,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         updateShooting(delta);
         updateLasers(delta);
         updateBoss(delta);
+        bossStorm.update(delta, stats);
         updatePortalStrikes(delta);
         handleExitPortal();
         stats.update(delta);
@@ -473,7 +484,9 @@ public class LuaMarteScreen extends ScreenAdapter {
         if (supremeAlien.isDead()) {
             if (!bossDeathSequenceStarted) beginBossDeathSequence();
             bossDeathTimer -= delta;
-            if (bossDeathTimer <= 0f && !portalSpawned) spawnMarsExit();
+            if (bossDeathTimer <= 0f && bossStorm.isFinished() && !portalSpawned) {
+                spawnMarsExit();
+            }
             return;
         }
 
@@ -579,7 +592,8 @@ public class LuaMarteScreen extends ScreenAdapter {
         mission = MarsMission.GO_TO_NEXT;
         martians.clear();
         portalStrikes.clear();
-        showMessage("ALIEN SUPREMO DERROTADO! Uma chave verde apareceu.");
+        bossStorm.start(2580f, 1530f);
+        showMessage("ALIEN SUPREMO DERROTADO! UMA TEMPESTADE ROXA FECHOU O PORTAL! Sobreviva por 12s.");
     }
 
     private void spawnMarsExit() {
@@ -666,6 +680,20 @@ public class LuaMarteScreen extends ScreenAdapter {
                     : assets.getO2TankTexture();
             batch.draw(texture, item.getX(), item.getY(), item.getWidth(), item.getHeight());
         }
+    }
+
+    private void drawStormEffect() {
+        if (!bossStorm.isActive()) {
+            return;
+        }
+
+        Gdx.gl.glEnable(GL20.GL_BLEND);
+        Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        bossStorm.drawWorld(shapeRenderer, WORLD_WIDTH, WORLD_HEIGHT);
+        shapeRenderer.end();
+        Gdx.gl.glDisable(GL20.GL_BLEND);
     }
 
     private void drawWorld() {
@@ -906,6 +934,18 @@ public class LuaMarteScreen extends ScreenAdapter {
             hudFont.draw(batch, "CHAVE VERDE", hudViewport.getWorldWidth() - 210f, 62f);
         }
 
+        if (bossStorm.isActive()) {
+            hudFont.setColor(Color.valueOf("D98CFF"));
+            hudFont.getData().setScale(1.0f);
+            hudFont.draw(
+                    batch,
+                    String.format("TEMPESTADE ROXA: %.1fs | -10 HP/s | PORTAL FECHADO",
+                            bossStorm.getRemaining()),
+                    28f,
+                    hudViewport.getWorldHeight() - 318f
+            );
+        }
+
         if (messageTimer > 0f) {
             hudFont.getData().setScale(1f);
             hudFont.setColor(Color.WHITE);
@@ -959,6 +999,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         ScreenUtils.clear(0.72f, 0.25f, 0.06f, 1f);
         drawWorld();
         drawBossEffects();
+        drawStormEffect();
         drawHud();
         pauseMenu.render();
     }
