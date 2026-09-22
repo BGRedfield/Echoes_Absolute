@@ -4,13 +4,18 @@ import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Preferences;
 
 /**
- * Persistent single-slot save for Echoes Absolute.
- * Uses libGDX Preferences so the save survives closing the game.
+ * Dois slots independentes de save para Echoes Absolute.
+ *
+ * Slot 1 também consegue ler o antigo save "echoes_absolute_save",
+ * mantendo o progresso criado antes da implementação dos dois slots.
  */
 public final class SaveManager {
 
-    private static final String PREFS_NAME = "echoes_absolute_save";
-    private static final int SAVE_VERSION = 2;
+    private static final String SLOT_PREFS_PREFIX = "echoes_absolute_save_slot";
+    private static final String LEGACY_PREFS_NAME = "echoes_absolute_save";
+    private static final int SAVE_VERSION = 3;
+
+    private static int activeSlot = 1;
 
     private SaveManager() {
     }
@@ -43,6 +48,7 @@ public final class SaveManager {
         public boolean redKeyCollected;
         public boolean trumpBossExists;
         public float trumpBossHealth = 2000f;
+        public float luaStormRemaining;
 
         // Marte
         public int marsMission = 0;
@@ -56,6 +62,7 @@ public final class SaveManager {
         public boolean greenKeyCollected;
         public boolean supremeAlienExists;
         public float supremeAlienHealth = 5000f;
+        public float marsStormRemaining;
 
         // Titã
         public boolean insideTitanCastle;
@@ -82,7 +89,7 @@ public final class SaveManager {
         // Aharin
         public int aharinDialogueIndex;
         public boolean aharinDialogueFinished;
-        // -1 = nenhuma escolha ainda; 0/1/2 = finais.
+        // -1 = nenhuma escolha ainda; 0 = ajudar, 1 = dominar, 2 = ficar.
         public int aharinChoice = -1;
 
         // Titan NPC dialogue
@@ -90,12 +97,38 @@ public final class SaveManager {
         public boolean titanDialogueFinished;
     }
 
+    public static int getActiveSlot() {
+        return activeSlot;
+    }
+
+    public static void setActiveSlot(int slot) {
+        activeSlot = normalizeSlot(slot);
+    }
+
     public static boolean hasSave() {
-        return preferences().getBoolean("exists", false);
+        return hasSave(activeSlot);
+    }
+
+    public static boolean hasSave(int slot) {
+        int safeSlot = normalizeSlot(slot);
+        Preferences p = preferences(safeSlot);
+
+        if (p.getBoolean("exists", false)) {
+            return true;
+        }
+
+        // Compatibilidade com o save antigo, considerado slot 1.
+        return safeSlot == 1
+                && Gdx.app.getPreferences(LEGACY_PREFS_NAME).getBoolean("exists", false);
     }
 
     public static void save(SaveData data) {
-        Preferences p = preferences();
+        save(data, activeSlot);
+    }
+
+    public static void save(SaveData data, int slot) {
+        activeSlot = normalizeSlot(slot);
+        Preferences p = preferences(activeSlot);
 
         p.putBoolean("exists", true);
         p.putInteger("version", SAVE_VERSION);
@@ -116,6 +149,7 @@ public final class SaveManager {
         p.putBoolean("redKeyCollected", data.redKeyCollected);
         p.putBoolean("trumpBossExists", data.trumpBossExists);
         p.putFloat("trumpBossHealth", data.trumpBossHealth);
+        p.putFloat("luaStormRemaining", data.luaStormRemaining);
 
         p.putInteger("marsMission", data.marsMission);
         p.putInteger("rawOreCount", data.rawOreCount);
@@ -128,6 +162,7 @@ public final class SaveManager {
         p.putBoolean("greenKeyCollected", data.greenKeyCollected);
         p.putBoolean("supremeAlienExists", data.supremeAlienExists);
         p.putFloat("supremeAlienHealth", data.supremeAlienHealth);
+        p.putFloat("marsStormRemaining", data.marsStormRemaining);
 
         p.putBoolean("insideTitanCastle", data.insideTitanCastle);
         p.putInteger("currentTitanCastle", data.currentTitanCastle);
@@ -162,11 +197,24 @@ public final class SaveManager {
         p.putBoolean("titanDialogueFinished", data.titanDialogueFinished);
 
         p.flush();
-        Gdx.app.log("SaveManager", "Save gravado. Fase=" + data.phase);
+        Gdx.app.log("SaveManager", "Save slot " + activeSlot + " gravado. Fase=" + data.phase);
     }
 
     public static SaveData load() {
-        Preferences p = preferences();
+        return loadSlot(activeSlot);
+    }
+
+    public static SaveData loadSlot(int slot) {
+        activeSlot = normalizeSlot(slot);
+
+        Preferences p = preferences(activeSlot);
+        if (!p.getBoolean("exists", false) && activeSlot == 1) {
+            Preferences legacy = Gdx.app.getPreferences(LEGACY_PREFS_NAME);
+            if (legacy.getBoolean("exists", false)) {
+                p = legacy;
+            }
+        }
+
         if (!p.getBoolean("exists", false)) {
             return null;
         }
@@ -195,6 +243,7 @@ public final class SaveManager {
         data.redKeyCollected = p.getBoolean("redKeyCollected", false);
         data.trumpBossExists = p.getBoolean("trumpBossExists", false);
         data.trumpBossHealth = p.getFloat("trumpBossHealth", data.trumpBossHealth);
+        data.luaStormRemaining = p.getFloat("luaStormRemaining", 0f);
 
         data.marsMission = p.getInteger("marsMission", data.marsMission);
         data.rawOreCount = p.getInteger("rawOreCount", data.rawOreCount);
@@ -207,6 +256,7 @@ public final class SaveManager {
         data.greenKeyCollected = p.getBoolean("greenKeyCollected", false);
         data.supremeAlienExists = p.getBoolean("supremeAlienExists", false);
         data.supremeAlienHealth = p.getFloat("supremeAlienHealth", data.supremeAlienHealth);
+        data.marsStormRemaining = p.getFloat("marsStormRemaining", 0f);
 
         data.insideTitanCastle = p.getBoolean("insideTitanCastle", false);
         data.currentTitanCastle = p.getInteger("currentTitanCastle", -1);
@@ -244,11 +294,19 @@ public final class SaveManager {
     }
 
     public static void clear() {
-        preferences().clear();
-        preferences().flush();
+        clear(activeSlot);
     }
 
-    private static Preferences preferences() {
-        return Gdx.app.getPreferences(PREFS_NAME);
+    public static void clear(int slot) {
+        preferences(slot).clear();
+        preferences(slot).flush();
+    }
+
+    private static int normalizeSlot(int slot) {
+        return slot == 2 ? 2 : 1;
+    }
+
+    private static Preferences preferences(int slot) {
+        return Gdx.app.getPreferences(SLOT_PREFS_PREFIX + normalizeSlot(slot));
     }
 }
