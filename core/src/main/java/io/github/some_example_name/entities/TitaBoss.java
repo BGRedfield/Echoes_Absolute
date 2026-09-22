@@ -141,6 +141,11 @@ public class TitaBoss {
         return maxHealth;
     }
 
+    public void setHealth(float value) {
+        health = MathUtils.clamp(value, 0f, maxHealth);
+        dead = health <= 0f;
+    }
+
     public boolean isDead() {
         return dead;
     }
