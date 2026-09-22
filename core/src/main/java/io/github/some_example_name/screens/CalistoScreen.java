@@ -425,11 +425,7 @@ public class CalistoScreen extends ScreenAdapter {
                 && player.getHitbox().overlaps(finalPortalHitbox)) {
             changingScreen = true;
             dispose();
-            game.setScreen(new VictoryScreen(
-                    game,
-                    "CALISTO CONCLUÍDO",
-                    "O caminho da evolução foi atravessado."
-            ));
+            game.setScreen(new CalistoInfoScreen(game));
         }
     }
 
