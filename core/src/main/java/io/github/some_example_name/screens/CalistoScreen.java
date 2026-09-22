@@ -36,8 +36,8 @@ public class CalistoScreen extends ScreenAdapter {
 
     private static final float VIEW_WIDTH = 1280f;
     private static final float VIEW_HEIGHT = 720f;
-    private static final float WORLD_WIDTH = 3400f;
-    private static final float WORLD_HEIGHT = 1400f;
+    private static final float WORLD_WIDTH = 3900f;
+    private static final float WORLD_HEIGHT = 1600f;
 
     private static final float CORRIDOR_MIN_X = 120f;
     private static final float CORRIDOR_MAX_X = 2400f;
@@ -49,8 +49,13 @@ public class CalistoScreen extends ScreenAdapter {
     private static final float GATE_WIDTH = 120f;
     private static final float GATE_HEIGHT = 320f;
 
-    private static final float BOSS_X = 2880f;
-    private static final float BOSS_Y = 550f;
+    private static final float BOSS_ARENA_MIN_X = 2420f;
+    private static final float BOSS_ARENA_MAX_X = 3780f;
+    private static final float BOSS_ARENA_MIN_Y = 90f;
+    private static final float BOSS_ARENA_MAX_Y = 1510f;
+
+    private static final float BOSS_X = 3360f;
+    private static final float BOSS_Y = 660f;
     private static final float BOSS_SIZE = 280f;
     private static final float BOSS_MAX_HEALTH = 18000f;
 
@@ -161,6 +166,7 @@ public class CalistoScreen extends ScreenAdapter {
         bossPhase = MathUtils.clamp(data.calistoBossPhase, 1, 3);
 
         updateUpgradesFromBlessings();
+        stats.setSurvivalNeedsDisabled(angelBlessings[2]);
     }
 
     private void updateUpgradesFromBlessings() {
@@ -260,7 +266,10 @@ public class CalistoScreen extends ScreenAdapter {
             projectiles.clear();
             lasers.clear();
             player.getHitbox().set(
-                    2520f, 600f, player.getWidth(), player.getHeight()
+                    BOSS_ARENA_MIN_X + 150f,
+                    BOSS_ARENA_MIN_Y + 520f,
+                    player.getWidth(),
+                    player.getHeight()
             );
             bossAttackTimer = 0.9f;
             bossAttackIndex = 0;
@@ -275,6 +284,7 @@ public class CalistoScreen extends ScreenAdapter {
         stats.heal(25f);
         stats.addOxygen(25f);
         stats.addHunger(25f);
+        stats.setSurvivalNeedsDisabled(angelBlessings[2]);
 
         switch (index) {
             case 0:
@@ -284,7 +294,7 @@ public class CalistoScreen extends ScreenAdapter {
                 showMessage("ANJO II: PULSO DA LUZ — CADÊNCIA MUITO MAIS RÁPIDA.");
                 break;
             case 2:
-                showMessage("ANJO III: RESERVA CELESTE — HP, FOME e O2 restaurados.");
+                showMessage("ANJO III: SACIAÇÃO — FOME e O2 não diminuem mais.");
                 break;
             case 3:
                 showMessage("ANJO IV: MANTO DE LUZ — dano recebido reduzido em 35%.");
@@ -592,13 +602,13 @@ public class CalistoScreen extends ScreenAdapter {
         Rectangle box = player.getHitbox();
         box.x = MathUtils.clamp(
                 box.x,
-                2480f,
-                WORLD_WIDTH - box.width - 80f
+                BOSS_ARENA_MIN_X + 35f,
+                BOSS_ARENA_MAX_X - box.width - 35f
         );
         box.y = MathUtils.clamp(
                 box.y,
-                180f,
-                WORLD_HEIGHT - box.height - 180f
+                BOSS_ARENA_MIN_Y + 35f,
+                BOSS_ARENA_MAX_Y - box.height - 35f
         );
     }
 
@@ -646,7 +656,8 @@ public class CalistoScreen extends ScreenAdapter {
                 0f, 0f, WORLD_WIDTH, WORLD_HEIGHT
         );
 
-        shapeRenderer.setColor(new Color(0.10f, 0.11f, 0.18f, 1f));
+        // Corredor medieval: pedra escura, carpete central, paredes e janelas.
+        shapeRenderer.setColor(new Color(0.12f, 0.10f, 0.09f, 1f));
         shapeRenderer.rect(
                 CORRIDOR_MIN_X,
                 CORRIDOR_MIN_Y,
@@ -654,23 +665,84 @@ public class CalistoScreen extends ScreenAdapter {
                 CORRIDOR_MAX_Y - CORRIDOR_MIN_Y
         );
 
-        shapeRenderer.setColor(new Color(0.14f, 0.13f, 0.22f, 1f));
+        shapeRenderer.setColor(new Color(0.23f, 0.18f, 0.15f, 1f));
         shapeRenderer.rect(
-                2440f,
-                150f,
-                880f,
-                1100f
+                CORRIDOR_MIN_X,
+                CORRIDOR_MIN_Y + 20f,
+                CORRIDOR_MAX_X - CORRIDOR_MIN_X,
+                40f
+        );
+        shapeRenderer.rect(
+                CORRIDOR_MIN_X,
+                CORRIDOR_MAX_Y - 60f,
+                CORRIDOR_MAX_X - CORRIDOR_MIN_X,
+                40f
         );
 
-        shapeRenderer.setColor(new Color(0.20f, 0.18f, 0.30f, 1f));
-        for (float x = CORRIDOR_MIN_X; x < CORRIDOR_MAX_X; x += tile) {
-            shapeRenderer.rect(
-                    x,
-                    CORRIDOR_MIN_Y,
-                    2f,
-                    CORRIDOR_MAX_Y - CORRIDOR_MIN_Y
-            );
+        // Carpete vermelho medieval.
+        shapeRenderer.setColor(new Color(0.36f, 0.03f, 0.05f, 1f));
+        shapeRenderer.rect(
+                CORRIDOR_MIN_X + 120f,
+                CORRIDOR_MIN_Y + 120f,
+                CORRIDOR_MAX_X - CORRIDOR_MIN_X - 240f,
+                CORRIDOR_MAX_Y - CORRIDOR_MIN_Y - 240f
+        );
+
+        shapeRenderer.setColor(new Color(0.62f, 0.38f, 0.15f, 1f));
+        shapeRenderer.rect(
+                CORRIDOR_MIN_X + 120f,
+                CORRIDOR_MIN_Y + 120f,
+                18f,
+                CORRIDOR_MAX_Y - CORRIDOR_MIN_Y - 240f
+        );
+        shapeRenderer.rect(
+                CORRIDOR_MAX_X - 138f,
+                CORRIDOR_MIN_Y + 120f,
+                18f,
+                CORRIDOR_MAX_Y - CORRIDOR_MIN_Y - 240f
+        );
+
+        // Janelas nas duas paredes laterais.
+        for (int i = 0; i < 6; i++) {
+            float wx = CORRIDOR_MIN_X + 230f + i * 330f;
+
+            shapeRenderer.setColor(new Color(0.09f, 0.12f, 0.20f, 1f));
+            shapeRenderer.rect(wx, CORRIDOR_MAX_Y - 95f, 120f, 58f);
+            shapeRenderer.rect(wx, CORRIDOR_MIN_Y + 37f, 120f, 58f);
+
+            shapeRenderer.setColor(new Color(0.55f, 0.78f, 1f, 0.75f));
+            shapeRenderer.rect(wx + 8f, CORRIDOR_MAX_Y - 87f, 104f, 42f);
+            shapeRenderer.rect(wx + 8f, CORRIDOR_MIN_Y + 45f, 104f, 42f);
+
+            shapeRenderer.setColor(new Color(0.30f, 0.23f, 0.16f, 1f));
+            shapeRenderer.rect(wx + 56f, CORRIDOR_MAX_Y - 87f, 6f, 42f);
+            shapeRenderer.rect(wx + 56f, CORRIDOR_MIN_Y + 45f, 6f, 42f);
         }
+
+        // Grande sala final medieval.
+        shapeRenderer.setColor(new Color(0.08f, 0.075f, 0.10f, 1f));
+        shapeRenderer.rect(
+                BOSS_ARENA_MIN_X,
+                BOSS_ARENA_MIN_Y,
+                BOSS_ARENA_MAX_X - BOSS_ARENA_MIN_X,
+                BOSS_ARENA_MAX_Y - BOSS_ARENA_MIN_Y
+        );
+
+        shapeRenderer.setColor(new Color(0.16f, 0.12f, 0.12f, 1f));
+        shapeRenderer.rect(
+                BOSS_ARENA_MIN_X + 70f,
+                BOSS_ARENA_MIN_Y + 70f,
+                BOSS_ARENA_MAX_X - BOSS_ARENA_MIN_X - 140f,
+                BOSS_ARENA_MAX_Y - BOSS_ARENA_MIN_Y - 140f
+        );
+
+        shapeRenderer.setColor(new Color(0.25f, 0.04f, 0.05f, 1f));
+        shapeRenderer.rect(
+                BOSS_ARENA_MIN_X + 170f,
+                BOSS_ARENA_MIN_Y + 160f,
+                BOSS_ARENA_MAX_X - BOSS_ARENA_MIN_X - 340f,
+                BOSS_ARENA_MAX_Y - BOSS_ARENA_MIN_Y - 320f
+        );
 
         shapeRenderer.end();
     }
@@ -820,6 +892,12 @@ public class CalistoScreen extends ScreenAdapter {
                             : "E perto de cada entidade de luz para receber um upgrade.",
                     28f,
                     hudViewport.getWorldHeight() - 222f);
+
+            if (stats.areSurvivalNeedsDisabled()) {
+                font.setColor(Color.YELLOW);
+                font.draw(batch, "SACIAÇÃO: FOME e O2 DESATIVADOS", 28f,
+                        hudViewport.getWorldHeight() - 250f);
+            }
         } else {
             font.setColor(Color.ORANGE);
             font.getData().setScale(1.0f);
