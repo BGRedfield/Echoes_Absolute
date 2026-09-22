@@ -37,6 +37,7 @@ public class PlayerStats {
     private float oxygenDamageTimer;
     private float starvationDamageTimer;
     private float invulnerabilityTimer;
+    private boolean survivalNeedsDisabled;
 
     private int iceCollected;
     private DeathCause deathCause = DeathCause.NONE;
@@ -44,7 +45,7 @@ public class PlayerStats {
     public void update(float delta) {
         updateInvulnerability(delta);
 
-        if (isDead()) {
+        if (isDead() || survivalNeedsDisabled) {
             return;
         }
 
@@ -192,6 +193,30 @@ public class PlayerStats {
         if (oxygen > 0f) {
             oxygenDamageTimer = 0f;
         }
+    }
+
+    /**
+     * Disables hunger/O2 consumption and their related damage.
+     * Used by the Saciedade blessing in Calisto.
+     */
+    public void setSurvivalNeedsDisabled(boolean disabled) {
+        survivalNeedsDisabled = disabled;
+        if (disabled) {
+            hunger = MAX_HUNGER;
+            oxygen = MAX_OXYGEN;
+            hungerLossTimer = 0f;
+            oxygenLossTimer = 0f;
+            hungerDamageReset();
+        }
+    }
+
+    public boolean areSurvivalNeedsDisabled() {
+        return survivalNeedsDisabled;
+    }
+
+    private void hungerDamageReset() {
+        oxygenDamageTimer = 0f;
+        starvationDamageTimer = 0f;
     }
 
     public float getHealth() {
