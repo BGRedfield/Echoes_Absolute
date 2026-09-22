@@ -127,11 +127,29 @@ public final class SaveManager {
     }
 
     public static void save(SaveData data, int slot) {
-        activeSlot = normalizeSlot(slot);
+        int requestedSlot = normalizeSlot(slot);
+        int sourceSlot = activeSlot;
+
+        // Ao criar um segundo slot pela primeira vez, parte do slot atual
+        // para que SALVAR 2 seja uma cópia real da campanha naquele momento.
+        SaveData sourceProgress = null;
+        boolean targetExists = preferences(requestedSlot).getBoolean("exists", false);
+
+        if (requestedSlot != sourceSlot
+                && !targetExists
+                && hasSave(sourceSlot)) {
+            sourceProgress = loadSlot(sourceSlot);
+        }
+
+        activeSlot = requestedSlot;
         Preferences p = preferences(activeSlot);
 
+        if (sourceProgress != null) {
+            mergePreviousProgress(sourceProgress, data);
+        }
+
         // Preserva automaticamente o progresso dos mundos anteriores
-        // deste mesmo slot. O estado atual da fase continua sendo o que foi salvo.
+        // já existentes neste mesmo slot.
         if (p.getBoolean("exists", false)) {
             SaveData previous = loadSlot(activeSlot);
             if (previous != null) {
