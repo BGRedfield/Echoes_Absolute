@@ -280,7 +280,7 @@ public class LuaScreen extends ScreenAdapter {
         updateRifleBullets(delta);
         updateAmericanBullets(delta);
         updateBoss(delta);
-        bossStorm.update(delta, stats);
+        bossStorm.update(delta, stats, player.getCenterX(), player.getCenterY());
         handleMarsPortalInteraction();
         stats.update(delta);
         if (stats.isDead()) { openGameOver(); return false; }
