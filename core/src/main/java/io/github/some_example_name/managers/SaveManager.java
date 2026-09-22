@@ -362,6 +362,28 @@ public final class SaveManager {
         }
 
         if (current.phase == Phase.AHARIN) {
+            // Aharin é posterior a todos os mundos anteriores:
+            // mantém os estados completos para que o Fast Travel possa retornar.
+            current.luaStormRemaining = Math.max(current.luaStormRemaining, previous.luaStormRemaining);
+            current.marsStormRemaining = Math.max(current.marsStormRemaining, previous.marsStormRemaining);
+
+            current.trumpBossHealth = previous.trumpBossHealth;
+            current.supremeAlienHealth = previous.supremeAlienHealth;
+
+            current.insideTitanCastle = previous.insideTitanCastle;
+            current.currentTitanCastle = previous.currentTitanCastle;
+            current.finalCastleUnlocked |= previous.finalCastleUnlocked;
+
+            for (int i = 0; i < current.titanBossHealth.length; i++) {
+                current.titanBossHealth[i] = Math.min(
+                        current.titanBossHealth[i],
+                        previous.titanBossHealth[i]
+                );
+            }
+
+            current.calistoBossHealth = previous.calistoBossHealth;
+            current.calistoBossPhase = previous.calistoBossPhase;
+
             current.aharinDialogueFinished |= previous.aharinDialogueFinished;
             if (previous.aharinDialogueIndex > current.aharinDialogueIndex) {
                 current.aharinDialogueIndex = previous.aharinDialogueIndex;
