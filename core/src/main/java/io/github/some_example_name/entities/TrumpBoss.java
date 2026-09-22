@@ -78,6 +78,16 @@ public class TrumpBoss {
         }
     }
 
+    public void setHealth(float value) {
+        health = MathUtils.clamp(value, 0f, MAX_HEALTH);
+        dead = health <= 0f;
+        if (dead && activeBoss == this) {
+            activeBoss = null;
+        } else if (!dead) {
+            activeBoss = this;
+        }
+    }
+
     public boolean isDead() { return dead; }
     public float getHealth() { return health; }
     public Rectangle getHitbox() { return hitbox; }
