@@ -118,6 +118,9 @@ public class MenuScreen extends ScreenAdapter {
             case CALISTO:
                 game.setScreen(new CalistoScreen(game, data));
                 break;
+            case AHARIN:
+                game.setScreen(new AharinScreen(game, data));
+                break;
             default:
                 game.setScreen(new LuaScreen(game, data));
                 break;
