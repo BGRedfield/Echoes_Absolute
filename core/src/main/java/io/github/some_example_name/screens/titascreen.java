@@ -1593,6 +1593,84 @@ public class titascreen extends ScreenAdapter {
         }
     }
 
+    private void drawArenaExitGuide() {
+        if (!insideCastle || currentCastle < 0 || bosses[currentCastle] == null
+                || !bosses[currentCastle].isDead()) {
+            return;
+        }
+
+        Rectangle exitDoor = new Rectangle(
+                ARENA_MIN_X + 480f,
+                ARENA_MIN_Y + 5f,
+                320f,
+                100f
+        );
+
+        float targetX = exitDoor.x + exitDoor.width / 2f;
+        float targetY = exitDoor.y + exitDoor.height + 28f;
+
+        float startX = player.getCenterX();
+        float startY = player.getCenterY();
+
+        float dx = targetX - startX;
+        float dy = targetY - startY;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length < 1f) {
+            length = 1f;
+        }
+
+        dx /= length;
+        dy /= length;
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+
+        // A porta aparece somente depois da vitória.
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(new Color(0.16f, 0.08f, 0.04f, 1f));
+        shapeRenderer.rect(exitDoor.x, exitDoor.y, exitDoor.width, exitDoor.height);
+
+        shapeRenderer.setColor(new Color(0.65f, 0.46f, 0.16f, 1f));
+        shapeRenderer.rect(exitDoor.x + 8f, exitDoor.y + 8f,
+                exitDoor.width - 16f, exitDoor.height - 16f);
+
+        // Seta amarela apontando para a porta.
+        shapeRenderer.setColor(Color.YELLOW);
+        float arrowLength = Math.min(260f, Math.max(90f, length - 80f));
+        float arrowStartX = startX + dx * 55f;
+        float arrowStartY = startY + dy * 55f;
+        float arrowEndX = arrowStartX + dx * arrowLength;
+        float arrowEndY = arrowStartY + dy * arrowLength;
+
+        shapeRenderer.rectLine(arrowStartX, arrowStartY, arrowEndX, arrowEndY, 12f);
+
+        float headSize = 32f;
+        float perpX = -dy;
+        float perpY = dx;
+
+        shapeRenderer.triangle(
+                arrowEndX + dx * headSize,
+                arrowEndY + dy * headSize,
+                arrowEndX + perpX * headSize,
+                arrowEndY + perpY * headSize,
+                arrowEndX - perpX * headSize,
+                arrowEndY - perpY * headSize
+        );
+        shapeRenderer.end();
+
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        font.setColor(Color.YELLOW);
+        font.getData().setScale(0.92f);
+        GlyphLayout layout = new GlyphLayout(font, "SAÍDA");
+        font.draw(
+                batch,
+                "SAÍDA",
+                exitDoor.x + exitDoor.width / 2f - layout.width / 2f,
+                exitDoor.y + exitDoor.height + 30f
+        );
+        batch.end();
+    }
+
     private void drawYellowKey() {
         if (!insideCastle || currentCastle != 3 || !yellowKeyVisible || yellowKeyCollected) {
             return;
@@ -1652,6 +1730,7 @@ public class titascreen extends ScreenAdapter {
 
         drawBossProjectiles();
         drawObamaAttackEffects();
+        drawArenaExitGuide();
     }
 
     private void drawObamaAttackEffects() {
@@ -1934,7 +2013,7 @@ public class titascreen extends ScreenAdapter {
             TitaBoss boss = bosses[currentCastle];
             font.draw(batch, "CASTELO: " + boss.getName(), 28f, hudViewport.getWorldHeight() - 238f);
             if (boss.isDead()) {
-                font.draw(batch, "Chefe derrotado. Vá à porta inferior e pressione E.", 28f,
+                font.draw(batch, "Boss derrotado. Siga a SETA AMARELA até a porta e pressione E.", 28f,
                         hudViewport.getWorldHeight() - 270f);
             } else {
                 font.draw(batch, "Derrote o chefe | Clique/segure = atirar", 28f,
