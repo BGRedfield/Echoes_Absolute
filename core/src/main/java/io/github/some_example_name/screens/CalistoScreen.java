@@ -1085,6 +1085,15 @@ public class CalistoScreen extends ScreenAdapter {
             return;
         }
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)
+                && !pauseMenu.isOpen()) {
+            saveGame();
+            changingScreen = true;
+            dispose();
+            game.setScreen(new FastTravelScreen(game, SaveManager.load()));
+            return;
+        }
+
         PauseMenu.Action pauseAction = pauseMenu.handleInput();
 
         if (pauseAction == PauseMenu.Action.SAVE) {
