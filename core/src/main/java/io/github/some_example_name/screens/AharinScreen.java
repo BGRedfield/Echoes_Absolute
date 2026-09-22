@@ -254,6 +254,11 @@ public class AharinScreen extends ScreenAdapter {
         float bodyW = 34f * scale;
         float bodyH = 54f * scale;
 
+        // Aura primeiro para não cobrir o corpo do anjo.
+        shapes.setColor(new Color(1f, 0.88f, 0.28f, 0.18f));
+        shapes.circle(x, y + bodyH * 0.40f, 44f * scale);
+
+        // Corpo e cabeça.
         shapes.setColor(Color.valueOf("FFF4C2"));
         shapes.circle(x, y + bodyH * 0.66f, 16f * scale);
         shapes.rect(x - bodyW / 2f, y - bodyH / 2f, bodyW, bodyH);
@@ -275,10 +280,6 @@ public class AharinScreen extends ScreenAdapter {
                 x + bodyW * 0.85f,
                 y - bodyH * 0.02f
         );
-
-        // Aura.
-        shapes.setColor(new Color(1f, 0.88f, 0.28f, 0.16f));
-        shapes.circle(x, y + bodyH * 0.40f, 44f * scale);
     }
 
     private void drawHud() {
@@ -398,7 +399,7 @@ public class AharinScreen extends ScreenAdapter {
 
             case STAY_AHARIN:
             default:
-                title = "A GUARDIÃO DE AHARIN";
+                title = "O GUARDIÃO DE AHARIN";
                 lines = new String[] {
                         "Você decide ficar.",
                         "Aharin se torna sua nova casa.",
