@@ -325,6 +325,10 @@ public class titascreen extends ScreenAdapter {
     }
 
     private void saveGame() {
+        saveGame(SaveManager.getActiveSlot());
+    }
+
+    private void saveGame(int slot) {
         SaveManager.SaveData data = new SaveManager.SaveData();
         data.phase = SaveManager.Phase.TITA;
         data.playerX = player.getX();
@@ -2189,8 +2193,13 @@ public class titascreen extends ScreenAdapter {
 
         PauseMenu.Action pauseAction = pauseMenu.handleInput();
 
-        if (pauseAction == PauseMenu.Action.SAVE) {
-            saveGame();
+        if (pauseAction == PauseMenu.Action.SAVE_SLOT_1) {
+            saveGame(1);
+            return;
+        }
+
+        if (pauseAction == PauseMenu.Action.SAVE_SLOT_2) {
+            saveGame(2);
             return;
         }
 
