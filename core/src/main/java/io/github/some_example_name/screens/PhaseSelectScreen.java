@@ -60,6 +60,13 @@ public class PhaseSelectScreen extends ScreenAdapter {
             return;
         }
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)) {
+            changingScreen = true;
+            dispose();
+            game.setScreen(new CalistoScreen(game));
+            return;
+        }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             changingScreen = true;
             dispose();
@@ -97,10 +104,11 @@ public class PhaseSelectScreen extends ScreenAdapter {
 
         font.setColor(Color.WHITE);
         drawCentered("3 - TITÃ", width, height / 2f - 40f);
+        drawCentered("4 - CALISTO", width, height / 2f - 100f);
 
         font.getData().setScale(0.95f);
         font.setColor(Color.LIGHT_GRAY);
-        drawCentered("1/2/3 = entrar direto na fase", width, 70f);
+        drawCentered("1/2/3/4 = entrar direto na fase", width, 70f);
         drawCentered("ESC = voltar ao menu", width, 38f);
 
         batch.end();
