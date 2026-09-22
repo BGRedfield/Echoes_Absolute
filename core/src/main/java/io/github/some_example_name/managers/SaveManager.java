@@ -75,6 +75,8 @@ public final class SaveManager {
         public float calistoBossHealth = 18000f;
         public boolean calistoBossDefeated;
         public int calistoBossPhase = 1;
+        public boolean calistoFinalKeySpawned;
+        public boolean calistoFinalKeyCollected;
 
         // Titan NPC dialogue
         public int titanDialogueRound;
@@ -142,6 +144,8 @@ public final class SaveManager {
         p.putFloat("calistoBossHealth", data.calistoBossHealth);
         p.putBoolean("calistoBossDefeated", data.calistoBossDefeated);
         p.putInteger("calistoBossPhase", data.calistoBossPhase);
+        p.putBoolean("calistoFinalKeySpawned", data.calistoFinalKeySpawned);
+        p.putBoolean("calistoFinalKeyCollected", data.calistoFinalKeyCollected);
 
         p.putInteger("titanDialogueRound", data.titanDialogueRound);
         p.putBoolean("titanDialogueFinished", data.titanDialogueFinished);
