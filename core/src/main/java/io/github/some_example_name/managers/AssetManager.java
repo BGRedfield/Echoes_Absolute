@@ -5,7 +5,13 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.Pixmap;
 import com.badlogic.gdx.graphics.Texture;
 
-/** Centraliza os assets de Lua e Marte. */
+/**
+ * Centraliza os assets de Lua, Marte, Titã e Calisto.
+ *
+ * As texturas são compartilhadas entre as Screens durante toda a execução
+ * do jogo. Isso evita criar/destruir dezenas de recursos OpenGL a cada
+ * troca de fase, o que pode causar crash nativo no Windows.
+ */
 public class AssetManager {
 
     public static final String PLAYER = "astronauta.png";
@@ -28,7 +34,6 @@ public class AssetManager {
     public static final String RED_KEY = "chave.png";
     public static final String GREEN_KEY = "chave_verde.png";
 
-    // TITÃ — substitua estes PNGs pelos seus sprites/mapas quando criar as imagens.
     public static final String TITA_TILE = "tileset_tita.png";
     public static final String TITA_INTERIOR_TILE = "castelo_tileset.png";
     public static final String TITA_CASTLE = "castelo.png";
@@ -42,6 +47,40 @@ public class AssetManager {
     public static final String TITA_AUTHENTIC = "authentic_games.png";
     public static final String TITA_VERITY = "verity.png";
     public static final String TITA_CR7 = "cr7.png";
+
+    private static boolean sharedLoaded;
+    private static Texture sharedPlayerTexture;
+    private static Texture sharedLuaBackgroundTexture;
+    private static Texture sharedLaserTexture;
+    private static Texture sharedLunarBaseTexture;
+    private static Texture sharedLuaTileTexture;
+    private static Texture sharedMarsTileTexture;
+    private static Texture sharedFoodTexture;
+    private static Texture sharedO2TankTexture;
+    private static Texture sharedIceTexture;
+    private static Texture sharedOreTexture;
+    private static Texture sharedMineTexture;
+    private static Texture sharedAmericanTexture;
+    private static Texture sharedAlienTexture;
+    private static Texture sharedBossMarsTexture;
+    private static Texture sharedTrumpTexture;
+    private static Texture sharedRifleTexture;
+    private static Texture sharedPortalTexture;
+    private static Texture sharedRedKeyTexture;
+    private static Texture sharedGreenKeyTexture;
+    private static Texture sharedTitaTileTexture;
+    private static Texture sharedTitaInteriorTileTexture;
+    private static Texture sharedTitaCastleTexture;
+    private static Texture sharedTitaFinalCastleTexture;
+    private static Texture sharedTitaDoorTexture;
+    private static Texture sharedTitaAltarTexture;
+    private static Texture sharedRedCrystalTexture;
+    private static Texture sharedBlueCrystalTexture;
+    private static Texture sharedYellowCrystalTexture;
+    private static Texture sharedObamaTexture;
+    private static Texture sharedAuthenticGamesTexture;
+    private static Texture sharedVerityTexture;
+    private static Texture sharedCr7Texture;
 
     private Texture playerTexture;
     private Texture luaBackgroundTexture;
@@ -79,47 +118,116 @@ public class AssetManager {
     private boolean playerFallback;
 
     public void load() {
-        playerFallback = !assetExists(PLAYER);
-        playerTexture = playerFallback
-                ? createAstronautFallback()
-                : loadAsset(PLAYER, Color.CYAN);
-        luaBackgroundTexture = loadAsset(LUA_BACKGROUND, new Color(0.08f, 0.08f, 0.13f, 1f));
-        laserTexture = loadAsset(LASER, new Color(1f, 0.90f, 0.10f, 1f));
-        lunarBaseTexture = loadAsset(LUNAR_BASE, new Color(0.45f, 0.45f, 0.50f, 1f));
-        luaTileTexture = loadAsset(LUA_TILE, new Color(0.20f, 0.20f, 0.23f, 1f));
-        marsTileTexture = loadAsset(MARS_TILE, new Color(0.72f, 0.25f, 0.06f, 1f));
-        foodTexture = assetExists(FOOD)
-                ? loadAsset(FOOD, new Color(1f, 0.55f, 0f, 1f))
-                : createFoodFallback();
+        if (sharedLoaded) {
+            attachSharedTextures();
+            Gdx.app.log("AssetManager", "Texturas compartilhadas reutilizadas.");
+            return;
+        }
 
-        o2TankTexture = assetExists(O2_TANK)
-                ? loadAsset(O2_TANK, new Color(0.70f, 0.78f, 0.86f, 1f))
-                : createO2Fallback();
-        iceTexture = loadAsset(ICE, new Color(0.20f, 0.55f, 1f, 1f));
-        oreTexture = loadAsset(ORE, new Color(0.15f, 0.95f, 0.25f, 1f));
-        mineTexture = loadAsset(MINE, new Color(0.28f, 0.10f, 0.035f, 1f));
-        americanTexture = loadAsset(AMERICAN, new Color(0.90f, 0.08f, 0.08f, 1f));
-        alienTexture = loadAsset(ALIEN, new Color(0.45f, 0.95f, 0.35f, 1f));
-        bossMarsTexture = loadAsset(BOSS_MARS, new Color(0.35f, 0.85f, 0.25f, 1f));
-        trumpTexture = loadAsset(TRUMP, new Color(1f, 0.45f, 0.05f, 1f));
-        rifleTexture = loadAsset(RIFLE, new Color(0.10f, 0.10f, 0.10f, 1f));
-        portalTexture = loadAsset(PORTAL, new Color(0.15f, 0.85f, 1f, 1f));
-        redKeyTexture = loadAsset(RED_KEY, Color.RED);
-        greenKeyTexture = loadAsset(GREEN_KEY, Color.GREEN);
+        synchronized (AssetManager.class) {
+            if (!sharedLoaded) {
+                Gdx.app.log("AssetManager", "Carregando pacote de texturas compartilhado.");
 
-        titaTileTexture = loadAsset(TITA_TILE, new Color(0.26f, 0.02f, 0.03f, 1f));
-        titaInteriorTileTexture = loadAsset(TITA_INTERIOR_TILE, new Color(0.16f, 0.16f, 0.18f, 1f));
-        titaCastleTexture = loadAsset(TITA_CASTLE, new Color(0.43f, 0.44f, 0.47f, 1f));
-        titaFinalCastleTexture = loadAsset(TITA_FINAL_CASTLE, new Color(0.32f, 0.33f, 0.36f, 1f));
-        titaDoorTexture = loadAsset(TITA_DOOR, new Color(0.12f, 0.10f, 0.10f, 1f));
-        titaAltarTexture = loadAsset(TITA_ALTAR, new Color(0.38f, 0.37f, 0.34f, 1f));
-        redCrystalTexture = loadAsset(TITA_RED_CRYSTAL, Color.RED);
-        blueCrystalTexture = loadAsset(TITA_BLUE_CRYSTAL, Color.BLUE);
-        yellowCrystalTexture = loadAsset(TITA_YELLOW_CRYSTAL, Color.YELLOW);
-        obamaTexture = loadAsset(TITA_OBAMA, new Color(0.25f, 0.55f, 0.95f, 1f));
-        authenticGamesTexture = loadAsset(TITA_AUTHENTIC, new Color(0.10f, 0.75f, 0.35f, 1f));
-        verityTexture = loadAsset(TITA_VERITY, new Color(0.85f, 0.25f, 0.75f, 1f));
-        cr7Texture = loadAsset(TITA_CR7, new Color(0.95f, 0.75f, 0.10f, 1f));
+                sharedPlayerTexture = !assetExists(PLAYER)
+                        ? createAstronautFallback()
+                        : loadAsset(PLAYER, Color.CYAN);
+
+                sharedLuaBackgroundTexture = loadAsset(
+                        LUA_BACKGROUND, new Color(0.08f, 0.08f, 0.13f, 1f));
+                sharedLaserTexture = loadAsset(
+                        LASER, new Color(1f, 0.90f, 0.10f, 1f));
+                sharedLunarBaseTexture = loadAsset(
+                        LUNAR_BASE, new Color(0.45f, 0.45f, 0.50f, 1f));
+                sharedLuaTileTexture = loadAsset(
+                        LUA_TILE, new Color(0.20f, 0.20f, 0.23f, 1f));
+                sharedMarsTileTexture = loadAsset(
+                        MARS_TILE, new Color(0.72f, 0.25f, 0.06f, 1f));
+
+                sharedFoodTexture = assetExists(FOOD)
+                        ? loadAsset(FOOD, new Color(1f, 0.55f, 0f, 1f))
+                        : createFoodFallback();
+
+                sharedO2TankTexture = assetExists(O2_TANK)
+                        ? loadAsset(O2_TANK, new Color(0.70f, 0.78f, 0.86f, 1f))
+                        : createO2Fallback();
+
+                sharedIceTexture = loadAsset(ICE, new Color(0.20f, 0.55f, 1f, 1f));
+                sharedOreTexture = loadAsset(ORE, new Color(0.15f, 0.95f, 0.25f, 1f));
+                sharedMineTexture = loadAsset(MINE, new Color(0.28f, 0.10f, 0.035f, 1f));
+                sharedAmericanTexture = loadAsset(AMERICAN, new Color(0.90f, 0.08f, 0.08f, 1f));
+                sharedAlienTexture = loadAsset(ALIEN, new Color(0.45f, 0.95f, 0.35f, 1f));
+                sharedBossMarsTexture = loadAsset(BOSS_MARS, new Color(0.35f, 0.85f, 0.25f, 1f));
+                sharedTrumpTexture = loadAsset(TRUMP, new Color(1f, 0.45f, 0.05f, 1f));
+                sharedRifleTexture = loadAsset(RIFLE, new Color(0.10f, 0.10f, 0.10f, 1f));
+                sharedPortalTexture = loadAsset(PORTAL, new Color(0.15f, 0.85f, 1f, 1f));
+                sharedRedKeyTexture = loadAsset(RED_KEY, Color.RED);
+                sharedGreenKeyTexture = loadAsset(GREEN_KEY, Color.GREEN);
+
+                sharedTitaTileTexture = loadAsset(
+                        TITA_TILE, new Color(0.26f, 0.02f, 0.03f, 1f));
+                sharedTitaInteriorTileTexture = loadAsset(
+                        TITA_INTERIOR_TILE, new Color(0.16f, 0.16f, 0.18f, 1f));
+                sharedTitaCastleTexture = loadAsset(
+                        TITA_CASTLE, new Color(0.43f, 0.44f, 0.47f, 1f));
+                sharedTitaFinalCastleTexture = loadAsset(
+                        TITA_FINAL_CASTLE, new Color(0.32f, 0.33f, 0.36f, 1f));
+                sharedTitaDoorTexture = loadAsset(
+                        TITA_DOOR, new Color(0.12f, 0.10f, 0.10f, 1f));
+                sharedTitaAltarTexture = loadAsset(
+                        TITA_ALTAR, new Color(0.38f, 0.37f, 0.34f, 1f));
+                sharedRedCrystalTexture = loadAsset(TITA_RED_CRYSTAL, Color.RED);
+                sharedBlueCrystalTexture = loadAsset(TITA_BLUE_CRYSTAL, Color.BLUE);
+                sharedYellowCrystalTexture = loadAsset(TITA_YELLOW_CRYSTAL, Color.YELLOW);
+                sharedObamaTexture = loadAsset(
+                        TITA_OBAMA, new Color(0.25f, 0.55f, 0.95f, 1f));
+                sharedAuthenticGamesTexture = loadAsset(
+                        TITA_AUTHENTIC, new Color(0.10f, 0.75f, 0.35f, 1f));
+                sharedVerityTexture = loadAsset(
+                        TITA_VERITY, new Color(0.85f, 0.25f, 0.75f, 1f));
+                sharedCr7Texture = loadAsset(
+                        TITA_CR7, new Color(0.95f, 0.75f, 0.10f, 1f));
+
+                sharedLoaded = true;
+            }
+        }
+
+        attachSharedTextures();
+    }
+
+    private void attachSharedTextures() {
+        playerTexture = sharedPlayerTexture;
+        luaBackgroundTexture = sharedLuaBackgroundTexture;
+        laserTexture = sharedLaserTexture;
+        lunarBaseTexture = sharedLunarBaseTexture;
+        luaTileTexture = sharedLuaTileTexture;
+        marsTileTexture = sharedMarsTileTexture;
+        foodTexture = sharedFoodTexture;
+        o2TankTexture = sharedO2TankTexture;
+        iceTexture = sharedIceTexture;
+        oreTexture = sharedOreTexture;
+        mineTexture = sharedMineTexture;
+        americanTexture = sharedAmericanTexture;
+        alienTexture = sharedAlienTexture;
+        bossMarsTexture = sharedBossMarsTexture;
+        trumpTexture = sharedTrumpTexture;
+        rifleTexture = sharedRifleTexture;
+        portalTexture = sharedPortalTexture;
+        redKeyTexture = sharedRedKeyTexture;
+        greenKeyTexture = sharedGreenKeyTexture;
+        titaTileTexture = sharedTitaTileTexture;
+        titaInteriorTileTexture = sharedTitaInteriorTileTexture;
+        titaCastleTexture = sharedTitaCastleTexture;
+        titaFinalCastleTexture = sharedTitaFinalCastleTexture;
+        titaDoorTexture = sharedTitaDoorTexture;
+        titaAltarTexture = sharedTitaAltarTexture;
+        redCrystalTexture = sharedRedCrystalTexture;
+        blueCrystalTexture = sharedBlueCrystalTexture;
+        yellowCrystalTexture = sharedYellowCrystalTexture;
+        obamaTexture = sharedObamaTexture;
+        authenticGamesTexture = sharedAuthenticGamesTexture;
+        verityTexture = sharedVerityTexture;
+        cr7Texture = sharedCr7Texture;
+        playerFallback = playerTexture == sharedPlayerTexture && !assetExists(PLAYER);
     }
 
     private Texture loadAsset(String fileName, Color fallbackColor) {
@@ -235,44 +343,12 @@ public class AssetManager {
     public Texture getCr7Texture() { return cr7Texture; }
     public boolean isPlayerFallback() { return playerFallback; }
 
+    /**
+     * Do not dispose shared textures during a Screen transition.
+     * They belong to the whole game process and will be released by the
+     * operating system when the game exits.
+     */
     public void dispose() {
-        disposeTexture(playerTexture);
-        disposeTexture(luaBackgroundTexture);
-        disposeTexture(laserTexture);
-        disposeTexture(lunarBaseTexture);
-        disposeTexture(luaTileTexture);
-        disposeTexture(marsTileTexture);
-        disposeTexture(foodTexture);
-        disposeTexture(o2TankTexture);
-        disposeTexture(iceTexture);
-        disposeTexture(oreTexture);
-        disposeTexture(mineTexture);
-        disposeTexture(americanTexture);
-        disposeTexture(alienTexture);
-        disposeTexture(bossMarsTexture);
-        disposeTexture(trumpTexture);
-        disposeTexture(rifleTexture);
-        disposeTexture(portalTexture);
-        disposeTexture(redKeyTexture);
-        disposeTexture(greenKeyTexture);
-        disposeTexture(titaTileTexture);
-        disposeTexture(titaInteriorTileTexture);
-        disposeTexture(titaCastleTexture);
-        disposeTexture(titaFinalCastleTexture);
-        disposeTexture(titaDoorTexture);
-        disposeTexture(titaAltarTexture);
-        disposeTexture(redCrystalTexture);
-        disposeTexture(blueCrystalTexture);
-        disposeTexture(yellowCrystalTexture);
-        disposeTexture(obamaTexture);
-        disposeTexture(authenticGamesTexture);
-        disposeTexture(verityTexture);
-        disposeTexture(cr7Texture);
-    }
-
-    private void disposeTexture(Texture texture) {
-        if (texture != null) {
-            texture.dispose();
-        }
+        // Intentionally empty: textures are shared across Screens.
     }
 }
