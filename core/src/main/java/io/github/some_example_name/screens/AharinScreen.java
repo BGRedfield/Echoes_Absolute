@@ -42,6 +42,7 @@ public class AharinScreen extends ScreenAdapter {
     private final ShapeRenderer shapes;
     private final BitmapFont font;
     private final Viewport viewport;
+    private final QuestLog questLog;
 
     private State state = State.DIALOGUE;
     private Ending ending;
@@ -84,6 +85,7 @@ public class AharinScreen extends ScreenAdapter {
         shapes = new ShapeRenderer();
         font = new BitmapFont();
         viewport = new ScreenViewport();
+        questLog = new QuestLog();
 
         if (saveData != null) {
             dialogueIndex = MathUtils.clamp(saveData.aharinDialogueIndex, 0, dialogue.length);
@@ -106,6 +108,27 @@ public class AharinScreen extends ScreenAdapter {
     @Override
     public void render(float delta) {
         if (changingScreen) {
+            return;
+        }
+
+        boolean questWasOpen = questLog.isOpen();
+
+        if (!questWasOpen
+                && Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
+            saveProgress(false);
+            questLog.open();
+        }
+
+        if (questWasOpen) {
+            questLog.handleInput();
+        }
+
+        if (questWasOpen || questLog.isOpen()) {
+            Gdx.gl.glClearColor(0.035f, 0.018f, 0.005f, 1f);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+            drawWorld();
+            drawHud();
+            questLog.render();
             return;
         }
 
@@ -481,6 +504,7 @@ public class AharinScreen extends ScreenAdapter {
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height, true);
+        questLog.resize(width, height);
     }
 
     @Override
@@ -498,5 +522,6 @@ public class AharinScreen extends ScreenAdapter {
         batch.dispose();
         shapes.dispose();
         font.dispose();
+        questLog.dispose();
     }
 }
