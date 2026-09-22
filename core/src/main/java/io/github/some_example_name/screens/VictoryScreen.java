@@ -23,9 +23,17 @@ public class VictoryScreen extends ScreenAdapter {
     private final Viewport viewport;
     private boolean changingScreen;
     private boolean disposed;
+    private final String title;
+    private final String subtitle;
 
     public VictoryScreen(Game game) {
+        this(game, "TITÃ CONCLUÍDO", "Você conquistou o planeta Titã.");
+    }
+
+    public VictoryScreen(Game game, String title, String subtitle) {
         this.game = game;
+        this.title = title;
+        this.subtitle = subtitle;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         font = new BitmapFont();
@@ -73,16 +81,29 @@ public class VictoryScreen extends ScreenAdapter {
 
         font.setColor(Color.WHITE);
         font.getData().setScale(2.7f);
-        drawCentered("TITÃ CONCLUÍDO", centerX, height / 2f + 250f);
+        drawCentered(title, centerX, height / 2f + 250f);
 
         font.getData().setScale(1.35f);
         font.setColor(Color.ORANGE);
-        drawCentered("CR7 foi derrotado.", centerX, height / 2f + 150f);
+        drawCentered(
+                title.startsWith("CALISTO")
+                        ? "O BOSS FINAL foi derrotado."
+                        : "CR7 foi derrotado.",
+                centerX,
+                height / 2f + 150f
+        );
 
         font.setColor(Color.LIGHT_GRAY);
         font.getData().setScale(1.08f);
-        drawCentered("Os três cristais abriram o castelo final.", centerX, height / 2f + 95f);
-        drawCentered("Você conquistou o planeta Titã.", centerX, height / 2f + 55f);
+        if (title.startsWith("CALISTO")) {
+            drawCentered("As cinco bênçãos abriram o caminho da evolução.", centerX,
+                    height / 2f + 95f);
+            drawCentered(subtitle, centerX, height / 2f + 55f);
+        } else {
+            drawCentered("Os três cristais abriram o castelo final.", centerX,
+                    height / 2f + 95f);
+            drawCentered(subtitle, centerX, height / 2f + 55f);
+        }
 
         font.setColor(Color.WHITE);
         font.getData().setScale(1.15f);
