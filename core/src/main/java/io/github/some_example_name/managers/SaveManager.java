@@ -18,7 +18,8 @@ public final class SaveManager {
     public enum Phase {
         LUA,
         MARTE,
-        TITA
+        TITA,
+        CALISTO
     }
 
     public static class SaveData {
@@ -63,6 +64,17 @@ public final class SaveManager {
         public final boolean[] crystalPlaced = new boolean[3];
         public final boolean[] titanBossDefeated = new boolean[4];
         public final float[] titanBossHealth = new float[] {10000f, 800f, 900f, 2500f};
+
+        // Titã -> Calisto
+        public boolean yellowKeyVisible;
+        public boolean yellowKeyCollected;
+        public boolean calistoPortalUnlocked;
+
+        // Calisto
+        public final boolean[] calistoAngelBlessings = new boolean[5];
+        public float calistoBossHealth = 18000f;
+        public boolean calistoBossDefeated;
+        public int calistoBossPhase = 1;
 
         // Titan NPC dialogue
         public int titanDialogueRound;
@@ -119,6 +131,17 @@ public final class SaveManager {
             p.putBoolean("titanBossDefeated" + i, data.titanBossDefeated[i]);
             p.putFloat("titanBossHealth" + i, data.titanBossHealth[i]);
         }
+
+        p.putBoolean("yellowKeyVisible", data.yellowKeyVisible);
+        p.putBoolean("yellowKeyCollected", data.yellowKeyCollected);
+        p.putBoolean("calistoPortalUnlocked", data.calistoPortalUnlocked);
+
+        for (int i = 0; i < 5; i++) {
+            p.putBoolean("calistoAngelBlessing" + i, data.calistoAngelBlessings[i]);
+        }
+        p.putFloat("calistoBossHealth", data.calistoBossHealth);
+        p.putBoolean("calistoBossDefeated", data.calistoBossDefeated);
+        p.putInteger("calistoBossPhase", data.calistoBossPhase);
 
         p.putInteger("titanDialogueRound", data.titanDialogueRound);
         p.putBoolean("titanDialogueFinished", data.titanDialogueFinished);
@@ -181,6 +204,17 @@ public final class SaveManager {
             data.titanBossDefeated[i] = p.getBoolean("titanBossDefeated" + i, false);
             data.titanBossHealth[i] = p.getFloat("titanBossHealth" + i, data.titanBossHealth[i]);
         }
+
+        data.yellowKeyVisible = p.getBoolean("yellowKeyVisible", false);
+        data.yellowKeyCollected = p.getBoolean("yellowKeyCollected", false);
+        data.calistoPortalUnlocked = p.getBoolean("calistoPortalUnlocked", false);
+
+        for (int i = 0; i < 5; i++) {
+            data.calistoAngelBlessings[i] = p.getBoolean("calistoAngelBlessing" + i, false);
+        }
+        data.calistoBossHealth = p.getFloat("calistoBossHealth", data.calistoBossHealth);
+        data.calistoBossDefeated = p.getBoolean("calistoBossDefeated", false);
+        data.calistoBossPhase = p.getInteger("calistoBossPhase", 1);
 
         data.titanDialogueRound = p.getInteger("titanDialogueRound", 0);
         data.titanDialogueFinished = p.getBoolean("titanDialogueFinished", false);
