@@ -36,6 +36,7 @@ import io.github.some_example_name.entities.TitaBoss;
 import io.github.some_example_name.entities.TitaBossProjectile;
 import io.github.some_example_name.entities.TrumpMissile;
 import io.github.some_example_name.managers.AssetManager;
+import io.github.some_example_name.managers.SaveManager;
 
 /**
  * Titan phase:
@@ -53,6 +54,12 @@ public class titascreen extends ScreenAdapter {
     private static final float BASE_Y = 910f;
     private static final float BASE_WIDTH = 260f;
     private static final float BASE_HEIGHT = 175f;
+
+    // NPC de Titã que abre o diálogo estilo Undertale.
+    private static final float TITA_NPC_X = 1650f;
+    private static final float TITA_NPC_Y = 945f;
+    private static final float TITA_NPC_WIDTH = 82f;
+    private static final float TITA_NPC_HEIGHT = 118f;
 
     private static final float CASTLE_WIDTH = 360f;
     private static final float CASTLE_HEIGHT = 280f;
@@ -149,6 +156,20 @@ public class titascreen extends ScreenAdapter {
 
     private final Array<LuaItem> exteriorResources = new Array<>();
 
+    private final Rectangle titanNpcHitbox = new Rectangle(
+            TITA_NPC_X,
+            TITA_NPC_Y,
+            TITA_NPC_WIDTH,
+            TITA_NPC_HEIGHT
+    );
+
+    private boolean titanDialogueOpen;
+    private boolean titanDialogueWaiting;
+    private boolean titanDialogueFinished;
+    private int titanDialogueRound;
+    private int titanDialogueChoice = -1;
+    private String titanDialogueResponse = "";
+
     private int currentCastle = -1;
     private boolean insideCastle;
     private boolean changingScreen;
@@ -166,6 +187,10 @@ public class titascreen extends ScreenAdapter {
     private String message = "";
 
     public titascreen(Game game) {
+        this(game, null);
+    }
+
+    public titascreen(Game game, SaveManager.SaveData saveData) {
         this.game = game;
         camera = new OrthographicCamera();
         viewport = new FitViewport(VIEW_WIDTH, VIEW_HEIGHT, camera);
@@ -185,8 +210,128 @@ public class titascreen extends ScreenAdapter {
 
         createExteriorResources();
 
-        showMessage("TITÃ: derrote os 3 chefes, pegue os cristais e abra o castelo final.");
+        if (saveData != null) {
+            applySave(saveData);
+            showMessage("SAVE CARREGADO: retomando Titã.");
+        } else {
+            showMessage("TITÃ: derrote os 3 chefes, pegue os cristais e abra o castelo final.");
+        }
+
         updateCamera();
+    }
+
+    private void applySave(SaveManager.SaveData data) {
+        player.getHitbox().set(data.playerX, data.playerY, player.getWidth(), player.getHeight());
+        stats.setHealth(data.health);
+        stats.setHunger(data.hunger);
+        stats.setOxygen(data.oxygen);
+
+        insideCastle = data.insideTitanCastle;
+        currentCastle = data.currentTitanCastle;
+        finalCastleUnlocked = data.finalCastleUnlocked;
+
+        for (int i = 0; i < 3; i++) {
+            crystalOwned[i] = data.crystalOwned[i];
+            crystalPlaced[i] = data.crystalPlaced[i];
+        }
+
+        for (int i = 0; i < 4; i++) {
+            bossDefeated[i] = data.titanBossDefeated[i];
+        }
+
+        titanDialogueRound = MathUtils.clamp(data.titanDialogueRound, 0, 3);
+        titanDialogueFinished = data.titanDialogueFinished;
+
+        for (int i = 0; i < 4; i++) {
+            if (bossDefeated[i]) {
+                continue;
+            }
+
+            if (data.titanBossHealth[i] >= getTitanBossMaxHealth(i) && currentCastle != i) {
+                continue;
+            }
+
+            bosses[i] = createTitanBoss(i);
+            bosses[i].setHealth(data.titanBossHealth[i]);
+        }
+
+        if (insideCastle && currentCastle >= 0 && currentCastle < bosses.length) {
+            if (bosses[currentCastle] == null) {
+                bosses[currentCastle] = createTitanBoss(currentCastle);
+                bosses[currentCastle].setHealth(data.titanBossHealth[currentCastle]);
+            }
+        }
+    }
+
+    private TitaBoss createTitanBoss(int castleIndex) {
+        TitaBoss.Type type;
+        switch (castleIndex) {
+            case 0:
+                type = TitaBoss.Type.OBAMA;
+                break;
+            case 1:
+                type = TitaBoss.Type.AUTHENTIC_GAMES;
+                break;
+            case 2:
+                type = TitaBoss.Type.VERITY;
+                break;
+            case 3:
+            default:
+                type = TitaBoss.Type.CR7;
+                break;
+        }
+
+        return new TitaBoss(
+                type,
+                (ARENA_MIN_X + ARENA_MAX_X) / 2f - 75f,
+                ARENA_MIN_Y + 470f
+        );
+    }
+
+    private float getTitanBossMaxHealth(int index) {
+        switch (index) {
+            case 0:
+                return 10000f;
+            case 1:
+                return 800f;
+            case 2:
+                return 900f;
+            case 3:
+            default:
+                return 2500f;
+        }
+    }
+
+    private void saveGame() {
+        SaveManager.SaveData data = new SaveManager.SaveData();
+        data.phase = SaveManager.Phase.TITA;
+        data.playerX = player.getX();
+        data.playerY = player.getY();
+        data.health = stats.getHealth();
+        data.hunger = stats.getHunger();
+        data.oxygen = stats.getOxygen();
+
+        data.insideTitanCastle = insideCastle;
+        data.currentTitanCastle = currentCastle;
+        data.finalCastleUnlocked = finalCastleUnlocked;
+
+        for (int i = 0; i < 3; i++) {
+            data.crystalOwned[i] = crystalOwned[i];
+            data.crystalPlaced[i] = crystalPlaced[i];
+        }
+
+        for (int i = 0; i < 4; i++) {
+            data.titanBossDefeated[i] = bossDefeated[i];
+            data.titanBossHealth[i] = bosses[i] == null
+                    ? getTitanBossMaxHealth(i)
+                    : bosses[i].getHealth();
+        }
+
+        data.titanDialogueRound = titanDialogueRound;
+        data.titanDialogueFinished = titanDialogueFinished;
+
+        SaveManager.save(data);
+        showMessage("JOGO SALVO! O save permanece mesmo fechando o jogo.");
     }
 
     @Override
@@ -200,7 +345,16 @@ public class titascreen extends ScreenAdapter {
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
 
-        player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+        if (!titanDialogueOpen) {
+            player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+        }
+
+        if (titanDialogueOpen) {
+            updateTitanDialogueInput();
+            stats.updateInvulnerability(delta);
+            updateCamera();
+            return true;
+        }
 
         if (insideCastle) {
             // Fome/O2 ficam congelados dentro dos bosses, mas a invulnerabilidade
@@ -325,6 +479,11 @@ public class titascreen extends ScreenAdapter {
 
     private void handleExteriorInteractions() {
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
+            if (player.getHitbox().overlaps(titanNpcHitbox) && !titanDialogueFinished) {
+                openTitanDialogue();
+                return;
+            }
+
             if (tryUseAltar()) {
                 return;
             }
@@ -343,6 +502,202 @@ public class titascreen extends ScreenAdapter {
                 return;
             }
         }
+    }
+
+    private void openTitanDialogue() {
+        titanDialogueOpen = true;
+        titanDialogueWaiting = false;
+        titanDialogueChoice = -1;
+        titanDialogueResponse = "";
+    }
+
+    private void closeTitanDialogue() {
+        titanDialogueOpen = false;
+        titanDialogueWaiting = false;
+        titanDialogueChoice = -1;
+        titanDialogueResponse = "";
+
+        if (titanDialogueRound >= 3) {
+            titanDialogueFinished = true;
+        }
+    }
+
+    private void updateTitanDialogueInput() {
+        if (titanDialogueWaiting) {
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
+                    || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+                titanDialogueRound++;
+
+                if (titanDialogueRound >= 3) {
+                    closeTitanDialogue();
+                } else {
+                    titanDialogueWaiting = false;
+                    titanDialogueChoice = -1;
+                    titanDialogueResponse = "";
+                }
+            }
+
+            if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+                closeTitanDialogue();
+            }
+            return;
+        }
+
+        int choice = -1;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) choice = 0;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) choice = 1;
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) choice = 2;
+
+        if (choice >= 0) {
+            titanDialogueChoice = choice;
+            titanDialogueResponse = getTitanDialogueResponse(titanDialogueRound, choice);
+            titanDialogueWaiting = true;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
+            closeTitanDialogue();
+        }
+    }
+
+    private String getTitanDialogueQuestion(int round, int choice) {
+        String[][] questions = {
+                {
+                        "Quem construiu estas fortalezas?",
+                        "Por que Titã tem essa cor vermelha?",
+                        "O que são os cristais?"
+                },
+                {
+                        "Obama é realmente o líder daqui?",
+                        "Como eu abro o Bastião?",
+                        "Existe perigo fora dos castelos?"
+                },
+                {
+                        "Você vai me ajudar nessa missão?",
+                        "O que existe depois de Titã?",
+                        "Qual é o maior segredo deste lugar?"
+                }
+        };
+
+        return questions[MathUtils.clamp(round, 0, 2)][MathUtils.clamp(choice, 0, 2)];
+    }
+
+    private String getTitanDialogueResponse(int round, int choice) {
+        String[][] responses = {
+                {
+                        "O povo antigo construiu tudo isso antes de a poeira cobrir Titã.",
+                        "A poeira vermelha não é só poeira. Ela esconde sinais de energia.",
+                        "Os cristais guardam energia. Três deles juntos conseguem abrir o Bastião."
+                },
+                {
+                        "Ele se chama de líder, mas até líderes precisam responder às ruínas daqui.",
+                        "Você não abre com força. Ative os três altares e a porta reconhecerá você.",
+                        "Existe. O silêncio daqui costuma esconder coisas que preferem continuar escondidas."
+                },
+                {
+                        "Já estou ajudando. Só não posso lutar no seu lugar.",
+                        "Depois de Titã existe um caminho que poucos conseguem atravessar.",
+                        "O maior segredo é que os cristais não estão só abrindo portas. Eles estão acordando algo."
+                }
+        };
+
+        return responses[MathUtils.clamp(round, 0, 2)][MathUtils.clamp(choice, 0, 2)];
+    }
+
+    private void drawTitanNpc() {
+        if (titanDialogueOpen || titanDialogueFinished) {
+            return;
+        }
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        // Placeholder do NPC: corpo escuro, cabeça clara e olhos.
+        float cx = titanNpcHitbox.x + titanNpcHitbox.width / 2f;
+        shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.10f, 1f));
+        shapeRenderer.rect(titanNpcHitbox.x + 16f, titanNpcHitbox.y, 50f, 62f);
+
+        shapeRenderer.setColor(new Color(0.75f, 0.78f, 0.82f, 1f));
+        shapeRenderer.circle(cx, titanNpcHitbox.y + 88f, 27f);
+
+        shapeRenderer.setColor(Color.BLACK);
+        shapeRenderer.circle(cx - 9f, titanNpcHitbox.y + 94f, 4f);
+        shapeRenderer.circle(cx + 9f, titanNpcHitbox.y + 94f, 4f);
+
+        shapeRenderer.setColor(new Color(0.45f, 0.18f, 0.12f, 1f));
+        shapeRenderer.rect(titanNpcHitbox.x + 6f, titanNpcHitbox.y + 62f, 70f, 10f);
+
+        shapeRenderer.end();
+    }
+
+    private void drawTitanDialogue() {
+        if (!titanDialogueOpen) {
+            return;
+        }
+
+        float width = hudViewport.getWorldWidth();
+        float height = hudViewport.getWorldHeight();
+
+        shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+
+        // Retrato/placeholder do personagem acima do balão.
+        shapeRenderer.setColor(Color.BLACK);
+        shapeRenderer.rect(width / 2f - 55f, height - 220f, 110f, 100f);
+        shapeRenderer.setColor(new Color(0.72f, 0.76f, 0.82f, 1f));
+        shapeRenderer.circle(width / 2f, height - 145f, 30f);
+        shapeRenderer.setColor(Color.BLACK);
+        shapeRenderer.circle(width / 2f - 10f, height - 138f, 4f);
+        shapeRenderer.circle(width / 2f + 10f, height - 138f, 4f);
+
+        // Balão preto com outline preto.
+        shapeRenderer.setColor(Color.BLACK);
+        shapeRenderer.rect(55f, 65f, width - 110f, 230f);
+
+        // Botões pretos.
+        for (int i = 0; i < 3; i++) {
+            float bx = 90f + i * ((width - 270f) / 3f);
+            shapeRenderer.setColor(Color.BLACK);
+            shapeRenderer.rect(bx, 78f, (width - 330f) / 3f, 48f);
+        }
+
+        shapeRenderer.end();
+
+        batch.setProjectionMatrix(hudViewport.getCamera().combined);
+        batch.begin();
+
+        font.setColor(Color.WHITE);
+        font.getData().setScale(0.78f);
+
+        if (titanDialogueWaiting) {
+            font.draw(batch, "NPC:", 82f, 270f);
+            font.draw(batch, titanDialogueResponse, 82f, 238f, width - 164f, 2, true);
+            font.getData().setScale(0.62f);
+            font.setColor(Color.LIGHT_GRAY);
+            font.draw(batch, "ENTER = próxima pergunta    ESC = fechar", 82f, 150f);
+        } else {
+            font.draw(batch, "Você:", 82f, 270f);
+            font.setColor(Color.WHITE);
+            font.draw(batch, "Escolha uma pergunta:", 82f, 238f);
+
+            for (int i = 0; i < 3; i++) {
+                font.getData().setScale(0.66f);
+                font.setColor(Color.WHITE);
+                font.draw(
+                        batch,
+                        (i + 1) + " - " + getTitanDialogueQuestion(titanDialogueRound, i),
+                        100f + i * ((width - 300f) / 3f),
+                        108f
+                );
+            }
+        }
+
+        font.getData().setScale(0.60f);
+        font.setColor(Color.GRAY);
+        if (!titanDialogueWaiting) {
+            font.draw(batch, "Rodada " + (titanDialogueRound + 1) + "/3", 82f, 192f);
+        }
+
+        batch.end();
     }
 
     private boolean tryUseAltar() {
@@ -1101,6 +1456,10 @@ public class titascreen extends ScreenAdapter {
 
         batch.end();
 
+        if (!insideCastle) {
+            drawTitanNpc();
+        }
+
         if (insideCastle) {
             drawArenaEffects();
         }
@@ -1448,6 +1807,12 @@ public class titascreen extends ScreenAdapter {
             font.draw(batch, message, hudViewport.getWorldWidth() / 2f - layout.width / 2f, 92f);
         }
 
+        if (!titanDialogueOpen && !titanDialogueFinished && !insideCastle) {
+            font.getData().setScale(0.78f);
+            font.setColor(Color.CYAN);
+            font.draw(batch, "E = falar com o NPC de Titã", 28f, hudViewport.getWorldHeight() - 335f);
+        }
+
         if (insideCastle && currentCastle >= 0) {
             TitaBoss boss = bosses[currentCastle];
             if (boss != null && !boss.isDead()) {
@@ -1550,7 +1915,13 @@ public class titascreen extends ScreenAdapter {
 
         PauseMenu.Action pauseAction = pauseMenu.handleInput();
 
+        if (pauseAction == PauseMenu.Action.SAVE) {
+            saveGame();
+            return;
+        }
+
         if (pauseAction == PauseMenu.Action.PHASES) {
+            saveGame();
             changingScreen = true;
             dispose();
             game.setScreen(new PhaseSelectScreen(game));
@@ -1558,6 +1929,7 @@ public class titascreen extends ScreenAdapter {
         }
 
         if (pauseAction == PauseMenu.Action.MENU) {
+            saveGame();
             changingScreen = true;
             dispose();
             game.setScreen(new MenuScreen(game));
