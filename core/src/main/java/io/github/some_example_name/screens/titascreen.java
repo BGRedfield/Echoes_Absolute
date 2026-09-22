@@ -131,6 +131,7 @@ public class titascreen extends ScreenAdapter {
     private final Player player;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
+    private final QuestLog questLog;
 
     private final Array<Laser> lasers = new Array<>();
     private final Array<TitaBossProjectile> bossProjectiles = new Array<>();
@@ -220,6 +221,7 @@ public class titascreen extends ScreenAdapter {
         player = new Player(BASE_X + 120f, BASE_Y + 50f);
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
+        questLog = new QuestLog();
 
         for (int i = 0; i < crystalDrops.length; i++) {
             crystalDrops[i] = new Rectangle();
@@ -2192,7 +2194,22 @@ public class titascreen extends ScreenAdapter {
             return;
         }
 
-        PauseMenu.Action pauseAction = pauseMenu.handleInput();
+        boolean questWasOpen = questLog.isOpen();
+
+        if (!questWasOpen
+                && !pauseMenu.isOpen()
+                && Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
+            saveGame();
+            questLog.open();
+        }
+
+        if (questWasOpen) {
+            questLog.handleInput();
+        }
+
+        PauseMenu.Action pauseAction = (questWasOpen || questLog.isOpen())
+                ? PauseMenu.Action.NONE
+                : pauseMenu.handleInput();
 
         if (pauseAction == PauseMenu.Action.SAVE_SLOT_1) {
             saveGame(1);
@@ -2220,7 +2237,7 @@ public class titascreen extends ScreenAdapter {
             return;
         }
 
-        if (!pauseMenu.isOpen()) {
+        if (!pauseMenu.isOpen() && !questWasOpen && !questLog.isOpen()) {
             if (!update(delta)) {
                 return;
             }
@@ -2230,6 +2247,7 @@ public class titascreen extends ScreenAdapter {
         drawWorld();
         drawHud();
         pauseMenu.render();
+        questLog.render();
     }
 
     @Override
@@ -2237,6 +2255,7 @@ public class titascreen extends ScreenAdapter {
         viewport.update(width, height, true);
         hudViewport.update(width, height, true);
         pauseMenu.resize(width, height);
+        questLog.resize(width, height);
         updateCamera();
     }
 
@@ -2257,5 +2276,6 @@ public class titascreen extends ScreenAdapter {
         font.dispose();
         assets.dispose();
         pauseMenu.dispose();
+        questLog.dispose();
     }
 }
