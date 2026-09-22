@@ -622,6 +622,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         if (greenKeyVisible && player.getHitbox().overlaps(greenKeyHitbox)) {
             greenKeyVisible = false;
             greenKeyCollected = true;
+            saveGame();
             showMessage("CHAVE VERDE COLETADA! Vá ao portal e pressione E.");
         }
 
@@ -642,6 +643,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
 
         if (portalEntryArmed) {
+            saveGame();
             float health = stats.getHealth();
             float hunger = stats.getHunger();
             float oxygen = stats.getOxygen();
