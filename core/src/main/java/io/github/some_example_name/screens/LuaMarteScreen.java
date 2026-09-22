@@ -32,6 +32,7 @@ import io.github.some_example_name.entities.Player;
 import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.entities.SupremeAlienBoss;
 import io.github.some_example_name.managers.AssetManager;
+import io.github.some_example_name.managers.SaveManager;
 
 /** Mars phase: Lua clone plus mining, upgraded weapon, Martians and Supreme Alien boss. */
 public class LuaMarteScreen extends ScreenAdapter {
@@ -126,6 +127,10 @@ public class LuaMarteScreen extends ScreenAdapter {
     private boolean disposed;
 
     public LuaMarteScreen(Game game) {
+        this(game, null);
+    }
+
+    public LuaMarteScreen(Game game, SaveManager.SaveData saveData) {
         this.game = game;
         camera = new OrthographicCamera();
         viewport = new FitViewport(VIEW_WIDTH, VIEW_HEIGHT, camera);
@@ -141,8 +146,78 @@ public class LuaMarteScreen extends ScreenAdapter {
         createMarsResources();
         createMarsOres();
         createStartingMartians();
-        showMessage("MISSÃO MARTE: colete 5 minérios verdes e leve-os até a mina para refinar.");
+
+        if (saveData != null) {
+            applySave(saveData);
+            showMessage("SAVE CARREGADO: retomando Marte.");
+        } else {
+            showMessage("MISSÃO MARTE: colete 5 minérios verdes e leve-os até a mina para refinar.");
+        }
+
         updateCamera();
+    }
+
+    private void applySave(SaveManager.SaveData data) {
+        player.getHitbox().set(data.playerX, data.playerY, player.getWidth(), player.getHeight());
+        stats.setHealth(data.health);
+        stats.setHunger(data.hunger);
+        stats.setOxygen(data.oxygen);
+
+        mission = MarsMission.values()[MathUtils.clamp(data.marsMission, 0, MarsMission.values().length - 1)];
+        rawOreCount = Math.max(0, data.rawOreCount);
+        refinedOreCount = Math.max(0, data.refinedOreCount);
+        weaponUpgraded = data.weaponUpgraded;
+
+        portalSpawned = data.marsPortalSpawned;
+        portalUnlocked = data.marsPortalUnlocked;
+        portalEntryArmed = data.marsPortalEntryArmed;
+        greenKeyVisible = data.greenKeyVisible;
+        greenKeyCollected = data.greenKeyCollected;
+
+        if (data.supremeAlienExists) {
+            supremeAlien = new SupremeAlienBoss(2250f, 1350f);
+            supremeAlien.setHealth(data.supremeAlienHealth);
+            bossDeathSequenceStarted = supremeAlien.isDead();
+        }
+
+        if (portalSpawned) {
+            marsPortal = new MarsPortal(2580f, 1530f);
+            if (supremeAlien != null) {
+                greenKeyHitbox.set(
+                        supremeAlien.getCenterX() - KEY_SIZE / 2f,
+                        supremeAlien.getCenterY() - KEY_SIZE / 2f,
+                        KEY_SIZE,
+                        KEY_SIZE
+                );
+            }
+        }
+    }
+
+    private void saveGame() {
+        SaveManager.SaveData data = new SaveManager.SaveData();
+        data.phase = SaveManager.Phase.MARTE;
+        data.playerX = player.getX();
+        data.playerY = player.getY();
+        data.health = stats.getHealth();
+        data.hunger = stats.getHunger();
+        data.oxygen = stats.getOxygen();
+
+        data.marsMission = mission.ordinal();
+        data.rawOreCount = rawOreCount;
+        data.refinedOreCount = refinedOreCount;
+        data.weaponUpgraded = weaponUpgraded;
+        data.marsPortalSpawned = portalSpawned;
+        data.marsPortalUnlocked = portalUnlocked;
+        data.marsPortalEntryArmed = portalEntryArmed;
+        data.greenKeyVisible = greenKeyVisible;
+        data.greenKeyCollected = greenKeyCollected;
+        data.supremeAlienExists = supremeAlien != null;
+        data.supremeAlienHealth = supremeAlien == null
+                ? SupremeAlienBoss.MAX_HEALTH
+                : supremeAlien.getHealth();
+
+        SaveManager.save(data);
+        showMessage("JOGO SALVO! O save permanece mesmo fechando o jogo.");
     }
 
     private void createMarsResources() {
@@ -856,7 +931,13 @@ public class LuaMarteScreen extends ScreenAdapter {
 
         PauseMenu.Action pauseAction = pauseMenu.handleInput();
 
+        if (pauseAction == PauseMenu.Action.SAVE) {
+            saveGame();
+            return;
+        }
+
         if (pauseAction == PauseMenu.Action.PHASES) {
+            saveGame();
             changingScreen = true;
             dispose();
             game.setScreen(new PhaseSelectScreen(game));
@@ -864,6 +945,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
 
         if (pauseAction == PauseMenu.Action.MENU) {
+            saveGame();
             changingScreen = true;
             dispose();
             game.setScreen(new MenuScreen(game));
