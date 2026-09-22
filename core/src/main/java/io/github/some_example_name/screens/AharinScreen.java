@@ -285,13 +285,19 @@ public class AharinScreen extends ScreenAdapter {
         float w = viewport.getWorldWidth();
         float h = viewport.getWorldHeight();
 
+        if (state == State.DIALOGUE) {
+            drawDialoguePanel(w);
+        } else if (state == State.CHOICE) {
+            drawChoicePanel(w);
+        }
+
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
 
         if (state == State.DIALOGUE) {
-            drawDialogueBox(w, h);
+            drawDialogueText(w);
         } else if (state == State.CHOICE) {
-            drawChoiceBox(w, h);
+            drawChoiceText(w);
         } else {
             drawEnding(w, h);
         }
@@ -299,8 +305,7 @@ public class AharinScreen extends ScreenAdapter {
         batch.end();
     }
 
-    private void drawDialogueBox(float w, float h) {
-        // Fundo da caixa.
+    private void drawDialoguePanel(float w) {
         shapes.setProjectionMatrix(viewport.getCamera().combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         shapes.setColor(new Color(0.02f, 0.01f, 0.00f, 0.92f));
@@ -308,7 +313,9 @@ public class AharinScreen extends ScreenAdapter {
         shapes.setColor(Color.valueOf("FFD43B"));
         shapes.rect(70f, 230f, w - 140f, 4f);
         shapes.end();
+    }
 
+    private void drawDialogueText(float w) {
         font.setColor(Color.valueOf("FFD43B"));
         font.getData().setScale(1.15f);
         font.draw(batch, speakers[Math.min(dialogueIndex, speakers.length - 1)], 96f, 205f);
@@ -324,7 +331,7 @@ public class AharinScreen extends ScreenAdapter {
         font.draw(batch, "[ ENTER ]", w - 175f, 73f);
     }
 
-    private void drawChoiceBox(float w, float h) {
+    private void drawChoicePanel(float w) {
         shapes.setProjectionMatrix(viewport.getCamera().combined);
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         shapes.setColor(new Color(0.02f, 0.01f, 0.00f, 0.94f));
@@ -332,7 +339,9 @@ public class AharinScreen extends ScreenAdapter {
         shapes.setColor(Color.valueOf("FFD43B"));
         shapes.rect(95f, 355f, w - 190f, 4f);
         shapes.end();
+    }
 
+    private void drawChoiceText(float w) {
         font.setColor(Color.valueOf("FFD43B"));
         font.getData().setScale(1.35f);
         drawCentered("A DECISÃO FINAL", w / 2f, 323f);
