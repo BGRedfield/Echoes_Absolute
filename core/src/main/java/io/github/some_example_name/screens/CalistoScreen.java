@@ -1114,6 +1114,13 @@ public class CalistoScreen extends ScreenAdapter {
 
         if (!pauseMenu.isOpen()) {
             update(delta);
+
+            // A troca de Screen pode acontecer dentro de update().
+            // Nesse caso a Screen atual já pode ter sido descartada.
+            // Nunca continue desenhando com SpriteBatch/ShapeRenderer destruídos.
+            if (changingScreen) {
+                return;
+            }
         }
 
         ScreenUtils.clear(0.015f, 0.025f, 0.07f, 1f);
