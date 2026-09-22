@@ -87,6 +87,7 @@ public class LuaScreen extends ScreenAdapter {
     private final Player player;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
+    private final QuestLog questLog;
     private final Array<Laser> lasers = new Array<>();
     private final Array<LuaItem> luaItems = new Array<>();
     private final Array<AmericanEnemy> americans = new Array<>();
@@ -139,6 +140,7 @@ public class LuaScreen extends ScreenAdapter {
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
+        questLog = new QuestLog();
         createLuaResources();
         createStartingAmericans();
 
@@ -1008,7 +1010,22 @@ public class LuaScreen extends ScreenAdapter {
             return;
         }
 
-        PauseMenu.Action pauseAction = pauseMenu.handleInput();
+        boolean questWasOpen = questLog.isOpen();
+
+        if (!questWasOpen
+                && !pauseMenu.isOpen()
+                && Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
+            saveGame();
+            questLog.open();
+        }
+
+        if (questWasOpen) {
+            questLog.handleInput();
+        }
+
+        PauseMenu.Action pauseAction = (questWasOpen || questLog.isOpen())
+                ? PauseMenu.Action.NONE
+                : pauseMenu.handleInput();
 
         if (pauseAction == PauseMenu.Action.SAVE_SLOT_1) {
             saveGame(1);
@@ -1036,7 +1053,7 @@ public class LuaScreen extends ScreenAdapter {
             return;
         }
 
-        if (!pauseMenu.isOpen()) {
+        if (!pauseMenu.isOpen() && !questWasOpen && !questLog.isOpen()) {
             if (!update(delta)) return;
         }
 
@@ -1046,6 +1063,7 @@ public class LuaScreen extends ScreenAdapter {
         drawStormEffect();
         drawHud();
         pauseMenu.render();
+        questLog.render();
     }
 
     @Override
@@ -1053,6 +1071,7 @@ public class LuaScreen extends ScreenAdapter {
         viewport.update(width, height, true);
         hudViewport.update(width, height, true);
         pauseMenu.resize(width, height);
+        questLog.resize(width, height);
         updateCamera();
     }
 
@@ -1063,5 +1082,6 @@ public class LuaScreen extends ScreenAdapter {
         hudFont.dispose();
         assets.dispose();
         pauseMenu.dispose();
+        questLog.dispose();
     }
 }
