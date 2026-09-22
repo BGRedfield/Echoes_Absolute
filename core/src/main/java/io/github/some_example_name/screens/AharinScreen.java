@@ -89,7 +89,8 @@ public class AharinScreen extends ScreenAdapter {
             dialogueIndex = MathUtils.clamp(saveData.aharinDialogueIndex, 0, dialogue.length);
             if (saveData.aharinChoice >= 0 && saveData.aharinChoice <= 2) {
                 ending = Ending.values()[saveData.aharinChoice];
-                state = State.ENDING;
+                selectedChoice = saveData.aharinChoice;
+                state = State.CHOICE;
             } else if (saveData.aharinDialogueFinished) {
                 state = State.CHOICE;
             }
@@ -110,6 +111,15 @@ public class AharinScreen extends ScreenAdapter {
 
         delta = Math.min(delta, 0.05f);
         time += delta;
+
+        if (state != State.DIALOGUE
+                && Gdx.input.isKeyJustPressed(Input.Keys.M)) {
+            saveProgress(false);
+            changingScreen = true;
+            dispose();
+            game.setScreen(new FastTravelScreen(game, SaveManager.load()));
+            return;
+        }
 
         handleInput(delta);
 
@@ -185,8 +195,11 @@ public class AharinScreen extends ScreenAdapter {
 
     private void confirmChoice() {
         ending = Ending.values()[selectedChoice];
-        state = State.ENDING;
         saveProgress(true);
+
+        changingScreen = true;
+        dispose();
+        game.setScreen(new AharinEndingScreen(game, selectedChoice));
     }
 
     private void saveProgress(boolean choiceMade) {
