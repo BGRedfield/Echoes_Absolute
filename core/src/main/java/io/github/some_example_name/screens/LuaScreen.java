@@ -995,6 +995,14 @@ public class LuaScreen extends ScreenAdapter {
 
     @Override
     public void render(float delta) {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.M)
+                && !pauseMenu.isOpen()) {
+            saveGame();
+            screenChanged = true;
+            game.setScreen(new FastTravelScreen(game, SaveManager.load()));
+            return;
+        }
+
         PauseMenu.Action pauseAction = pauseMenu.handleInput();
 
         if (pauseAction == PauseMenu.Action.SAVE) {
