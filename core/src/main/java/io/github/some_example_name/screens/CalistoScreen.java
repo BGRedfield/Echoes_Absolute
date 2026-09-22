@@ -76,6 +76,7 @@ public class CalistoScreen extends ScreenAdapter {
     private final Player player;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
+    private final QuestLog questLog;
 
     private final Rectangle gate = new Rectangle(
             GATE_X, GATE_Y, GATE_WIDTH, GATE_HEIGHT
@@ -135,6 +136,7 @@ public class CalistoScreen extends ScreenAdapter {
         player = new Player(210f, 620f);
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
+        questLog = new QuestLog();
 
         for (int i = 0; i < angels.length; i++) {
             angels[i] = new Rectangle(
@@ -1098,7 +1100,22 @@ public class CalistoScreen extends ScreenAdapter {
             return;
         }
 
-        PauseMenu.Action pauseAction = pauseMenu.handleInput();
+        boolean questWasOpen = questLog.isOpen();
+
+        if (!questWasOpen
+                && !pauseMenu.isOpen()
+                && Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
+            saveGame();
+            questLog.open();
+        }
+
+        if (questWasOpen) {
+            questLog.handleInput();
+        }
+
+        PauseMenu.Action pauseAction = (questWasOpen || questLog.isOpen())
+                ? PauseMenu.Action.NONE
+                : pauseMenu.handleInput();
 
         if (pauseAction == PauseMenu.Action.SAVE_SLOT_1) {
             saveGame(1);
@@ -1126,7 +1143,7 @@ public class CalistoScreen extends ScreenAdapter {
             return;
         }
 
-        if (!pauseMenu.isOpen()) {
+        if (!pauseMenu.isOpen() && !questWasOpen && !questLog.isOpen()) {
             update(delta);
 
             // A troca de Screen pode acontecer dentro de update().
@@ -1141,6 +1158,7 @@ public class CalistoScreen extends ScreenAdapter {
         drawWorld();
         drawHud();
         pauseMenu.render();
+        questLog.render();
     }
 
     @Override
@@ -1148,6 +1166,7 @@ public class CalistoScreen extends ScreenAdapter {
         viewport.update(width, height, true);
         hudViewport.update(width, height, true);
         pauseMenu.resize(width, height);
+        questLog.resize(width, height);
         updateCamera();
     }
 
@@ -1168,6 +1187,7 @@ public class CalistoScreen extends ScreenAdapter {
         font.dispose();
         assets.dispose();
         pauseMenu.dispose();
+        questLog.dispose();
     }
 
     private static class CalistoProjectile {
