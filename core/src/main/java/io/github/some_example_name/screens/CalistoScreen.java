@@ -83,6 +83,12 @@ public class CalistoScreen extends ScreenAdapter {
     private final Rectangle bossHitbox = new Rectangle(
             BOSS_X, BOSS_Y, BOSS_SIZE, BOSS_SIZE
     );
+
+    private final Rectangle finalKeyHitbox = new Rectangle();
+    private final Rectangle finalPortalHitbox = new Rectangle();
+
+    private static final float FINAL_KEY_SIZE = 82f;
+    private static final float FINAL_PORTAL_SIZE = 170f;
     private final Rectangle[] angels = new Rectangle[5];
     private final boolean[] angelBlessings = new boolean[5];
     private final Array<Laser> lasers = new Array<>();
@@ -100,6 +106,9 @@ public class CalistoScreen extends ScreenAdapter {
 
     private float bossHealth = BOSS_MAX_HEALTH;
     private boolean bossDefeated;
+    private boolean finalKeySpawned;
+    private boolean finalKeyCollected;
+    private boolean finalPortalActive;
     private int bossPhase = 1;
     private int bossAttackIndex;
     private int lastDisplayedPhase;
@@ -163,7 +172,17 @@ public class CalistoScreen extends ScreenAdapter {
                 BOSS_MAX_HEALTH
         );
         bossDefeated = data.calistoBossDefeated;
+        finalKeySpawned = data.calistoFinalKeySpawned || bossDefeated;
+        finalKeyCollected = data.calistoFinalKeyCollected;
+        finalPortalActive = finalKeyCollected;
         bossPhase = MathUtils.clamp(data.calistoBossPhase, 1, 3);
+
+        if (finalKeySpawned && !finalKeyCollected) {
+            spawnFinalKey();
+        }
+        if (finalPortalActive) {
+            activateFinalPortal();
+        }
 
         updateUpgradesFromBlessings();
         stats.setSurvivalNeedsDisabled(angelBlessings[2]);
@@ -192,6 +211,8 @@ public class CalistoScreen extends ScreenAdapter {
         data.calistoBossHealth = bossHealth;
         data.calistoBossDefeated = bossDefeated;
         data.calistoBossPhase = bossPhase;
+        data.calistoFinalKeySpawned = finalKeySpawned;
+        data.calistoFinalKeyCollected = finalKeyCollected;
 
         SaveManager.save(data);
         showMessage("JOGO SALVO! Você poderá carregar Calisto pelo menu.");
@@ -233,11 +254,7 @@ public class CalistoScreen extends ScreenAdapter {
         }
 
         if (inBossArena && bossDefeated) {
-            changingScreen = true;
-            dispose();
-            game.setScreen(new VictoryScreen(game, "CALISTO CONCLUÍDO",
-                    "O caminho da evolução foi atravessado."));
-            return;
+            handleFinalSequence();
         }
 
         updateCamera();
@@ -371,7 +388,11 @@ public class CalistoScreen extends ScreenAdapter {
                 if (bossHealth <= 0f) {
                     bossDefeated = true;
                     projectiles.clear();
-                    showMessage("BOSS FINAL DERROTADO! O corredor de Calisto foi conquistado.");
+                    finalKeySpawned = false;
+                    finalKeyCollected = false;
+                    finalPortalActive = false;
+                    showMessage("BOSS FINAL DERROTADO! A Chave de Luz vai surgir...");
+                    saveGame();
                 }
 
                 lasers.removeIndex(i);
@@ -382,6 +403,59 @@ public class CalistoScreen extends ScreenAdapter {
                 lasers.removeIndex(i);
             }
         }
+    }
+
+    private void handleFinalSequence() {
+        if (!finalKeySpawned) {
+            spawnFinalKey();
+            return;
+        }
+
+        if (!finalKeyCollected
+                && player.getHitbox().overlaps(finalKeyHitbox)) {
+            finalKeyCollected = true;
+            finalPortalActive = true;
+            activateFinalPortal();
+            showMessage("CHAVE DE LUZ COLETADA! A passagem final foi aberta.");
+            saveGame();
+            return;
+        }
+
+        if (finalPortalActive
+                && player.getHitbox().overlaps(finalPortalHitbox)) {
+            changingScreen = true;
+            dispose();
+            game.setScreen(new VictoryScreen(
+                    game,
+                    "CALISTO CONCLUÍDO",
+                    "O caminho da evolução foi atravessado."
+            ));
+        }
+    }
+
+    private void spawnFinalKey() {
+        finalKeySpawned = true;
+        finalKeyCollected = false;
+        finalPortalActive = false;
+
+        finalKeyHitbox.set(
+                BOSS_X + BOSS_SIZE / 2f - FINAL_KEY_SIZE / 2f,
+                BOSS_Y - 150f,
+                FINAL_KEY_SIZE,
+                FINAL_KEY_SIZE
+        );
+
+        showMessage("A CHAVE DE LUZ surgiu. Encoste nela para abrir o caminho final.");
+    }
+
+    private void activateFinalPortal() {
+        finalPortalHitbox.set(
+                BOSS_ARENA_MIN_X + 95f,
+                BOSS_ARENA_MIN_Y + (BOSS_ARENA_MAX_Y - BOSS_ARENA_MIN_Y) / 2f
+                        - FINAL_PORTAL_SIZE / 2f,
+                FINAL_PORTAL_SIZE,
+                FINAL_PORTAL_SIZE
+        );
     }
 
     private void updateBoss(float delta) {
@@ -786,6 +860,21 @@ public class CalistoScreen extends ScreenAdapter {
             shapeRenderer.rect(cx - 60f, cy - 9f, 120f, 18f);
         }
 
+        // Chave e saída do final.
+        if (inBossArena && bossDefeated && finalKeySpawned && !finalKeyCollected) {
+            float cx = finalKeyHitbox.x + finalKeyHitbox.width / 2f;
+            float cy = finalKeyHitbox.y + finalKeyHitbox.height / 2f;
+            shapeRenderer.setColor(new Color(1f, 0.85f, 0.1f, 0.28f));
+            shapeRenderer.circle(cx, cy, 70f);
+        }
+
+        if (inBossArena && finalPortalActive) {
+            float cx = finalPortalHitbox.x + finalPortalHitbox.width / 2f;
+            float cy = finalPortalHitbox.y + finalPortalHitbox.height / 2f;
+            shapeRenderer.setColor(new Color(1f, 0.85f, 0.1f, 0.18f));
+            shapeRenderer.circle(cx, cy, 115f);
+        }
+
         // Boss final.
         if (inBossArena && !bossDefeated) {
             float cx = bossHitbox.x + bossHitbox.width / 2f;
@@ -902,16 +991,31 @@ public class CalistoScreen extends ScreenAdapter {
             font.setColor(Color.ORANGE);
             font.getData().setScale(1.0f);
             font.draw(batch,
-                    "BOSS FINAL — FASE " + bossPhase + "/3 — ATAQUE " + (bossAttackIndex + 1) + "/3",
+                    bossDefeated
+                            ? "BOSS FINAL DERROTADO"
+                            : "BOSS FINAL — FASE " + bossPhase + "/3 — ATAQUE " + (bossAttackIndex + 1) + "/3",
                     28f,
                     hudViewport.getWorldHeight() - 222f);
 
             font.getData().setScale(0.86f);
             font.setColor(Color.LIGHT_GRAY);
-            font.draw(batch,
-                    "FASE 1: 8-12 projéteis | FASE 2: mais velocidade | FASE 3: tempestade máxima",
-                    28f,
-                    hudViewport.getWorldHeight() - 250f);
+
+            if (bossDefeated && !finalKeyCollected) {
+                font.draw(batch,
+                        "A CHAVE DE LUZ surgiu perto do boss. Encoste nela.",
+                        28f,
+                        hudViewport.getWorldHeight() - 250f);
+            } else if (finalPortalActive) {
+                font.draw(batch,
+                        "PORTAL FINAL ABERTO — entre nele para concluir a jornada.",
+                        28f,
+                        hudViewport.getWorldHeight() - 250f);
+            } else {
+                font.draw(batch,
+                        "FASE 1: 8-12 projéteis | FASE 2: mais velocidade | FASE 3: tempestade máxima",
+                        28f,
+                        hudViewport.getWorldHeight() - 250f);
+            }
         }
 
         font.setColor(Color.LIGHT_GRAY);
