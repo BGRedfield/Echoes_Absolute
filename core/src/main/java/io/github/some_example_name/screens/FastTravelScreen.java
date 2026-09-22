@@ -169,8 +169,13 @@ public class FastTravelScreen extends ScreenAdapter {
         SaveManager.Phase target = phases[selectedIndex];
 
         // Salva antes da viagem rápida.
+        boolean changingPlanet = saveData.phase != target;
         saveData.phase = target;
-        setSafeSpawn(saveData, target);
+
+        if (changingPlanet) {
+            setSafeSpawn(saveData, target);
+        }
+
         SaveManager.save(saveData);
 
         changingScreen = true;
