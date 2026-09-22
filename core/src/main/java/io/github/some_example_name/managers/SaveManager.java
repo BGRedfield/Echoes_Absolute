@@ -130,6 +130,15 @@ public final class SaveManager {
         activeSlot = normalizeSlot(slot);
         Preferences p = preferences(activeSlot);
 
+        // Preserva automaticamente o progresso dos mundos anteriores
+        // deste mesmo slot. O estado atual da fase continua sendo o que foi salvo.
+        if (p.getBoolean("exists", false)) {
+            SaveData previous = loadSlot(activeSlot);
+            if (previous != null) {
+                mergePreviousProgress(previous, data);
+            }
+        }
+
         p.putBoolean("exists", true);
         p.putInteger("version", SAVE_VERSION);
         p.putString("phase", data.phase.name());
@@ -291,6 +300,76 @@ public final class SaveManager {
         data.titanDialogueFinished = p.getBoolean("titanDialogueFinished", false);
 
         return data;
+    }
+
+    private static void mergePreviousProgress(
+            SaveData previous,
+            SaveData current
+    ) {
+        if (current.phase.ordinal() >= Phase.MARTE.ordinal()) {
+            current.luaMission = Math.max(current.luaMission, previous.luaMission);
+            current.iceCollected = Math.max(current.iceCollected, previous.iceCollected);
+            current.luaPortalSpawned |= previous.luaPortalSpawned;
+            current.luaPortalUnlocked |= previous.luaPortalUnlocked;
+            current.luaPortalEntryArmed |= previous.luaPortalEntryArmed;
+            current.redKeyVisible |= previous.redKeyVisible;
+            current.redKeyCollected |= previous.redKeyCollected;
+            current.trumpBossExists |= previous.trumpBossExists;
+
+            if (previous.trumpBossHealth <= 0f) {
+                current.trumpBossHealth = 0f;
+            }
+        }
+
+        if (current.phase.ordinal() >= Phase.TITA.ordinal()) {
+            current.marsMission = Math.max(current.marsMission, previous.marsMission);
+            current.rawOreCount = Math.max(current.rawOreCount, previous.rawOreCount);
+            current.refinedOreCount = Math.max(current.refinedOreCount, previous.refinedOreCount);
+            current.weaponUpgraded |= previous.weaponUpgraded;
+            current.marsPortalSpawned |= previous.marsPortalSpawned;
+            current.marsPortalUnlocked |= previous.marsPortalUnlocked;
+            current.marsPortalEntryArmed |= previous.marsPortalEntryArmed;
+            current.greenKeyVisible |= previous.greenKeyVisible;
+            current.greenKeyCollected |= previous.greenKeyCollected;
+            current.supremeAlienExists |= previous.supremeAlienExists;
+
+            if (previous.supremeAlienHealth <= 0f) {
+                current.supremeAlienHealth = 0f;
+            }
+        }
+
+        if (current.phase.ordinal() >= Phase.CALISTO.ordinal()) {
+            current.yellowKeyVisible |= previous.yellowKeyVisible;
+            current.yellowKeyCollected |= previous.yellowKeyCollected;
+            current.calistoPortalUnlocked |= previous.calistoPortalUnlocked;
+
+            for (int i = 0; i < current.crystalOwned.length; i++) {
+                current.crystalOwned[i] |= previous.crystalOwned[i];
+                current.crystalPlaced[i] |= previous.crystalPlaced[i];
+            }
+
+            for (int i = 0; i < current.titanBossDefeated.length; i++) {
+                current.titanBossDefeated[i] |= previous.titanBossDefeated[i];
+            }
+
+            for (int i = 0; i < current.calistoAngelBlessings.length; i++) {
+                current.calistoAngelBlessings[i] |= previous.calistoAngelBlessings[i];
+            }
+
+            current.calistoBossDefeated |= previous.calistoBossDefeated;
+            current.calistoFinalKeySpawned |= previous.calistoFinalKeySpawned;
+            current.calistoFinalKeyCollected |= previous.calistoFinalKeyCollected;
+        }
+
+        if (current.phase == Phase.AHARIN) {
+            current.aharinDialogueFinished |= previous.aharinDialogueFinished;
+            if (previous.aharinDialogueIndex > current.aharinDialogueIndex) {
+                current.aharinDialogueIndex = previous.aharinDialogueIndex;
+            }
+            if (current.aharinChoice < 0 && previous.aharinChoice >= 0) {
+                current.aharinChoice = previous.aharinChoice;
+            }
+        }
     }
 
     public static void clear() {
