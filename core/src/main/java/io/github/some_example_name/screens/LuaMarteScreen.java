@@ -92,6 +92,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private final Player player;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
+    private final QuestLog questLog;
 
     private final Array<LuaItem> resources = new Array<>();
     private final Array<MarsOre> ores = new Array<>();
@@ -145,6 +146,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
+        questLog = new QuestLog();
         createMarsResources();
         createMarsOres();
         createStartingMartians();
@@ -984,7 +986,22 @@ public class LuaMarteScreen extends ScreenAdapter {
             return;
         }
 
-        PauseMenu.Action pauseAction = pauseMenu.handleInput();
+        boolean questWasOpen = questLog.isOpen();
+
+        if (!questWasOpen
+                && !pauseMenu.isOpen()
+                && Gdx.input.isKeyJustPressed(Input.Keys.Q)) {
+            saveGame();
+            questLog.open();
+        }
+
+        if (questWasOpen) {
+            questLog.handleInput();
+        }
+
+        PauseMenu.Action pauseAction = (questWasOpen || questLog.isOpen())
+                ? PauseMenu.Action.NONE
+                : pauseMenu.handleInput();
 
         if (pauseAction == PauseMenu.Action.SAVE_SLOT_1) {
             saveGame(1);
@@ -1012,7 +1029,7 @@ public class LuaMarteScreen extends ScreenAdapter {
             return;
         }
 
-        if (!pauseMenu.isOpen()) {
+        if (!pauseMenu.isOpen() && !questWasOpen && !questLog.isOpen()) {
             if (!update(delta)) return;
         }
 
@@ -1022,6 +1039,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         drawStormEffect();
         drawHud();
         pauseMenu.render();
+        questLog.render();
     }
 
     @Override
@@ -1029,6 +1047,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         viewport.update(width, height, true);
         hudViewport.update(width, height, true);
         pauseMenu.resize(width, height);
+        questLog.resize(width, height);
         updateCamera();
     }
 
@@ -1046,6 +1065,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         hudFont.dispose();
         assets.dispose();
         pauseMenu.dispose();
+        questLog.dispose();
     }
 }
 
