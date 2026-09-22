@@ -1,0 +1,199 @@
+package io.github.some_example_name.managers;
+
+import com.badlogic.gdx.Gdx;
+import com.badlogic.gdx.Preferences;
+
+/**
+ * Persistent single-slot save for Echoes Absolute.
+ * Uses libGDX Preferences so the save survives closing the game.
+ */
+public final class SaveManager {
+
+    private static final String PREFS_NAME = "echoes_absolute_save";
+    private static final int SAVE_VERSION = 1;
+
+    private SaveManager() {
+    }
+
+    public enum Phase {
+        LUA,
+        MARTE,
+        TITA
+    }
+
+    public static class SaveData {
+        public int version = SAVE_VERSION;
+        public Phase phase = Phase.LUA;
+
+        public float playerX = 400f;
+        public float playerY = 400f;
+        public float health = 100f;
+        public float hunger = 100f;
+        public float oxygen = 100f;
+
+        // Lua
+        public int luaMission = 0;
+        public int iceCollected = 0;
+        public boolean luaPortalSpawned;
+        public boolean luaPortalUnlocked;
+        public boolean luaPortalEntryArmed;
+        public boolean redKeyVisible;
+        public boolean redKeyCollected;
+        public boolean trumpBossExists;
+        public float trumpBossHealth = 2000f;
+
+        // Marte
+        public int marsMission = 0;
+        public int rawOreCount;
+        public int refinedOreCount;
+        public boolean weaponUpgraded;
+        public boolean marsPortalSpawned;
+        public boolean marsPortalUnlocked;
+        public boolean marsPortalEntryArmed;
+        public boolean greenKeyVisible;
+        public boolean greenKeyCollected;
+        public boolean supremeAlienExists;
+        public float supremeAlienHealth = 5000f;
+
+        // Titã
+        public boolean insideTitanCastle;
+        public int currentTitanCastle = -1;
+        public boolean finalCastleUnlocked;
+        public final boolean[] crystalOwned = new boolean[3];
+        public final boolean[] crystalPlaced = new boolean[3];
+        public final boolean[] titanBossDefeated = new boolean[4];
+        public final float[] titanBossHealth = new float[] {10000f, 800f, 900f, 2500f};
+
+        // Titan NPC dialogue
+        public int titanDialogueRound;
+        public boolean titanDialogueFinished;
+    }
+
+    public static boolean hasSave() {
+        return preferences().getBoolean("exists", false);
+    }
+
+    public static void save(SaveData data) {
+        Preferences p = preferences();
+
+        p.putBoolean("exists", true);
+        p.putInteger("version", SAVE_VERSION);
+        p.putString("phase", data.phase.name());
+
+        p.putFloat("playerX", data.playerX);
+        p.putFloat("playerY", data.playerY);
+        p.putFloat("health", data.health);
+        p.putFloat("hunger", data.hunger);
+        p.putFloat("oxygen", data.oxygen);
+
+        p.putInteger("luaMission", data.luaMission);
+        p.putInteger("iceCollected", data.iceCollected);
+        p.putBoolean("luaPortalSpawned", data.luaPortalSpawned);
+        p.putBoolean("luaPortalUnlocked", data.luaPortalUnlocked);
+        p.putBoolean("luaPortalEntryArmed", data.luaPortalEntryArmed);
+        p.putBoolean("redKeyVisible", data.redKeyVisible);
+        p.putBoolean("redKeyCollected", data.redKeyCollected);
+        p.putBoolean("trumpBossExists", data.trumpBossExists);
+        p.putFloat("trumpBossHealth", data.trumpBossHealth);
+
+        p.putInteger("marsMission", data.marsMission);
+        p.putInteger("rawOreCount", data.rawOreCount);
+        p.putInteger("refinedOreCount", data.refinedOreCount);
+        p.putBoolean("weaponUpgraded", data.weaponUpgraded);
+        p.putBoolean("marsPortalSpawned", data.marsPortalSpawned);
+        p.putBoolean("marsPortalUnlocked", data.marsPortalUnlocked);
+        p.putBoolean("marsPortalEntryArmed", data.marsPortalEntryArmed);
+        p.putBoolean("greenKeyVisible", data.greenKeyVisible);
+        p.putBoolean("greenKeyCollected", data.greenKeyCollected);
+        p.putBoolean("supremeAlienExists", data.supremeAlienExists);
+        p.putFloat("supremeAlienHealth", data.supremeAlienHealth);
+
+        p.putBoolean("insideTitanCastle", data.insideTitanCastle);
+        p.putInteger("currentTitanCastle", data.currentTitanCastle);
+        p.putBoolean("finalCastleUnlocked", data.finalCastleUnlocked);
+        for (int i = 0; i < 3; i++) {
+            p.putBoolean("crystalOwned" + i, data.crystalOwned[i]);
+            p.putBoolean("crystalPlaced" + i, data.crystalPlaced[i]);
+        }
+        for (int i = 0; i < 4; i++) {
+            p.putBoolean("titanBossDefeated" + i, data.titanBossDefeated[i]);
+            p.putFloat("titanBossHealth" + i, data.titanBossHealth[i]);
+        }
+
+        p.putInteger("titanDialogueRound", data.titanDialogueRound);
+        p.putBoolean("titanDialogueFinished", data.titanDialogueFinished);
+
+        p.flush();
+        Gdx.app.log("SaveManager", "Save gravado. Fase=" + data.phase);
+    }
+
+    public static SaveData load() {
+        Preferences p = preferences();
+        if (!p.getBoolean("exists", false)) {
+            return null;
+        }
+
+        SaveData data = new SaveData();
+        data.version = p.getInteger("version", SAVE_VERSION);
+
+        try {
+            data.phase = Phase.valueOf(p.getString("phase", Phase.LUA.name()));
+        } catch (IllegalArgumentException ignored) {
+            data.phase = Phase.LUA;
+        }
+
+        data.playerX = p.getFloat("playerX", data.playerX);
+        data.playerY = p.getFloat("playerY", data.playerY);
+        data.health = p.getFloat("health", data.health);
+        data.hunger = p.getFloat("hunger", data.hunger);
+        data.oxygen = p.getFloat("oxygen", data.oxygen);
+
+        data.luaMission = p.getInteger("luaMission", data.luaMission);
+        data.iceCollected = p.getInteger("iceCollected", data.iceCollected);
+        data.luaPortalSpawned = p.getBoolean("luaPortalSpawned", false);
+        data.luaPortalUnlocked = p.getBoolean("luaPortalUnlocked", false);
+        data.luaPortalEntryArmed = p.getBoolean("luaPortalEntryArmed", false);
+        data.redKeyVisible = p.getBoolean("redKeyVisible", false);
+        data.redKeyCollected = p.getBoolean("redKeyCollected", false);
+        data.trumpBossExists = p.getBoolean("trumpBossExists", false);
+        data.trumpBossHealth = p.getFloat("trumpBossHealth", data.trumpBossHealth);
+
+        data.marsMission = p.getInteger("marsMission", data.marsMission);
+        data.rawOreCount = p.getInteger("rawOreCount", data.rawOreCount);
+        data.refinedOreCount = p.getInteger("refinedOreCount", data.refinedOreCount);
+        data.weaponUpgraded = p.getBoolean("weaponUpgraded", false);
+        data.marsPortalSpawned = p.getBoolean("marsPortalSpawned", false);
+        data.marsPortalUnlocked = p.getBoolean("marsPortalUnlocked", false);
+        data.marsPortalEntryArmed = p.getBoolean("marsPortalEntryArmed", false);
+        data.greenKeyVisible = p.getBoolean("greenKeyVisible", false);
+        data.greenKeyCollected = p.getBoolean("greenKeyCollected", false);
+        data.supremeAlienExists = p.getBoolean("supremeAlienExists", false);
+        data.supremeAlienHealth = p.getFloat("supremeAlienHealth", data.supremeAlienHealth);
+
+        data.insideTitanCastle = p.getBoolean("insideTitanCastle", false);
+        data.currentTitanCastle = p.getInteger("currentTitanCastle", -1);
+        data.finalCastleUnlocked = p.getBoolean("finalCastleUnlocked", false);
+        for (int i = 0; i < 3; i++) {
+            data.crystalOwned[i] = p.getBoolean("crystalOwned" + i, false);
+            data.crystalPlaced[i] = p.getBoolean("crystalPlaced" + i, false);
+        }
+        for (int i = 0; i < 4; i++) {
+            data.titanBossDefeated[i] = p.getBoolean("titanBossDefeated" + i, false);
+            data.titanBossHealth[i] = p.getFloat("titanBossHealth" + i, data.titanBossHealth[i]);
+        }
+
+        data.titanDialogueRound = p.getInteger("titanDialogueRound", 0);
+        data.titanDialogueFinished = p.getBoolean("titanDialogueFinished", false);
+
+        return data;
+    }
+
+    public static void clear() {
+        preferences().clear();
+        preferences().flush();
+    }
+
+    private static Preferences preferences() {
+        return Gdx.app.getPreferences(PREFS_NAME);
+    }
+}
