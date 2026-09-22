@@ -69,6 +69,11 @@ public class SupremeAlienBoss {
         barrierHealth = BARRIER_MAX_HEALTH;
     }
 
+    public void setHealth(float value) {
+        health = MathUtils.clamp(value, 0f, MAX_HEALTH);
+        dead = health <= 0f;
+    }
+
     public boolean isBarrierActive() { return barrierActive; }
     public float getBarrierHealth() { return barrierHealth; }
     public float getHealth() { return health; }
