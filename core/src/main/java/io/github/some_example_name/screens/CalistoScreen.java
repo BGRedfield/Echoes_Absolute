@@ -782,7 +782,7 @@ public class CalistoScreen extends ScreenAdapter {
                     30f,
                     bossHealth,
                     BOSS_MAX_HEALTH,
-                    Color.GOLD
+                    Color.YELLOW
             );
         }
 
