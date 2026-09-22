@@ -37,6 +37,7 @@ import io.github.some_example_name.entities.RifleWeapon;
 import io.github.some_example_name.entities.TrumpBoss;
 import io.github.some_example_name.entities.TrumpMissile;
 import io.github.some_example_name.managers.AssetManager;
+import io.github.some_example_name.managers.SaveManager;
 
 /** Complete Lua phase: mission, enemies, Trump boss, weapons and portal to Mars. */
 public class LuaScreen extends ScreenAdapter {
@@ -120,6 +121,10 @@ public class LuaScreen extends ScreenAdapter {
     private boolean screenChanged;
 
     public LuaScreen(Game game) {
+        this(game, null);
+    }
+
+    public LuaScreen(Game game, SaveManager.SaveData saveData) {
         this.game = game;
         camera = new OrthographicCamera();
         viewport = new FitViewport(VIEW_WIDTH, VIEW_HEIGHT, camera);
@@ -134,8 +139,75 @@ public class LuaScreen extends ScreenAdapter {
         pauseMenu = new PauseMenu(game);
         createLuaResources();
         createStartingAmericans();
-        showMessage("MISSÃO LUA: colete 5 gelos e leve os 5 até a base lunar.");
+
+        if (saveData != null) {
+            applySave(saveData);
+            showMessage("SAVE CARREGADO: retomando a Lua.");
+        } else {
+            showMessage("MISSÃO LUA: colete 5 gelos e leve os 5 até a base lunar.");
+        }
+
         updateCamera();
+    }
+
+    private void applySave(SaveManager.SaveData data) {
+        player.getHitbox().set(data.playerX, data.playerY, player.getWidth(), player.getHeight());
+        stats.setHealth(data.health);
+        stats.setHunger(data.hunger);
+        stats.setOxygen(data.oxygen);
+
+        mission = LuaMission.values()[MathUtils.clamp(data.luaMission, 0, LuaMission.values().length - 1)];
+
+        while (stats.getIceCollected() < data.iceCollected) {
+            stats.collectIce();
+        }
+
+        portalSpawned = data.luaPortalSpawned;
+        portalUnlocked = data.luaPortalUnlocked;
+        portalEntryArmed = data.luaPortalEntryArmed;
+        redKeyVisible = data.redKeyVisible;
+        redKeyCollected = data.redKeyCollected;
+
+        if (data.trumpBossExists) {
+            trumpBoss = new TrumpBoss(1240f, 850f);
+            trumpBoss.setHealth(data.trumpBossHealth);
+            bossDeathSequenceStarted = trumpBoss.isDead();
+        }
+
+        if (portalSpawned) {
+            marsPortal = new MarsPortal(2580f, 1530f);
+            if (trumpBoss != null) {
+                redKeyHitbox.set(
+                        trumpBoss.getCenterX() - RED_KEY_SIZE / 2f,
+                        trumpBoss.getCenterY() - RED_KEY_SIZE / 2f,
+                        RED_KEY_SIZE,
+                        RED_KEY_SIZE
+                );
+            }
+        }
+    }
+
+    private void saveGame() {
+        SaveManager.SaveData data = new SaveManager.SaveData();
+        data.phase = SaveManager.Phase.LUA;
+        data.playerX = player.getX();
+        data.playerY = player.getY();
+        data.health = stats.getHealth();
+        data.hunger = stats.getHunger();
+        data.oxygen = stats.getOxygen();
+
+        data.luaMission = mission.ordinal();
+        data.iceCollected = stats.getIceCollected();
+        data.luaPortalSpawned = portalSpawned;
+        data.luaPortalUnlocked = portalUnlocked;
+        data.luaPortalEntryArmed = portalEntryArmed;
+        data.redKeyVisible = redKeyVisible;
+        data.redKeyCollected = redKeyCollected;
+        data.trumpBossExists = trumpBoss != null;
+        data.trumpBossHealth = trumpBoss == null ? TrumpBoss.MAX_HEALTH : trumpBoss.getHealth();
+
+        SaveManager.save(data);
+        showMessage("JOGO SALVO! O save permanece mesmo fechando o jogo.");
     }
 
     private void createLuaResources() {
@@ -883,7 +955,13 @@ public class LuaScreen extends ScreenAdapter {
     public void render(float delta) {
         PauseMenu.Action pauseAction = pauseMenu.handleInput();
 
+        if (pauseAction == PauseMenu.Action.SAVE) {
+            saveGame();
+            return;
+        }
+
         if (pauseAction == PauseMenu.Action.PHASES) {
+            saveGame();
             screenChanged = true;
             dispose();
             game.setScreen(new PhaseSelectScreen(game));
@@ -891,6 +969,7 @@ public class LuaScreen extends ScreenAdapter {
         }
 
         if (pauseAction == PauseMenu.Action.MENU) {
+            saveGame();
             screenChanged = true;
             dispose();
             game.setScreen(new MenuScreen(game));
