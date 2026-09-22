@@ -80,6 +80,14 @@ public class titascreen extends ScreenAdapter {
     private static final float FIRE_INTERVAL = 0.12f;
     private static final float BASE_RECOVERY_INTERVAL = 1f;
 
+    private static final float YELLOW_KEY_X = 2480f;
+    private static final float YELLOW_KEY_Y = 620f;
+    private static final float YELLOW_KEY_SIZE = 72f;
+
+    private static final float CALISTO_PORTAL_X = 2580f;
+    private static final float CALISTO_PORTAL_Y = 650f;
+    private static final float CALISTO_PORTAL_SIZE = 150f;
+
     // Arena ampliada para as boss fights.
     private static final float ARENA_MIN_X = 450f;
     private static final float ARENA_MIN_Y = 250f;
@@ -153,6 +161,12 @@ public class titascreen extends ScreenAdapter {
     private final boolean[] bossDefeated = new boolean[4];
     private final TitaBoss[] bosses = new TitaBoss[4];
     private final Rectangle[] crystalDrops = new Rectangle[3];
+    private final Rectangle yellowKey = new Rectangle(
+            YELLOW_KEY_X, YELLOW_KEY_Y, YELLOW_KEY_SIZE, YELLOW_KEY_SIZE
+    );
+    private final Rectangle calistoPortal = new Rectangle(
+            CALISTO_PORTAL_X, CALISTO_PORTAL_Y, CALISTO_PORTAL_SIZE, CALISTO_PORTAL_SIZE
+    );
 
     private final Array<LuaItem> exteriorResources = new Array<>();
 
@@ -175,6 +189,9 @@ public class titascreen extends ScreenAdapter {
     private boolean changingScreen;
     private boolean disposed;
     private boolean finalCastleUnlocked;
+    private boolean yellowKeyVisible;
+    private boolean yellowKeyCollected;
+    private boolean calistoPortalUnlocked;
 
     private float fireTimer;
     private float baseRecoveryTimer;
@@ -229,6 +246,9 @@ public class titascreen extends ScreenAdapter {
         insideCastle = data.insideTitanCastle;
         currentCastle = data.currentTitanCastle;
         finalCastleUnlocked = data.finalCastleUnlocked;
+        yellowKeyVisible = data.yellowKeyVisible;
+        yellowKeyCollected = data.yellowKeyCollected;
+        calistoPortalUnlocked = data.calistoPortalUnlocked;
 
         for (int i = 0; i < 3; i++) {
             crystalOwned[i] = data.crystalOwned[i];
@@ -316,6 +336,9 @@ public class titascreen extends ScreenAdapter {
         data.insideTitanCastle = insideCastle;
         data.currentTitanCastle = currentCastle;
         data.finalCastleUnlocked = finalCastleUnlocked;
+        data.yellowKeyVisible = yellowKeyVisible;
+        data.yellowKeyCollected = yellowKeyCollected;
+        data.calistoPortalUnlocked = calistoPortalUnlocked;
 
         for (int i = 0; i < 3; i++) {
             data.crystalOwned[i] = crystalOwned[i];
@@ -393,6 +416,7 @@ public class titascreen extends ScreenAdapter {
             }
 
             handleCastleCrystalPickup();
+            handleYellowKeyPickup();
 
             if (Gdx.input.isKeyJustPressed(Input.Keys.E)
                     && playerNearArenaDoor()
@@ -483,6 +507,11 @@ public class titascreen extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.E)) {
             if (player.getHitbox().overlaps(titanNpcHitbox) && !titanDialogueFinished) {
                 openTitanDialogue();
+                return;
+            }
+
+            if (calistoPortalUnlocked && player.getHitbox().overlaps(calistoPortal)) {
+                enterCalisto();
                 return;
             }
 
@@ -613,20 +642,28 @@ public class titascreen extends ScreenAdapter {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Placeholder do NPC: corpo escuro, cabeça clara e olhos.
-        float cx = titanNpcHitbox.x + titanNpcHitbox.width / 2f;
-        shapeRenderer.setColor(new Color(0.08f, 0.08f, 0.10f, 1f));
-        shapeRenderer.rect(titanNpcHitbox.x + 16f, titanNpcHitbox.y, 50f, 62f);
-
-        shapeRenderer.setColor(new Color(0.75f, 0.78f, 0.82f, 1f));
-        shapeRenderer.circle(cx, titanNpcHitbox.y + 88f, 27f);
+        // Placeholder pedido: um cubo amarelo simples.
+        shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
+        shapeRenderer.rect(
+                titanNpcHitbox.x + 5f,
+                titanNpcHitbox.y + 8f,
+                titanNpcHitbox.width - 10f,
+                titanNpcHitbox.height - 16f
+        );
 
         shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.circle(cx - 9f, titanNpcHitbox.y + 94f, 4f);
-        shapeRenderer.circle(cx + 9f, titanNpcHitbox.y + 94f, 4f);
-
-        shapeRenderer.setColor(new Color(0.45f, 0.18f, 0.12f, 1f));
-        shapeRenderer.rect(titanNpcHitbox.x + 6f, titanNpcHitbox.y + 62f, 70f, 10f);
+        shapeRenderer.rect(
+                titanNpcHitbox.x + 20f,
+                titanNpcHitbox.y + 82f,
+                10f,
+                10f
+        );
+        shapeRenderer.rect(
+                titanNpcHitbox.x + titanNpcHitbox.width - 30f,
+                titanNpcHitbox.y + 82f,
+                10f,
+                10f
+        );
 
         shapeRenderer.end();
     }
@@ -639,64 +676,109 @@ public class titascreen extends ScreenAdapter {
         float width = hudViewport.getWorldWidth();
         float height = hudViewport.getWorldHeight();
 
+        float panelX = 45f;
+        float panelY = 45f;
+        float panelWidth = width - 90f;
+        float panelHeight = 305f;
+        float portraitX = width - 330f;
+        float portraitY = 345f;
+        float portraitSize = 250f;
+
         shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Retrato/placeholder do personagem acima do balão.
+        // Balão preto.
         shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.rect(width / 2f - 55f, height - 220f, 110f, 100f);
-        shapeRenderer.setColor(new Color(0.72f, 0.76f, 0.82f, 1f));
-        shapeRenderer.circle(width / 2f, height - 145f, 30f);
-        shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.circle(width / 2f - 10f, height - 138f, 4f);
-        shapeRenderer.circle(width / 2f + 10f, height - 138f, 4f);
+        shapeRenderer.rect(panelX, panelY, panelWidth, panelHeight);
 
-        // Balão preto com outline preto.
-        shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.rect(55f, 65f, width - 110f, 230f);
+        // Place holder grande do NPC na lateral direita.
+        shapeRenderer.setColor(new Color(0.04f, 0.04f, 0.04f, 1f));
+        shapeRenderer.rect(portraitX, portraitY, portraitSize, portraitSize);
 
-        // Botões pretos.
+        float cubeSize = 145f;
+        float cubeX = portraitX + (portraitSize - cubeSize) / 2f;
+        float cubeY = portraitY + 55f;
+        shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
+        shapeRenderer.rect(cubeX, cubeY, cubeSize, cubeSize);
+
+        shapeRenderer.setColor(Color.BLACK);
+        shapeRenderer.rect(cubeX + 32f, cubeY + 88f, 16f, 16f);
+        shapeRenderer.rect(cubeX + cubeSize - 48f, cubeY + 88f, 16f, 16f);
+
+        // Outline preto, como solicitado.
+        shapeRenderer.end();
+
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.BLACK);
+        shapeRenderer.rect(panelX, panelY, panelWidth, panelHeight);
+        shapeRenderer.rect(portraitX, portraitY, portraitSize, portraitSize);
+
         for (int i = 0; i < 3; i++) {
-            float bx = 90f + i * ((width - 270f) / 3f);
-            shapeRenderer.setColor(Color.BLACK);
-            shapeRenderer.rect(bx, 78f, (width - 330f) / 3f, 48f);
+            float bx = panelX + 25f + i * 300f;
+            shapeRenderer.rect(bx, panelY + 18f, 280f, 62f);
         }
+        shapeRenderer.end();
 
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        for (int i = 0; i < 3; i++) {
+            float bx = panelX + 25f + i * 300f;
+            shapeRenderer.setColor(Color.BLACK);
+            shapeRenderer.rect(bx, panelY + 18f, 280f, 62f);
+        }
         shapeRenderer.end();
 
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
 
         font.setColor(Color.WHITE);
-        font.getData().setScale(0.78f);
+        font.getData().setScale(1.0f);
+
+        float textWidth = width - 420f;
 
         if (titanDialogueWaiting) {
-            font.draw(batch, "NPC:", 82f, 270f);
-            font.draw(batch, titanDialogueResponse, 82f, 238f, width - 164f, 2, true);
-            font.getData().setScale(0.62f);
-            font.setColor(Color.LIGHT_GRAY);
-            font.draw(batch, "ENTER = próxima pergunta    ESC = fechar", 82f, 150f);
-        } else {
-            font.draw(batch, "Você:", 82f, 270f);
-            font.setColor(Color.WHITE);
-            font.draw(batch, "Escolha uma pergunta:", 82f, 238f);
+            font.draw(batch, "NPC:", 75f, 300f);
+            font.draw(
+                    batch,
+                    titanDialogueResponse,
+                    75f,
+                    255f,
+                    textWidth,
+                    3,
+                    true
+            );
 
+            font.getData().setScale(0.82f);
+            font.setColor(Color.LIGHT_GRAY);
+            font.draw(batch, "ENTER = próxima pergunta    ESC = fechar", 75f, 125f);
+        } else {
+            font.draw(batch, "Você:", 75f, 300f);
+            font.draw(batch, "Escolha uma pergunta:", 75f, 262f);
+
+            font.getData().setScale(0.80f);
             for (int i = 0; i < 3; i++) {
-                font.getData().setScale(0.66f);
+                float bx = panelX + 35f + i * 300f;
                 font.setColor(Color.WHITE);
                 font.draw(
                         batch,
                         (i + 1) + " - " + getTitanDialogueQuestion(titanDialogueRound, i),
-                        100f + i * ((width - 300f) / 3f),
-                        108f
+                        bx,
+                        panelY + 68f,
+                        260f,
+                        2,
+                        true
                 );
             }
         }
 
-        font.getData().setScale(0.60f);
+        font.getData().setScale(0.82f);
         font.setColor(Color.GRAY);
         if (!titanDialogueWaiting) {
-            font.draw(batch, "Rodada " + (titanDialogueRound + 1) + "/3", 82f, 192f);
+            font.draw(
+                    batch,
+                    "Rodada " + (titanDialogueRound + 1) + "/3",
+                    75f,
+                    205f
+            );
         }
 
         batch.end();
@@ -833,6 +915,43 @@ public class titascreen extends ScreenAdapter {
         return player.getHitbox().overlaps(door);
     }
 
+    private void handleYellowKeyPickup() {
+        if (currentCastle != 3 || !yellowKeyVisible || yellowKeyCollected) {
+            return;
+        }
+
+        if (player.getHitbox().overlaps(yellowKey)) {
+            yellowKeyCollected = true;
+            yellowKeyVisible = false;
+            calistoPortalUnlocked = true;
+            showMessage("CHAVE AMARELA COLETADA! Um portal para CALISTO surgiu na superfície.");
+        }
+    }
+
+    private void enterCalisto() {
+        SaveManager.SaveData data = new SaveManager.SaveData();
+        data.phase = SaveManager.Phase.CALISTO;
+        data.playerX = 210f;
+        data.playerY = 620f;
+        data.health = stats.getHealth();
+        data.hunger = stats.getHunger();
+        data.oxygen = stats.getOxygen();
+
+        for (int i = 0; i < 5; i++) {
+            data.calistoAngelBlessings[i] = false;
+        }
+
+        data.calistoBossHealth = 18000f;
+        data.calistoBossDefeated = false;
+        data.calistoBossPhase = 1;
+
+        SaveManager.save(data);
+
+        changingScreen = true;
+        dispose();
+        game.setScreen(new CalistoScreen(game, data));
+    }
+
     private void handleCastleCrystalPickup() {
         if (currentCastle < 0 || currentCastle > 2 || bosses[currentCastle] == null) {
             return;
@@ -948,11 +1067,15 @@ public class titascreen extends ScreenAdapter {
                             showMessage(boss.getName() + " derrotado! O cristal " + crystalName(currentCastle) + " caiu.");
                         } else {
                             bossProjectiles.clear();
-                            showMessage("CR7 DERROTADO! TITÃ FOI CONCLUÍDO.");
-                            changingScreen = true;
-                            dispose();
-                            game.setScreen(new VictoryScreen(game));
-                            return;
+                            yellowKeyVisible = true;
+                            yellowKeyCollected = false;
+                            yellowKey.set(
+                                    boss.getCenterX() - YELLOW_KEY_SIZE / 2f,
+                                    boss.getCenterY() - YELLOW_KEY_SIZE / 2f,
+                                    YELLOW_KEY_SIZE,
+                                    YELLOW_KEY_SIZE
+                            );
+                            showMessage("CR7 DERROTADO! A CHAVE AMARELA CAIU. Colete-a para abrir o caminho para CALISTO.");
                         }
                     }
                 }
@@ -1464,7 +1587,58 @@ public class titascreen extends ScreenAdapter {
 
         if (insideCastle) {
             drawArenaEffects();
+            drawYellowKey();
+        } else {
+            drawCalistoPortal();
         }
+    }
+
+    private void drawYellowKey() {
+        if (!insideCastle || currentCastle != 3 || !yellowKeyVisible || yellowKeyCollected) {
+            return;
+        }
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
+        shapeRenderer.circle(
+                yellowKey.x + yellowKey.width / 2f,
+                yellowKey.y + yellowKey.height / 2f,
+                27f
+        );
+        shapeRenderer.rect(
+                yellowKey.x + 22f,
+                yellowKey.y + 8f,
+                16f,
+                45f
+        );
+        shapeRenderer.setColor(Color.BLACK);
+        shapeRenderer.rect(
+                yellowKey.x + 34f,
+                yellowKey.y + 20f,
+                22f,
+                8f
+        );
+        shapeRenderer.end();
+    }
+
+    private void drawCalistoPortal() {
+        if (!calistoPortalUnlocked) {
+            return;
+        }
+
+        float cx = calistoPortal.x + calistoPortal.width / 2f;
+        float cy = calistoPortal.y + calistoPortal.height / 2f;
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(new Color(0.35f, 0.85f, 1f, 0.20f));
+        shapeRenderer.circle(cx, cy, 100f);
+        shapeRenderer.setColor(new Color(0.70f, 0.95f, 1f, 0.70f));
+        shapeRenderer.circle(cx, cy, 70f);
+        shapeRenderer.setColor(new Color(0.02f, 0.08f, 0.20f, 1f));
+        shapeRenderer.circle(cx, cy, 50f);
+        shapeRenderer.end();
     }
 
     private void drawArenaEffects() {
@@ -1787,7 +1961,15 @@ public class titascreen extends ScreenAdapter {
                     28f,
                     hudViewport.getWorldHeight() - 270f);
 
-            if (finalCastleUnlocked) {
+            if (calistoPortalUnlocked) {
+                font.setColor(Color.CYAN);
+                font.draw(batch, "CHAVE AMARELA COLETADA! E no portal azul = entrar em CALISTO.", 28f,
+                        hudViewport.getWorldHeight() - 302f);
+            } else if (yellowKeyVisible) {
+                font.setColor(Color.YELLOW);
+                font.draw(batch, "A CHAVE AMARELA ESTÁ DENTRO DO BASTIÃO. Pegue-a após derrotar CR7.", 28f,
+                        hudViewport.getWorldHeight() - 302f);
+            } else if (finalCastleUnlocked) {
                 font.setColor(Color.ORANGE);
                 font.draw(batch, "CASTELO FINAL ABERTO! Derrote CR7.", 28f,
                         hudViewport.getWorldHeight() - 302f);
