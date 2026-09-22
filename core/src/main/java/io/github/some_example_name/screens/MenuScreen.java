@@ -115,6 +115,9 @@ public class MenuScreen extends ScreenAdapter {
             case TITA:
                 game.setScreen(new titascreen(game, data));
                 break;
+            case CALISTO:
+                game.setScreen(new CalistoScreen(game, data));
+                break;
             default:
                 game.setScreen(new LuaScreen(game, data));
                 break;
