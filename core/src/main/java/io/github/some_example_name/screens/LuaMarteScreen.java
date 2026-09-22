@@ -304,7 +304,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         updateShooting(delta);
         updateLasers(delta);
         updateBoss(delta);
-        bossStorm.update(delta, stats);
+        bossStorm.update(delta, stats, player.getCenterX(), player.getCenterY());
         updatePortalStrikes(delta);
         handleExitPortal();
         stats.update(delta);
