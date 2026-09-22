@@ -1826,6 +1826,8 @@ public class titascreen extends ScreenAdapter {
             drawBossHealthBar();
         }
 
+        drawTitanDialogue();
+
         messageTimer = Math.max(0f, messageTimer - Gdx.graphics.getDeltaTime());
     }
 
