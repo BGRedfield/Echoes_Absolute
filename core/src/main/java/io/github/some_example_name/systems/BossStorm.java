@@ -24,6 +24,7 @@ public class BossStorm {
 
     private float targetX;
     private float targetY;
+    private float safeRadius;
 
     public BossStorm() {
         this(0f);
@@ -39,6 +40,7 @@ public class BossStorm {
         this.targetY = targetY;
         this.remaining = DURATION;
         this.damageTimer = 1f;
+        this.safeRadius = 2400f;
     }
 
     public void restore(float remaining, float targetX, float targetY) {
@@ -46,19 +48,34 @@ public class BossStorm {
         this.targetY = targetY;
         this.remaining = Math.max(0f, remaining);
         this.damageTimer = 1f;
+        this.safeRadius = 2400f;
     }
 
-    public void update(float delta, PlayerStats stats) {
+    public void update(
+            float delta,
+            PlayerStats stats,
+            float playerX,
+            float playerY
+    ) {
         if (!isActive()) {
             return;
         }
 
         remaining = Math.max(0f, remaining - delta);
+        safeRadius = MathUtils.lerp(2400f, 220f, getProgress());
         damageTimer -= delta;
+
+        float dx = playerX - targetX;
+        float dy = playerY - targetY;
+        float distanceSquared = dx * dx + dy * dy;
+        float safeSquared = safeRadius * safeRadius;
+        boolean playerInsideSafeZone = distanceSquared <= safeSquared;
 
         while (damageTimer <= 0f && isActive()) {
             damageTimer += 1f;
-            stats.damage(DAMAGE_PER_SECOND, DeathCause.UNKNOWN);
+            if (!playerInsideSafeZone) {
+                stats.damage(DAMAGE_PER_SECOND, DeathCause.UNKNOWN);
+            }
         }
     }
 
@@ -91,17 +108,16 @@ public class BossStorm {
         float maxRadius = (float) Math.sqrt(
                 worldWidth * worldWidth + worldHeight * worldHeight
         ) * 0.72f;
-        float safeRadius = 170f;
-        float radius = MathUtils.lerp(maxRadius, safeRadius, progress);
+        float radius = MathUtils.lerp(maxRadius, 220f, progress);
 
-        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, 0.17f));
+        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, 0.14f));
         renderer.circle(targetX, targetY, radius);
 
-        renderer.setColor(new Color(0.72f, 0.10f, 0.95f, 0.30f));
-        renderer.circle(targetX, targetY, radius * 0.92f);
+        renderer.setColor(new Color(0.72f, 0.10f, 0.95f, 0.34f));
+        renderer.circle(targetX, targetY, radius * 0.94f);
 
-        renderer.setColor(new Color(0.88f, 0.35f, 1f, 0.82f));
-        renderer.circle(targetX, targetY, Math.max(10f, radius - 16f), 64);
+        renderer.setColor(new Color(0.98f, 0.48f, 1f, 0.95f));
+        renderer.circle(targetX, targetY, Math.max(8f, radius - 18f), 64);
 
         // Faixas diagonais para dar a sensação de tempestade em movimento.
         float stripeOffset = progress * 220f;
