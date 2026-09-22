@@ -244,6 +244,8 @@ public class titascreen extends ScreenAdapter {
 
         for (int i = 0; i < 4; i++) {
             if (bossDefeated[i]) {
+                bosses[i] = createTitanBoss(i);
+                bosses[i].setHealth(0f);
                 continue;
             }
 
