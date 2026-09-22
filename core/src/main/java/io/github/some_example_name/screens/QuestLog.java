@@ -168,10 +168,13 @@ public class QuestLog {
         shapes.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
 
+        SaveManager.SaveData data = SaveManager.load();
+
+        drawProgressBar(width, height, scale, data);
+
         batch.setProjectionMatrix(viewport.getCamera().combined);
         batch.begin();
 
-        SaveManager.SaveData data = SaveManager.load();
         drawContents(width, height, scale, data);
 
         batch.end();
@@ -182,8 +185,8 @@ public class QuestLog {
         float rightX = (OUTER_MARGIN + LEFT_PANEL_WIDTH + 32f) * scale;
 
         // Cabeçalho esquerdo.
-        drawText("CONTROLES", leftX, (height - 46f * scale), 1.35f * scale, Color.CYAN);
-        drawText("GUIA RÁPIDO DO JOGO", leftX, (height - 76f * scale), 0.72f * scale, Color.GRAY);
+        drawText("CONTROLES", leftX, height - 46f * scale, 1.35f * scale, Color.CYAN);
+        drawText("GUIA RÁPIDO DO JOGO", leftX, height - 76f * scale, 0.72f * scale, Color.GRAY);
 
         float controlsY = height - 112f * scale;
         for (String control : CONTROLS) {
@@ -207,15 +210,7 @@ public class QuestLog {
                 : "FASE: " + phaseName(data.phase) + "  |  SLOT " + SaveManager.getActiveSlot();
 
         drawText(phase, rightX, height - 78f * scale, 0.78f * scale, Color.GRAY);
-
-        // Linha informativa.
-        drawText(
-                "OBJETIVOS PRINCIPAIS",
-                rightX,
-                height - 112f * scale,
-                0.82f * scale,
-                Color.CYAN
-        );
+        drawText("OBJETIVOS PRINCIPAIS", rightX, height - 112f * scale, 0.82f * scale, Color.CYAN);
 
         float questY = height - 150f * scale;
         int openQuestIndex = firstOpenQuest(data);
@@ -233,9 +228,9 @@ public class QuestLog {
                 drawText((done ? "✓ " : "  ") + QUEST_NAMES[i], rightX, questY, 0.82f * scale, nameColor);
             }
 
-            GlyphLayout statusLayout = new GlyphLayout(font, status);
             font.setColor(statusColor);
             font.getData().setScale(0.70f * scale);
+            GlyphLayout statusLayout = new GlyphLayout(font, status);
             font.draw(
                     batch,
                     status,
@@ -246,15 +241,6 @@ public class QuestLog {
             questY -= 44f * scale;
         }
 
-        drawText(
-                "Q ou ESC para voltar ao jogo",
-                rightX,
-                44f * scale,
-                0.68f * scale,
-                Color.GRAY
-        );
-
-        // Ajusta uma barra visual indicando quantas quests foram feitas.
         int doneCount = 0;
         for (int i = 0; i < QUEST_NAMES.length; i++) {
             if (isQuestDone(i, data)) {
@@ -262,6 +248,32 @@ public class QuestLog {
             }
         }
 
+        drawText(
+                doneCount + "/" + QUEST_NAMES.length + " QUESTS FEITAS",
+                rightX,
+                108f * scale,
+                0.68f * scale,
+                Color.GRAY
+        );
+
+        drawText(
+                "Q ou ESC para voltar ao jogo",
+                rightX,
+                44f * scale,
+                0.68f * scale,
+                Color.GRAY
+        );
+    }
+
+    private void drawProgressBar(float width, float height, float scale, SaveManager.SaveData data) {
+        int doneCount = 0;
+        for (int i = 0; i < QUEST_NAMES.length; i++) {
+            if (isQuestDone(i, data)) {
+                doneCount++;
+            }
+        }
+
+        float rightX = (OUTER_MARGIN + LEFT_PANEL_WIDTH + 32f) * scale;
         float barX = rightX;
         float barY = 82f * scale;
         float barWidth = width - rightX - 46f * scale;
@@ -270,9 +282,11 @@ public class QuestLog {
         shapes.setProjectionMatrix(viewport.getCamera().combined);
         Gdx.gl.glEnable(GL20.GL_BLEND);
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
+
         shapes.begin(ShapeRenderer.ShapeType.Filled);
         shapes.setColor(new Color(0.10f, 0.10f, 0.14f, 1f));
         shapes.rect(barX, barY, barWidth, barHeight);
+
         shapes.setColor(new Color(0.15f, 0.75f, 0.35f, 1f));
         shapes.rect(
                 barX,
@@ -281,22 +295,8 @@ public class QuestLog {
                 barHeight
         );
         shapes.end();
+
         Gdx.gl.glDisable(GL20.GL_BLEND);
-
-        // O texto precisa voltar ao batch depois do ShapeRenderer.
-        batch.setProjectionMatrix(viewport.getCamera().combined);
-        batch.begin();
-        drawText(
-                doneCount + "/" + QUEST_NAMES.length + " QUESTS FEITAS",
-                barX,
-                barY + 28f * scale,
-                0.68f * scale,
-                Color.GRAY
-        );
-        batch.end();
-
-        // Reabre o batch para o método chamador não desenhar depois deste ponto.
-        batch.begin();
     }
 
     private int firstOpenQuest(SaveManager.SaveData data) {
