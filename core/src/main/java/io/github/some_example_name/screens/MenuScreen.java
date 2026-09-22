@@ -23,6 +23,7 @@ public class MenuScreen extends ScreenAdapter {
     private final Viewport viewport;
     private final Rectangle playButton = new Rectangle();
     private final Rectangle loadButton = new Rectangle();
+    private final Rectangle loadButton2 = new Rectangle();
 
     private boolean changingScreen;
     private boolean disposed;
@@ -48,11 +49,22 @@ public class MenuScreen extends ScreenAdapter {
 
         playButton.set(width / 2f - 170f, height / 2f - 70f, 340f, 70f);
         loadButton.set(width / 2f - 170f, height / 2f - 155f, 340f, 60f);
+        loadButton2.set(width / 2f - 170f, height / 2f - 225f, 340f, 60f);
     }
 
     private void handleInput() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) {
+            loadGame(1);
+            return;
+        }
+
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) {
+            loadGame(2);
+            return;
+        }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.L)) {
-            loadGame();
+            loadGame(SaveManager.getActiveSlot());
             return;
         }
 
@@ -77,8 +89,10 @@ public class MenuScreen extends ScreenAdapter {
             float y = Gdx.graphics.getHeight() - Gdx.input.getY();
             if (playButton.contains(x, y)) {
                 startGame();
-            } else if (SaveManager.hasSave() && loadButton.contains(x, y)) {
-                loadGame();
+            } else if (SaveManager.hasSave(1) && loadButton.contains(x, y)) {
+                loadGame(1);
+            } else if (SaveManager.hasSave(2) && loadButton2.contains(x, y)) {
+                loadGame(2);
             }
         }
     }
@@ -89,15 +103,16 @@ public class MenuScreen extends ScreenAdapter {
         }
 
         changingScreen = true;
+        SaveManager.setActiveSlot(1);
         game.setScreen(new LuaScreen(game));
     }
 
-    private void loadGame() {
-        if (changingScreen || !SaveManager.hasSave()) {
+    private void loadGame(int slot) {
+        if (changingScreen || !SaveManager.hasSave(slot)) {
             return;
         }
 
-        SaveManager.SaveData data = SaveManager.load();
+        SaveManager.SaveData data = SaveManager.loadSlot(slot);
         if (data == null) {
             return;
         }
@@ -166,16 +181,27 @@ public class MenuScreen extends ScreenAdapter {
         font.getData().setScale(1.15f);
         drawCentered("[ NOVO JOGO ]", width, playButton.y + 24f);
 
-        font.getData().setScale(1.05f);
-        font.setColor(SaveManager.hasSave() ? Color.CYAN : Color.DARK_GRAY);
-        drawCentered(SaveManager.hasSave() ? "[ CARREGAR ]" : "[ SEM SAVE ]", width, loadButton.y + 21f);
+        font.getData().setScale(1.0f);
 
-        font.getData().setScale(0.88f);
-        font.setColor(Color.LIGHT_GRAY);
+        font.setColor(SaveManager.hasSave(1) ? Color.CYAN : Color.DARK_GRAY);
+        drawCentered(
+                SaveManager.hasSave(1) ? "[ CONTINUAR SLOT 1 ]" : "[ SLOT 1 VAZIO ]",
+                width,
+                loadButton.y + 21f
+        );
+
+        font.setColor(SaveManager.hasSave(2) ? Color.CYAN : Color.DARK_GRAY);
+        drawCentered(
+                SaveManager.hasSave(2) ? "[ CONTINUAR SLOT 2 ]" : "[ SLOT 2 VAZIO ]",
+                width,
+                loadButton2.y + 21f
+        );
+
+        font.getData().setScale(0.82f);
         font.setColor(Color.LIGHT_GRAY);
         drawCentered("ENTER / SPACE = novo jogo", width, 78f);
-        drawCentered("L = carregar último save", width, 55f);
-        drawCentered("F = selecionar fase", width, 32f);
+        drawCentered("1 = CONTINUAR SLOT 1 | 2 = CONTINUAR SLOT 2", width, 55f);
+        drawCentered("L = carregar slot ativo | F = selecionar fase", width, 32f);
         drawCentered("ESC = sair", width, 10f);
 
         batch.end();
