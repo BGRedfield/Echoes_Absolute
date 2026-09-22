@@ -10,7 +10,7 @@ import com.badlogic.gdx.Preferences;
 public final class SaveManager {
 
     private static final String PREFS_NAME = "echoes_absolute_save";
-    private static final int SAVE_VERSION = 1;
+    private static final int SAVE_VERSION = 2;
 
     private SaveManager() {
     }
@@ -19,7 +19,8 @@ public final class SaveManager {
         LUA,
         MARTE,
         TITA,
-        CALISTO
+        CALISTO,
+        AHARIN
     }
 
     public static class SaveData {
@@ -77,6 +78,12 @@ public final class SaveManager {
         public int calistoBossPhase = 1;
         public boolean calistoFinalKeySpawned;
         public boolean calistoFinalKeyCollected;
+
+        // Aharin
+        public int aharinDialogueIndex;
+        public boolean aharinDialogueFinished;
+        // -1 = nenhuma escolha ainda; 0/1/2 = finais.
+        public int aharinChoice = -1;
 
         // Titan NPC dialogue
         public int titanDialogueRound;
@@ -146,6 +153,10 @@ public final class SaveManager {
         p.putInteger("calistoBossPhase", data.calistoBossPhase);
         p.putBoolean("calistoFinalKeySpawned", data.calistoFinalKeySpawned);
         p.putBoolean("calistoFinalKeyCollected", data.calistoFinalKeyCollected);
+
+        p.putInteger("aharinDialogueIndex", data.aharinDialogueIndex);
+        p.putBoolean("aharinDialogueFinished", data.aharinDialogueFinished);
+        p.putInteger("aharinChoice", data.aharinChoice);
 
         p.putInteger("titanDialogueRound", data.titanDialogueRound);
         p.putBoolean("titanDialogueFinished", data.titanDialogueFinished);
@@ -219,6 +230,12 @@ public final class SaveManager {
         data.calistoBossHealth = p.getFloat("calistoBossHealth", data.calistoBossHealth);
         data.calistoBossDefeated = p.getBoolean("calistoBossDefeated", false);
         data.calistoBossPhase = p.getInteger("calistoBossPhase", 1);
+        data.calistoFinalKeySpawned = p.getBoolean("calistoFinalKeySpawned", data.calistoBossDefeated);
+        data.calistoFinalKeyCollected = p.getBoolean("calistoFinalKeyCollected", false);
+
+        data.aharinDialogueIndex = p.getInteger("aharinDialogueIndex", 0);
+        data.aharinDialogueFinished = p.getBoolean("aharinDialogueFinished", false);
+        data.aharinChoice = p.getInteger("aharinChoice", -1);
 
         data.titanDialogueRound = p.getInteger("titanDialogueRound", 0);
         data.titanDialogueFinished = p.getBoolean("titanDialogueFinished", false);
