@@ -20,11 +20,13 @@ public class PauseMenu {
         NONE,
         RESUME,
         PHASES,
+        SAVE,
         MENU
     }
 
     private static final String[] OPTIONS = {
             "VOLTAR",
+            "SALVAR",
             "FASES",
             "SAIR"
     };
@@ -35,6 +37,7 @@ public class PauseMenu {
     private final BitmapFont font;
     private final Viewport viewport;
     private final Rectangle[] optionBoxes = {
+            new Rectangle(),
             new Rectangle(),
             new Rectangle(),
             new Rectangle()
@@ -92,6 +95,11 @@ public class PauseMenu {
             return confirm();
         }
 
+        if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_4)) {
+            selectedOption = 3;
+            return confirm();
+        }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
                 || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
             return confirm();
@@ -119,8 +127,10 @@ public class PauseMenu {
             case 0:
                 return Action.RESUME;
             case 1:
-                return Action.PHASES;
+                return Action.SAVE;
             case 2:
+                return Action.PHASES;
+            case 3:
                 return Action.MENU;
             default:
                 return Action.NONE;
@@ -153,7 +163,7 @@ public class PauseMenu {
         shapeRenderer.rect(0f, 0f, width, height);
 
         float panelWidth = Math.min(540f, width - 80f);
-        float panelHeight = 390f;
+        float panelHeight = 470f;
         float panelX = (width - panelWidth) / 2f;
         float panelY = (height - panelHeight) / 2f;
 
@@ -173,7 +183,7 @@ public class PauseMenu {
         font.getData().setScale(1.2f);
 
         float firstOptionY = panelY + panelHeight - 140f;
-        float gap = 78f;
+        float gap = 72f;
 
         for (int i = 0; i < OPTIONS.length; i++) {
             float y = firstOptionY - i * gap;
@@ -196,7 +206,7 @@ public class PauseMenu {
 
         font.getData().setScale(0.88f);
         font.setColor(Color.GRAY);
-        drawCentered("↑↓ / W S = selecionar   |   ENTER = confirmar", width, panelY + 38f);
+        drawCentered("↑↓ / W S = selecionar   |   1-4 / ENTER = confirmar", width, panelY + 38f);
         drawCentered("ESC = voltar ao jogo", width, panelY + 14f);
 
         batch.end();
