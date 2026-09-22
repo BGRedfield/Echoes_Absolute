@@ -10,6 +10,8 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.math.Rectangle;
+
+import io.github.some_example_name.managers.SaveManager;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
@@ -47,6 +49,11 @@ public class MenuScreen extends ScreenAdapter {
     }
 
     private void handleInput() {
+        if (Gdx.input.isKeyJustPressed(Input.Keys.L)) {
+            loadGame();
+            return;
+        }
+
         if (Gdx.input.isKeyJustPressed(Input.Keys.F)) {
             openPhaseSelect();
             return;
@@ -79,6 +86,35 @@ public class MenuScreen extends ScreenAdapter {
 
         changingScreen = true;
         game.setScreen(new LuaScreen(game));
+    }
+
+    private void loadGame() {
+        if (changingScreen || !SaveManager.hasSave()) {
+            return;
+        }
+
+        SaveManager.SaveData data = SaveManager.load();
+        if (data == null) {
+            return;
+        }
+
+        changingScreen = true;
+        dispose();
+
+        switch (data.phase) {
+            case LUA:
+                game.setScreen(new LuaScreen(game, data));
+                break;
+            case MARTE:
+                game.setScreen(new LuaMarteScreen(game, data));
+                break;
+            case TITA:
+                game.setScreen(new titascreen(game, data));
+                break;
+            default:
+                game.setScreen(new LuaScreen(game, data));
+                break;
+        }
     }
 
     private void openPhaseSelect() {
@@ -122,9 +158,19 @@ public class MenuScreen extends ScreenAdapter {
 
         font.getData().setScale(1.0f);
         font.setColor(Color.LIGHT_GRAY);
-        drawCentered("ENTER / SPACE = jogar", width, 60f);
-        drawCentered("F = selecionar fase", width, 42f);
-        drawCentered("ESC = sair", width, 24f);
+        drawCentered("ENTER / SPACE = novo jogo", width, 78f);
+
+        if (SaveManager.hasSave()) {
+            font.setColor(Color.CYAN);
+            drawCentered("L = carregar último save", width, 52f);
+        } else {
+            font.setColor(Color.DARK_GRAY);
+            drawCentered("L = carregar (nenhum save)", width, 52f);
+        }
+
+        font.setColor(Color.LIGHT_GRAY);
+        drawCentered("F = selecionar fase", width, 28f);
+        drawCentered("ESC = sair", width, 8f);
 
         batch.end();
     }
