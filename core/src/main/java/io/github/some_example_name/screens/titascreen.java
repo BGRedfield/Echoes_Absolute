@@ -928,6 +928,7 @@ public class titascreen extends ScreenAdapter {
             yellowKeyCollected = true;
             yellowKeyVisible = false;
             calistoPortalUnlocked = true;
+            saveGame();
             showMessage("CHAVE AMARELA COLETADA! Um portal para CALISTO surgiu na superfície.");
         }
     }
