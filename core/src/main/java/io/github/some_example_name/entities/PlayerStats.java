@@ -173,6 +173,27 @@ public class PlayerStats {
         return invulnerabilityTimer;
     }
 
+    public void setHealth(float value) {
+        health = MathUtils.clamp(value, 0f, MAX_HEALTH);
+        if (health > 0f) {
+            deathCause = DeathCause.NONE;
+        }
+    }
+
+    public void setHunger(float value) {
+        hunger = MathUtils.clamp(value, 0f, MAX_HUNGER);
+        if (hunger > 0f) {
+            starvationDamageTimer = 0f;
+        }
+    }
+
+    public void setOxygen(float value) {
+        oxygen = MathUtils.clamp(value, 0f, MAX_OXYGEN);
+        if (oxygen > 0f) {
+            oxygenDamageTimer = 0f;
+        }
+    }
+
     public float getHealth() {
         return health;
     }
