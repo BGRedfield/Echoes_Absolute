@@ -688,6 +688,7 @@ public class LuaScreen extends ScreenAdapter {
         if (redKeyVisible && !redKeyCollected && player.getHitbox().overlaps(redKeyHitbox)) {
             redKeyCollected = true;
             redKeyVisible = false;
+            saveGame();
             showMessage("CHAVE VERMELHA coletada! Agora chegue ao portal e pressione E.");
         }
         if (!portalUnlocked) {
