@@ -22,6 +22,7 @@ public class MenuScreen extends ScreenAdapter {
     private final BitmapFont font;
     private final Viewport viewport;
     private final Rectangle playButton = new Rectangle();
+    private final Rectangle loadButton = new Rectangle();
 
     private boolean changingScreen;
     private boolean disposed;
@@ -45,7 +46,8 @@ public class MenuScreen extends ScreenAdapter {
         float width = viewport.getWorldWidth();
         float height = viewport.getWorldHeight();
 
-        playButton.set(width / 2f - 170f, height / 2f - 55f, 340f, 80f);
+        playButton.set(width / 2f - 170f, height / 2f - 70f, 340f, 70f);
+        loadButton.set(width / 2f - 170f, height / 2f - 155f, 340f, 60f);
     }
 
     private void handleInput() {
@@ -75,6 +77,8 @@ public class MenuScreen extends ScreenAdapter {
             float y = Gdx.graphics.getHeight() - Gdx.input.getY();
             if (playButton.contains(x, y)) {
                 startGame();
+            } else if (SaveManager.hasSave() && loadButton.contains(x, y)) {
+                loadGame();
             }
         }
     }
@@ -154,23 +158,19 @@ public class MenuScreen extends ScreenAdapter {
         drawCentered("ECHOES ABSOLUTE", width, height / 2f + 120f);
 
         font.getData().setScale(1.15f);
-        drawCentered("[ JOGAR ]", width, playButton.y + 27f);
+        drawCentered("[ NOVO JOGO ]", width, playButton.y + 24f);
 
-        font.getData().setScale(1.0f);
+        font.getData().setScale(1.05f);
+        font.setColor(SaveManager.hasSave() ? Color.CYAN : Color.DARK_GRAY);
+        drawCentered(SaveManager.hasSave() ? "[ CARREGAR ]" : "[ SEM SAVE ]", width, loadButton.y + 21f);
+
+        font.getData().setScale(0.88f);
+        font.setColor(Color.LIGHT_GRAY);
         font.setColor(Color.LIGHT_GRAY);
         drawCentered("ENTER / SPACE = novo jogo", width, 78f);
-
-        if (SaveManager.hasSave()) {
-            font.setColor(Color.CYAN);
-            drawCentered("L = carregar último save", width, 52f);
-        } else {
-            font.setColor(Color.DARK_GRAY);
-            drawCentered("L = carregar (nenhum save)", width, 52f);
-        }
-
-        font.setColor(Color.LIGHT_GRAY);
-        drawCentered("F = selecionar fase", width, 28f);
-        drawCentered("ESC = sair", width, 8f);
+        drawCentered("L = carregar último save", width, 55f);
+        drawCentered("F = selecionar fase", width, 32f);
+        drawCentered("ESC = sair", width, 10f);
 
         batch.end();
     }
