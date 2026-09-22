@@ -119,7 +119,7 @@ public class VictoryScreen extends ScreenAdapter {
         } else if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             changingScreen = true;
             dispose();
-            game.setScreen(new MenuScreen(game));
+            game.setScreen(new PostCreditsScreen(game));
             return;
         }
 
@@ -133,7 +133,7 @@ public class VictoryScreen extends ScreenAdapter {
         if (!finished) {
             drawCrawl();
         } else {
-            drawFinalVictory();
+            drawFinalCredits();
         }
 
         batch.end();
@@ -171,28 +171,28 @@ public class VictoryScreen extends ScreenAdapter {
         }
     }
 
-    private void drawFinalVictory() {
+    private void drawFinalCredits() {
         float width = viewport.getWorldWidth();
         float height = viewport.getWorldHeight();
         float centerX = width / 2f;
 
         font.setColor(Color.valueOf("FFD54A"));
 
-        font.getData().setScale(3.8f);
-        drawCentered("VITORIA", centerX, height / 2f + 90f);
+        font.getData().setScale(2.8f);
+        drawCentered("CRÉDITOS CONCLUÍDOS", centerX, height / 2f + 70f);
 
-        font.getData().setScale(1.25f);
+        font.getData().setScale(1.15f);
         font.setColor(Color.WHITE);
-        drawCentered("A jornada de ECHOES ABSOLUTE chegou ao fim.", centerX,
-                height / 2f - 20f);
+        drawCentered("Mas existe algo além do último mundo...", centerX,
+                height / 2f - 10f);
 
-        font.getData().setScale(1.25f);
+        font.getData().setScale(1.05f);
         font.setColor(Color.valueOf("FFD54A"));
-        drawCentered("[ ENTER ]", centerX, height / 2f - 125f);
+        drawCentered("[ ENTER ]", centerX, height / 2f - 105f);
 
-        font.getData().setScale(0.95f);
+        font.getData().setScale(0.9f);
         font.setColor(Color.LIGHT_GRAY);
-        drawCentered("VOLTAR AO MENU", centerX, height / 2f - 170f);
+        drawCentered("PÓS-CRÉDITOS", centerX, height / 2f - 150f);
     }
 
     private void drawCentered(String text, float centerX, float y) {
