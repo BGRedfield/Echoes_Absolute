@@ -127,6 +127,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private float baseRecoveryTimer;
     private float messageTimer;
     private float screamTimer;
+    private float collectibleFloatTime;
     private int nextBossAttackIndex;
     private String missionMessage = "";
     private boolean changingScreen;
@@ -307,6 +308,7 @@ public class LuaMarteScreen extends ScreenAdapter {
 
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
+        collectibleFloatTime += delta;
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
         if (portalSpawned) {
             portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
@@ -695,12 +697,26 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
     }
 
-    private void drawResources() {
+        private void drawResources() {
+        int index = 0;
         for (LuaItem item : resources) {
             Texture texture = item.getType() == LuaItem.Type.FOOD
                     ? assets.getFoodTexture()
                     : assets.getO2TankTexture();
-            batch.draw(texture, item.getX(), item.getY(), item.getWidth(), item.getHeight());
+
+            float floatOffset = MathUtils.sin(
+                    collectibleFloatTime * 2.2f + index * 0.85f
+            ) * 8f;
+
+            batch.draw(
+                    texture,
+                    item.getX(),
+                    item.getY() + floatOffset,
+                    item.getWidth(),
+                    item.getHeight()
+            );
+
+            index++;
         }
     }
 
@@ -727,7 +743,20 @@ public class LuaMarteScreen extends ScreenAdapter {
         drawResources();
 
         Texture oreTexture = assets.getOreTexture();
-        for (MarsOre ore : ores) batch.draw(oreTexture, ore.getX(), ore.getY(), ore.getWidth(), ore.getHeight());
+        int oreIndex = 0;
+        for (MarsOre ore : ores) {
+            float floatOffset = MathUtils.sin(
+                    collectibleFloatTime * 2.2f + (oreIndex + 6) * 0.85f
+            ) * 8f;
+            batch.draw(
+                    oreTexture,
+                    ore.getX(),
+                    ore.getY() + floatOffset,
+                    ore.getWidth(),
+                    ore.getHeight()
+            );
+            oreIndex++;
+        }
 
         Texture alienTexture = assets.getAlienTexture();
         for (MarsEnemy enemy : martians) batch.draw(alienTexture, enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
@@ -762,7 +791,14 @@ public class LuaMarteScreen extends ScreenAdapter {
 
         if (greenKeyVisible) {
             Texture keyTexture = assets.getGreenKeyTexture();
-            batch.draw(keyTexture, greenKeyHitbox.x, greenKeyHitbox.y, greenKeyHitbox.width, greenKeyHitbox.height);
+            float keyFloatOffset = MathUtils.sin(collectibleFloatTime * 2.2f + 1.7f) * 8f;
+            batch.draw(
+                    keyTexture,
+                    greenKeyHitbox.x,
+                    greenKeyHitbox.y + keyFloatOffset,
+                    greenKeyHitbox.width,
+                    greenKeyHitbox.height
+            );
         }
 
         Texture laserTexture = assets.getLaserTexture();
@@ -772,44 +808,11 @@ public class LuaMarteScreen extends ScreenAdapter {
         batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
         batch.end();
     
-        drawMarsLocationOutlines();
+
 
     }
 
-    private void drawMarsLocationOutlines() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.WHITE);
-        Gdx.gl.glLineWidth(4f);
-
-        drawWhiteOutline(
-                BASE_X,
-                BASE_Y,
-                BASE_WIDTH,
-                BASE_HEIGHT
-        );
-
-        for (LuaItem item : resources) {
-            drawWhiteOutline(
-                    item.getX(),
-                    item.getY(),
-                    item.getWidth(),
-                    item.getHeight()
-            );
-        }
-
-        if (marsPortal != null && portalSpawned) {
-            drawWhiteOutline(
-                    marsPortal.getX(),
-                    marsPortal.getY(),
-                    marsPortal.getWidth(),
-                    marsPortal.getHeight()
-            );
-        }
-
-        shapeRenderer.end();
-        Gdx.gl.glLineWidth(1f);
-    }
+    
 
     private void drawWhiteOutline(float x, float y, float width, float height) {
         float padding = 4f;
