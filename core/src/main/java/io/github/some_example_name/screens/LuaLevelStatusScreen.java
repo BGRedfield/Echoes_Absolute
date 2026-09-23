@@ -11,6 +11,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import io.github.some_example_name.managers.SaveManager;
 
 /** Shows the Lua level results before the Mars introduction. */
 public class LuaLevelStatusScreen extends ScreenAdapter {
@@ -59,8 +60,20 @@ public class LuaLevelStatusScreen extends ScreenAdapter {
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             changingScreen = true;
+            SaveManager.SaveData data = SaveManager.load();
+            if (data == null) {
+                data = new SaveManager.SaveData();
+            }
+            data.phase = SaveManager.Phase.MARTE;
+            data.playerX = 400f;
+            data.playerY = 400f;
+            data.health = health;
+            data.hunger = hunger;
+            data.oxygen = oxygen;
+            SaveManager.save(data);
+
             dispose();
-            game.setScreen(new MarsIntroScreen(game));
+            game.setScreen(new MarsIntroScreen(game, data));
             return;
         }
 
