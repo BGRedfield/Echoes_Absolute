@@ -780,7 +780,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.WHITE);
-        shapeRenderer.setLineWidth(4f);
+        Gdx.gl.glLineWidth(4f);
 
         drawWhiteOutline(
                 BASE_X,
@@ -808,6 +808,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
 
         shapeRenderer.end();
+        Gdx.gl.glLineWidth(1f);
     }
 
     private void drawWhiteOutline(float x, float y, float width, float height) {
