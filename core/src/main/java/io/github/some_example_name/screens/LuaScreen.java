@@ -122,6 +122,7 @@ public class LuaScreen extends ScreenAdapter {
     private int bossAttackCycle;
     private String missionMessage = "";
     private boolean screenChanged;
+    private boolean disposed;
 
     public LuaScreen(Game game) {
         this(game, null);
@@ -1078,6 +1079,11 @@ public class LuaScreen extends ScreenAdapter {
 
     @Override
     public void dispose() {
+        if (disposed) {
+            return;
+        }
+
+        disposed = true;
         batch.dispose();
         shapeRenderer.dispose();
         hudFont.dispose();
