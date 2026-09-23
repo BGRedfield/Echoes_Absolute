@@ -745,7 +745,7 @@ public class LuaScreen extends ScreenAdapter {
             redKeyVisible = false;
 
             // A tempestade começa no momento em que a chave é coletada.
-            bossStorm.start(2580f, 1530f);
+            bossStorm.startImmediate(2580f, 1530f);
             spawnMarsPortal();
 
             saveGame();
