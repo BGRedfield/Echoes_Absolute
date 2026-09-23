@@ -1005,6 +1005,54 @@ public class LuaScreen extends ScreenAdapter {
         for (Laser laser : lasers) batch.draw(assets.getLaserTexture(), laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
         batch.draw(assets.getPlayerTexture(), player.getX(), player.getY(), player.getWidth(), player.getHeight());
         batch.end();
+    
+        drawLuaLocationOutlines();
+
+    }
+
+    private void drawLuaLocationOutlines() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.WHITE);
+        shapeRenderer.setLineWidth(4f);
+
+        drawWhiteOutline(
+                LUNAR_BASE_X,
+                LUNAR_BASE_Y,
+                LUNAR_BASE_WIDTH,
+                LUNAR_BASE_HEIGHT
+        );
+
+        for (LuaItem item : luaItems) {
+            drawWhiteOutline(
+                    item.getX(),
+                    item.getY(),
+                    item.getWidth(),
+                    item.getHeight()
+            );
+        }
+
+        if (marsPortal != null && portalSpawned) {
+            drawWhiteOutline(
+                    marsPortal.getX(),
+                    marsPortal.getY(),
+                    marsPortal.getWidth(),
+                    marsPortal.getHeight()
+            );
+        }
+
+        shapeRenderer.end();
+    }
+
+    private void drawWhiteOutline(float x, float y, float width, float height) {
+        float padding = 4f;
+        shapeRenderer.rect(
+                x - padding,
+                y - padding,
+                width + padding * 2f,
+                height + padding * 2f
+        );
+
     }
 
     private void drawHud() {
