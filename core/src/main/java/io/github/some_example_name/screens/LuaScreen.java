@@ -723,8 +723,11 @@ public class LuaScreen extends ScreenAdapter {
 
     private void spawnMarsPortal() {
         portalSpawned = true;
-        portalUnlocked = false;
-        portalEntryArmed = false;
+
+        // Se a chave já foi pega durante os 4s de preparação,
+        // o portal já nasce liberado.
+        portalUnlocked = redKeyCollected;
+        portalEntryArmed = redKeyCollected;
 
         marsPortal = new MarsPortal(2580f, 1530f);
 
