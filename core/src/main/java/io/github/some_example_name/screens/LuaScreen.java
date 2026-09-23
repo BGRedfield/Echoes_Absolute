@@ -117,6 +117,7 @@ public class LuaScreen extends ScreenAdapter {
     private float rifleOrbitAngle;
     private float americanSpawnTimer;
     private float baseRecoveryTimer;
+    private float stormWarningFlashTimer;
     private boolean portalSpawned;
     private boolean portalUnlocked;
     private boolean portalEntryArmed;
@@ -285,6 +286,13 @@ public class LuaScreen extends ScreenAdapter {
 
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
+
+        if (redKeyCollected && (bossStorm.isPending() || bossStorm.isActive())) {
+            stormWarningFlashTimer += delta;
+        } else {
+            stormWarningFlashTimer = 0f;
+        }
+
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
         if (portalSpawned) {
             portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
@@ -702,11 +710,9 @@ public class LuaScreen extends ScreenAdapter {
                 RED_KEY_SIZE
         );
 
-        bossStorm.start(2580f, 1530f);
-
         showMessage(
                 "TRUMP DERROTADO! PEGUE A CHAVE NO LOCAL DO BOSS. "
-                        + "EM 4s A TEMPESTADE COMEÇA PELAS BORDAS!"
+                        + "A TEMPESTADE COMEÇA QUANDO A CHAVE FOR COLETADA!"
         );
     }
 
@@ -716,30 +722,13 @@ public class LuaScreen extends ScreenAdapter {
         }
 
         bossExplosionTimer -= delta;
-
-        // Depois dos 4 segundos, quando a tempestade realmente começa,
-        // o portal aparece. Ele permanece VISÍVEL durante toda a tempestade.
-        if (bossExplosionTimer <= 0f
-                && bossStorm.isActive()
-                && !portalSpawned) {
-            spawnMarsPortal();
-        }
     }
 
     private void spawnMarsPortal() {
         portalSpawned = true;
-
-        // Se a chave já foi pega durante os 4s de preparação,
-        // o portal já nasce liberado.
-        portalUnlocked = redKeyCollected;
-        portalEntryArmed = redKeyCollected;
-
+        portalUnlocked = true;
+        portalEntryArmed = true;
         marsPortal = new MarsPortal(2580f, 1530f);
-
-        showMessage(
-                "TEMPESTADE INICIADA! A CHAVE ESTÁ ATRÁS. "
-                        + "PEGUE-A E CORRA PARA O PORTAL!"
-        );
     }
 
     private void handleMarsPortalInteraction() {
@@ -754,13 +743,15 @@ public class LuaScreen extends ScreenAdapter {
 
             redKeyCollected = true;
             redKeyVisible = false;
-            portalUnlocked = true;
-            portalEntryArmed = true;
+
+            // A tempestade começa no momento em que a chave é coletada.
+            bossStorm.start(2580f, 1530f);
+            spawnMarsPortal();
 
             saveGame();
 
             showMessage(
-                    "CHAVE VERMELHA COLETADA! CORRA PARA O PORTAL ANTES DA TEMPESTADE!"
+                    "CHAVE VERMELHA COLETADA! CORRA PARA O PORTAL!"
             );
         }
 
@@ -1075,6 +1066,23 @@ public class LuaScreen extends ScreenAdapter {
 
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
+
+        if (redKeyCollected && (bossStorm.isPending() || bossStorm.isActive())) {
+            boolean redFlash = ((int) (stormWarningFlashTimer * 5f)) % 2 == 0;
+            hudFont.setColor(redFlash ? Color.RED : Color.YELLOW);
+            hudFont.getData().setScale(1.85f);
+
+            String stormWarning = "ENTRE NO PORTAL ANTES QUE A TEMPESTADE TE MATE!";
+            GlyphLayout stormWarningLayout = new GlyphLayout(hudFont, stormWarning);
+
+            hudFont.draw(
+                    batch,
+                    stormWarning,
+                    hudViewport.getWorldWidth() / 2f - stormWarningLayout.width / 2f,
+                    hudViewport.getWorldHeight() - 55f
+            );
+        }
+
         hudFont.getData().setScale(1.05f);
         hudFont.setColor(Color.WHITE);
         hudFont.draw(batch, String.format("HP: %.0f / 100", stats.getHealth()), x + 10f, firstY + 20f);
@@ -1132,7 +1140,7 @@ public class LuaScreen extends ScreenAdapter {
             hudFont.getData().setScale(1.0f);
             hudFont.draw(
                     batch,
-                    String.format("TEMPESTADE ROXA: %.1fs | -10 HP/s | PORTAL FECHADO",
+                    String.format("TEMPESTADE ROXA: %.1fs | -10 HP/s | PORTAL ABERTO",
                             bossStorm.getRemaining()),
                     28f,
                     hudViewport.getWorldHeight() - 318f
