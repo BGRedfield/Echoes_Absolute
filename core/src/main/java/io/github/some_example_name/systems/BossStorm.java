@@ -245,20 +245,7 @@ public class BossStorm {
             renderer.rectLine(x0, y0, x1, y1, 8f);
         }
 
-        // Faixas diagonais movimentando dentro da área da tempestade.
-        float stripeOffset = progress * 260f;
-        renderer.setColor(new Color(0.65f, 0.05f, 0.90f, 0.16f));
-
-        for (int i = -16; i <= 16; i++) {
-            float x = i * 150f + stripeOffset - 500f;
-
-            renderer.rectLine(
-                    x,
-                    -500f,
-                    x + worldHeight + 900f,
-                    worldHeight + 400f,
-                    16f
-            );
-        }
+        // O centro fica sem pintura. A textura da tempestade é formada
+        // pelo próprio anel roxo, evitando qualquer efeito atravessando a área segura.
     }
 }
