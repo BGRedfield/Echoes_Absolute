@@ -1610,7 +1610,52 @@ public class titascreen extends ScreenAdapter {
             drawYellowKey();
         } else {
             drawCalistoPortal();
+            drawTitanExteriorLocationOutlines();
         }
+    }
+
+    private void drawTitanExteriorLocationOutlines() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.WHITE);
+        shapeRenderer.setLineWidth(4f);
+
+        drawWhiteOutline(
+                BASE_X,
+                BASE_Y,
+                BASE_WIDTH,
+                BASE_HEIGHT
+        );
+
+        for (LuaItem item : exteriorResources) {
+            drawWhiteOutline(
+                    item.getX(),
+                    item.getY(),
+                    item.getWidth(),
+                    item.getHeight()
+            );
+        }
+
+        if (calistoPortalUnlocked) {
+            drawWhiteOutline(
+                    calistoPortal.x,
+                    calistoPortal.y,
+                    calistoPortal.width,
+                    calistoPortal.height
+            );
+        }
+
+        shapeRenderer.end();
+    }
+
+    private void drawWhiteOutline(float x, float y, float width, float height) {
+        float padding = 4f;
+        shapeRenderer.rect(
+                x - padding,
+                y - padding,
+                width + padding * 2f,
+                height + padding * 2f
+        );
     }
 
     private void drawArenaExitGuide() {
