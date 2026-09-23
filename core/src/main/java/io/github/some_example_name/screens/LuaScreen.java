@@ -1028,16 +1028,7 @@ public class LuaScreen extends ScreenAdapter {
 
     
 
-    private void drawWhiteOutline(float x, float y, float width, float height) {
-        float padding = 4f;
-        shapeRenderer.rect(
-                x - padding,
-                y - padding,
-                width + padding * 2f,
-                height + padding * 2f
-        );
-
-    }
+    
 
     private void drawHud() {
         hudViewport.apply(false);
