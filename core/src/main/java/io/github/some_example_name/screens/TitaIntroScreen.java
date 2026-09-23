@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import io.github.some_example_name.managers.SaveManager;
 
 /** Status and description screen shown before entering Titan. */
 public class TitaIntroScreen extends ScreenAdapter {
@@ -24,8 +25,15 @@ public class TitaIntroScreen extends ScreenAdapter {
     private boolean changingScreen;
     private boolean disposed;
 
+    private final SaveManager.SaveData saveData;
+
     public TitaIntroScreen(Game game) {
+        this(game, SaveManager.load());
+    }
+
+    public TitaIntroScreen(Game game, SaveManager.SaveData saveData) {
         this.game = game;
+        this.saveData = saveData;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         font = new BitmapFont();
@@ -47,7 +55,15 @@ public class TitaIntroScreen extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             changingScreen = true;
             dispose();
-            game.setScreen(new titascreen(game));
+            SaveManager.SaveData data = saveData != null ? saveData : SaveManager.load();
+            if (data == null) {
+                data = new SaveManager.SaveData();
+            }
+            data.phase = SaveManager.Phase.TITA;
+            SaveManager.save(data);
+
+            dispose();
+            game.setScreen(new titascreen(game, data));
             return;
         }
 
