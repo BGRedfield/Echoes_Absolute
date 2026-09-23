@@ -429,9 +429,23 @@ public class CalistoScreen extends ScreenAdapter {
 
         if (finalPortalActive
                 && player.getHitbox().overlaps(finalPortalHitbox)) {
+            saveGame();
+
+            SaveManager.SaveData data = SaveManager.load();
+            if (data == null) {
+                data = new SaveManager.SaveData();
+            }
+            data.phase = SaveManager.Phase.AHARIN;
+            data.playerX = 600f;
+            data.playerY = 360f;
+            data.health = stats.getHealth();
+            data.hunger = stats.getHunger();
+            data.oxygen = stats.getOxygen();
+            SaveManager.save(data);
+
             changingScreen = true;
             dispose();
-            game.setScreen(new CalistoInfoScreen(game));
+            game.setScreen(new CalistoInfoScreen(game, data));
         }
     }
 
