@@ -12,6 +12,7 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import io.github.some_example_name.managers.SaveManager;
 
 /** Introduction screen shown immediately before entering the Mars phase. */
 public class MarsIntroScreen extends ScreenAdapter {
@@ -47,7 +48,15 @@ public class MarsIntroScreen extends ScreenAdapter {
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             changingScreen = true;
             dispose();
-            game.setScreen(new MarteScreen(game));
+            SaveManager.SaveData data = SaveManager.load();
+            if (data == null) {
+                data = new SaveManager.SaveData();
+            }
+            data.phase = SaveManager.Phase.MARTE;
+            data.playerX = 400f;
+            data.playerY = 400f;
+            SaveManager.save(data);
+            game.setScreen(new LuaMarteScreen(game, data));
             return;
         }
 
