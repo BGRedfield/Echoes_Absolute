@@ -12,6 +12,8 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import io.github.some_example_name.managers.SaveManager;
+
 /**
  * Tela de explicação de Aharin antes da fase.
  */
@@ -21,12 +23,18 @@ public class AharinInfoScreen extends ScreenAdapter {
     private final SpriteBatch batch;
     private final BitmapFont font;
     private final Viewport viewport;
+    private final SaveManager.SaveData saveData;
 
     private boolean changingScreen;
     private boolean disposed;
 
     public AharinInfoScreen(Game game) {
+        this(game, SaveManager.load());
+    }
+
+    public AharinInfoScreen(Game game, SaveManager.SaveData saveData) {
         this.game = game;
+        this.saveData = saveData;
         batch = new SpriteBatch();
         font = new BitmapFont();
         viewport = new ScreenViewport();
@@ -45,9 +53,16 @@ public class AharinInfoScreen extends ScreenAdapter {
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            SaveManager.SaveData data = saveData != null ? saveData : SaveManager.load();
+            if (data == null) {
+                data = new SaveManager.SaveData();
+            }
+            data.phase = SaveManager.Phase.AHARIN;
+            SaveManager.save(data);
+
             changingScreen = true;
             dispose();
-            game.setScreen(new AharinScreen(game));
+            game.setScreen(new AharinScreen(game, data));
             return;
         }
 
