@@ -6,7 +6,7 @@ import com.badlogic.gdx.math.Rectangle;
 public class MarsPortal {
 
     public static final float WIDTH = 170f;
-    public static final float HEIGHT = 220f;
+    public static final float HEIGHT = 170f;
 
     private final Rectangle hitbox;
 
