@@ -1732,8 +1732,9 @@ public class titascreen extends ScreenAdapter {
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        TextureRegion portalRegion = new TextureRegion(assets.getPortalCalistoTexture());
         batch.draw(
-                assets.getPortalCalistoTexture(),
+                portalRegion,
                 x,
                 y,
                 w / 2f,
