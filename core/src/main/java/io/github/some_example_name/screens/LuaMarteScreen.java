@@ -771,6 +771,54 @@ public class LuaMarteScreen extends ScreenAdapter {
         Texture playerTexture = assets.getPlayerTexture();
         batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
         batch.end();
+    
+        drawMarsLocationOutlines();
+
+    }
+
+    private void drawMarsLocationOutlines() {
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
+        shapeRenderer.setColor(Color.WHITE);
+        shapeRenderer.setLineWidth(4f);
+
+        drawWhiteOutline(
+                BASE_X,
+                BASE_Y,
+                BASE_WIDTH,
+                BASE_HEIGHT
+        );
+
+        for (LuaItem item : resources) {
+            drawWhiteOutline(
+                    item.getX(),
+                    item.getY(),
+                    item.getWidth(),
+                    item.getHeight()
+            );
+        }
+
+        if (marsPortal != null && portalSpawned) {
+            drawWhiteOutline(
+                    marsPortal.getX(),
+                    marsPortal.getY(),
+                    marsPortal.getWidth(),
+                    marsPortal.getHeight()
+            );
+        }
+
+        shapeRenderer.end();
+    }
+
+    private void drawWhiteOutline(float x, float y, float width, float height) {
+        float padding = 4f;
+        shapeRenderer.rect(
+                x - padding,
+                y - padding,
+                width + padding * 2f,
+                height + padding * 2f
+        );
+
     }
 
     private void drawBossEffects() {
