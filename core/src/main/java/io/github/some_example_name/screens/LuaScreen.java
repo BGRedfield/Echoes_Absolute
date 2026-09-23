@@ -987,9 +987,9 @@ public class LuaScreen extends ScreenAdapter {
         }
 
         if (bossStorm.isPending()) {
-            font.setColor(Color.MAGENTA);
-            font.getData().setScale(1.0f);
-            font.draw(batch,
+            hudFont.setColor(Color.MAGENTA);
+            hudFont.getData().setScale(1.0f);
+            hudFont.draw(batch,
                     String.format("TEMPESTADE ROXA EM %.1fs — PREPARE-SE", bossStorm.getDelayRemaining()),
                     28f,
                     hudViewport.getWorldHeight() - 276f);
