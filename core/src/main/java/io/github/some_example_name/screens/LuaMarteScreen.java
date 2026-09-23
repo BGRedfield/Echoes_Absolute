@@ -650,6 +650,7 @@ public class LuaMarteScreen extends ScreenAdapter {
             float hunger = stats.getHunger();
             float oxygen = stats.getOxygen();
             changingScreen = true;
+            saveGame();
             dispose();
             game.setScreen(new MarsLevelStatusScreen(game, health, hunger, oxygen));
         }
