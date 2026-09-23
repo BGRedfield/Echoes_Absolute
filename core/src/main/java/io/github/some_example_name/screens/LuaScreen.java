@@ -983,10 +983,11 @@ public class LuaScreen extends ScreenAdapter {
 
         if (marsPortal != null && portalSpawned) {
             Texture portalTexture = assets.getPortalTexture();
+            TextureRegion portalRegion = new TextureRegion(portalTexture);
             float w = marsPortal.getWidth();
             float h = marsPortal.getHeight();
             batch.draw(
-                    portalTexture,
+                    portalRegion,
                     marsPortal.getX(),
                     marsPortal.getY(),
                     w / 2f,
