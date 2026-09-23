@@ -985,7 +985,7 @@ public class CalistoScreen extends ScreenAdapter {
 
         font.getData().setScale(0.95f);
         font.draw(batch, String.format("HP %.0f/100", stats.getHealth()), x + 8f, y + 18f);
-        font.draw(batch, String.format("FOME %.0f/100", stats.getHunger()), x + 8f, y - 22f);
+        font.draw(batch, String.format("SACIAÇÃO %.0f/100", stats.getHunger()), x + 8f, y - 22f);
         font.draw(batch, String.format("O2 %.0f/100", stats.getOxygen()), x + 8f, y - 62f);
 
         int blessings = 0;
