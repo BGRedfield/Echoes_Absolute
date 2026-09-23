@@ -193,7 +193,7 @@ public class LuaScreen extends ScreenAdapter {
             }
         }
 
-        if (!portalSpawned && bossDeathSequenceStarted) {
+        if (bossDeathSequenceStarted) {
             if (data.luaStormRemaining < 0f) {
                 bossStorm.restorePending(
                         -data.luaStormRemaining,
@@ -666,9 +666,11 @@ public class LuaScreen extends ScreenAdapter {
 
     private void startBossDeathSequence() {
         if (bossDeathSequenceStarted) return;
+
         bossDeathSequenceStarted = true;
         bossExplosionTimer = BOSS_EXPLOSION_DURATION;
         mission = LuaMission.GO_TO_MARS;
+
         americans.clear();
         americanBullets.clear();
         rifleBullets.clear();
@@ -676,16 +678,42 @@ public class LuaScreen extends ScreenAdapter {
         missileWarnings.clear();
         trumpMissiles.clear();
         missileExplosions.clear();
+
+        // A chave nasce no local do Trump assim que a sequência termina.
+        // A tempestade, porém, só começa depois dos 4 segundos de espera.
+        redKeyVisible = true;
+        redKeyCollected = false;
+        portalSpawned = false;
+        portalUnlocked = false;
+        portalEntryArmed = false;
+
+        redKeyHitbox.set(
+                trumpBoss.getCenterX() - RED_KEY_SIZE / 2f,
+                trumpBoss.getCenterY() - RED_KEY_SIZE / 2f,
+                RED_KEY_SIZE,
+                RED_KEY_SIZE
+        );
+
         bossStorm.start(2580f, 1530f);
-        showMessage("TRUMP DERROTADO! A TEMPESTADE ROXA CHEGARÁ EM 4s PELAS BORDAS. O CENTRO É SEGURO.");
+
+        showMessage(
+                "TRUMP DERROTADO! PEGUE A CHAVE NO LOCAL DO BOSS. "
+                        + "EM 4s A TEMPESTADE COMEÇA PELAS BORDAS!"
+        );
     }
 
     private void finishBossDeath(float delta) {
-        if (!bossDeathSequenceStarted) startBossDeathSequence();
+        if (!bossDeathSequenceStarted) {
+            startBossDeathSequence();
+        }
+
         bossExplosionTimer -= delta;
 
-        // O portal permanece fechado enquanto a tempestade estiver ativa.
-        if (bossExplosionTimer <= 0f && bossStorm.isFinished() && !portalSpawned) {
+        // Depois dos 4 segundos, quando a tempestade realmente começa,
+        // o portal aparece. Ele permanece VISÍVEL durante toda a tempestade.
+        if (bossExplosionTimer <= 0f
+                && bossStorm.isActive()
+                && !portalSpawned) {
             spawnMarsPortal();
         }
     }
@@ -694,32 +722,61 @@ public class LuaScreen extends ScreenAdapter {
         portalSpawned = true;
         portalUnlocked = false;
         portalEntryArmed = false;
-        redKeyCollected = false;
-        redKeyVisible = true;
+
         marsPortal = new MarsPortal(2580f, 1530f);
-        redKeyHitbox.set(trumpBoss.getCenterX() - RED_KEY_SIZE / 2f, trumpBoss.getCenterY() - RED_KEY_SIZE / 2f, RED_KEY_SIZE, RED_KEY_SIZE);
-        showMessage("A chave vermelha apareceu no local do Trump. Toque nela para coletá-la e siga a flecha até o portal!");
+
+        showMessage(
+                "TEMPESTADE INICIADA! A CHAVE ESTÁ ATRÁS. "
+                        + "PEGUE-A E CORRA PARA O PORTAL!"
+        );
     }
 
     private void handleMarsPortalInteraction() {
-        if (!portalSpawned || marsPortal == null || mission != LuaMission.GO_TO_MARS) return;
-        boolean playerAtPortal = player.getHitbox().overlaps(marsPortal.getHitbox());
-        if (redKeyVisible && !redKeyCollected && player.getHitbox().overlaps(redKeyHitbox)) {
-            redKeyCollected = true;
-            redKeyVisible = false;
-            saveGame();
-            showMessage("CHAVE VERMELHA coletada! Agora chegue ao portal e pressione E.");
-        }
-        if (!portalUnlocked) {
-            if (!redKeyCollected) return;
-            if (playerAtPortal && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                portalUnlocked = true;
-                portalEntryArmed = false;
-                showMessage("PORTAL DESBLOQUEADO! Saia e entre novamente no portal para viajar a Marte.");
-            }
+        if (mission != LuaMission.GO_TO_MARS) {
             return;
         }
-        if (!playerAtPortal) portalEntryArmed = true;
+
+        // A chave pode ser coletada mesmo antes do portal aparecer.
+        if (redKeyVisible
+                && !redKeyCollected
+                && player.getHitbox().overlaps(redKeyHitbox)) {
+
+            redKeyCollected = true;
+            redKeyVisible = false;
+            portalUnlocked = true;
+            portalEntryArmed = true;
+
+            saveGame();
+
+            showMessage(
+                    "CHAVE VERMELHA COLETADA! CORRA PARA O PORTAL ANTES DA TEMPESTADE!"
+            );
+        }
+
+        if (!portalSpawned || marsPortal == null || !portalUnlocked) {
+            return;
+        }
+
+        // Basta tocar no portal depois de pegar a chave.
+        if (player.getHitbox().overlaps(marsPortal.getHitbox())) {
+            screenChanged = true;
+
+            float health = stats.getHealth();
+            float hunger = stats.getHunger();
+            float oxygen = stats.getOxygen();
+
+            saveGame();
+            dispose();
+            game.setScreen(
+                    new LuaLevelStatusScreen(
+                            game,
+                            health,
+                            hunger,
+                            oxygen,
+                            REQUIRED_ICE
+                    )
+            );
+        }
     }
 
     private void openGameOver() {
