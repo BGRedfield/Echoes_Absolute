@@ -64,6 +64,7 @@ public class LuaScreen extends ScreenAdapter {
     private static final float TILE_SIZE = 128f;
     private static final int REQUIRED_ICE = 5;
     private static final float PLAYER_SHOT_DAMAGE = 10f;
+    private static final float PLAYER_FIRE_INTERVAL = 0.12f;
     private static final float ENEMY_BULLET_DAMAGE = 10f;
     private static final float BOSS_ATTACK_COOLDOWN = 5f;
     private static final float MISSILE_WARNING_TIME = 2f;
@@ -107,6 +108,7 @@ public class LuaScreen extends ScreenAdapter {
     private final Rectangle redKeyHitbox = new Rectangle();
 
     private float bossPhaseTimer;
+    private float playerFireTimer;
     private float bossCooldownTimer;
     private float messageTimer;
     private float bossExplosionTimer;
@@ -192,10 +194,15 @@ public class LuaScreen extends ScreenAdapter {
         }
 
         if (!portalSpawned && bossDeathSequenceStarted) {
-            float remaining = data.luaStormRemaining > 0f
-                    ? data.luaStormRemaining
-                    : BossStorm.DURATION;
-            bossStorm.restore(remaining, 2580f, 1530f);
+            if (data.luaStormRemaining < 0f) {
+                bossStorm.restorePending(
+                        -data.luaStormRemaining,
+                        2580f,
+                        1530f
+                );
+            } else if (data.luaStormRemaining > 0f) {
+                bossStorm.restore(data.luaStormRemaining, 2580f, 1530f);
+            }
         }
     }
 
@@ -221,7 +228,9 @@ public class LuaScreen extends ScreenAdapter {
         data.redKeyCollected = redKeyCollected;
         data.trumpBossExists = trumpBoss != null;
         data.trumpBossHealth = trumpBoss == null ? TrumpBoss.MAX_HEALTH : trumpBoss.getHealth();
-        data.luaStormRemaining = bossStorm.getRemaining();
+        data.luaStormRemaining = bossStorm.isPending()
+                ? -bossStorm.getDelayRemaining()
+                : bossStorm.getRemaining();
 
         SaveManager.save(data);
         showMessage("JOGO SALVO! O save permanece mesmo fechando o jogo.");
@@ -276,7 +285,7 @@ public class LuaScreen extends ScreenAdapter {
         handleMissionInteraction();
         recoverAtLunarBase(delta);
         updateAmericans(delta);
-        updatePlayerShooting();
+        updatePlayerShooting(delta);
         updatePlayerLasers(delta);
         updateMissiles(delta);
         updateMissileExplosions(delta);
@@ -390,8 +399,13 @@ public class LuaScreen extends ScreenAdapter {
         americans.add(new AmericanEnemy(WORLD_WIDTH - 300f, WORLD_HEIGHT - 300f));
     }
 
-    private void updatePlayerShooting() {
-        if (!Gdx.input.isButtonJustPressed(Input.Buttons.LEFT)) return;
+    private void updatePlayerShooting(float delta) {
+        playerFireTimer -= delta;
+
+        if (!Gdx.input.isButtonPressed(Input.Buttons.LEFT) || playerFireTimer > 0f) {
+            return;
+        }
+
         Vector3 mouseWorld = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
         camera.unproject(mouseWorld);
         float dx = mouseWorld.x - player.getCenterX();
@@ -400,6 +414,7 @@ public class LuaScreen extends ScreenAdapter {
         if (length <= 0.001f) return;
         dx /= length; dy /= length;
         lasers.add(new Laser(player.getCenterX(), player.getCenterY(), dx, dy));
+        playerFireTimer = PLAYER_FIRE_INTERVAL;
     }
 
     private void updatePlayerLasers(float delta) {
@@ -662,7 +677,7 @@ public class LuaScreen extends ScreenAdapter {
         trumpMissiles.clear();
         missileExplosions.clear();
         bossStorm.start(2580f, 1530f);
-        showMessage("TRUMP DERROTADO! UMA TEMPESTADE ROXA FECHOU O PORTAL! Sobreviva por 12s.");
+        showMessage("TRUMP DERROTADO! A TEMPESTADE ROXA CHEGARÁ EM 4s PELAS BORDAS. O CENTRO É SEGURO.");
     }
 
     private void finishBossDeath(float delta) {
@@ -971,7 +986,14 @@ public class LuaScreen extends ScreenAdapter {
             hudFont.draw(batch, "CHAVE VERMELHA", hudViewport.getWorldWidth() - 230f, 94f);
         }
 
-        if (bossStorm.isActive()) {
+        if (bossStorm.isPending()) {
+            font.setColor(Color.MAGENTA);
+            font.getData().setScale(1.0f);
+            font.draw(batch,
+                    String.format("TEMPESTADE ROXA EM %.1fs — PREPARE-SE", bossStorm.getDelayRemaining()),
+                    28f,
+                    hudViewport.getWorldHeight() - 276f);
+        } else if (bossStorm.isActive()) {
             hudFont.setColor(Color.valueOf("D98CFF"));
             hudFont.getData().setScale(1.0f);
             hudFont.draw(
