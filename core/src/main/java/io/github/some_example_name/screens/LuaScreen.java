@@ -183,14 +183,17 @@ public class LuaScreen extends ScreenAdapter {
 
         if (portalSpawned) {
             marsPortal = new MarsPortal(2580f, 1530f);
-            if (trumpBoss != null) {
-                redKeyHitbox.set(
-                        trumpBoss.getCenterX() - RED_KEY_SIZE / 2f,
-                        trumpBoss.getCenterY() - RED_KEY_SIZE / 2f,
-                        RED_KEY_SIZE,
-                        RED_KEY_SIZE
-                );
-            }
+        }
+
+        // A chave precisa continuar coletável mesmo durante os 4s
+        // de espera antes da tempestade.
+        if (trumpBoss != null && redKeyVisible && !redKeyCollected) {
+            redKeyHitbox.set(
+                    trumpBoss.getCenterX() - RED_KEY_SIZE / 2f,
+                    trumpBoss.getCenterY() - RED_KEY_SIZE / 2f,
+                    RED_KEY_SIZE,
+                    RED_KEY_SIZE
+            );
         }
 
         if (bossDeathSequenceStarted) {
