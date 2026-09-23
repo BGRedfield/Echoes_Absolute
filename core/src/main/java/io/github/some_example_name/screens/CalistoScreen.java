@@ -117,6 +117,7 @@ public class CalistoScreen extends ScreenAdapter {
     private int lastDisplayedPhase;
     private float bossAttackTimer = 1.4f;
     private float portalRotationDegrees;
+    private float collectibleFloatTime;
 
     private String message = "";
     private float messageTimer;
@@ -867,6 +868,10 @@ public class CalistoScreen extends ScreenAdapter {
         for (int i = 0; i < angels.length; i++) {
             float cx = angels[i].x + angels[i].width / 2f;
             float cy = angels[i].y + angels[i].height / 2f;
+            float floatOffset = MathUtils.sin(
+                    collectibleFloatTime * 2.2f + i * 0.85f
+            ) * 8f;
+            cy += floatOffset;
 
             if (angelBlessings[i]) {
                 shapeRenderer.setColor(new Color(0.65f, 0.85f, 1f, 0.28f));
@@ -887,6 +892,7 @@ public class CalistoScreen extends ScreenAdapter {
         if (inBossArena && bossDefeated && finalKeySpawned && !finalKeyCollected) {
             float cx = finalKeyHitbox.x + finalKeyHitbox.width / 2f;
             float cy = finalKeyHitbox.y + finalKeyHitbox.height / 2f;
+            cy += MathUtils.sin(collectibleFloatTime * 2.2f + 1.7f) * 8f;
             shapeRenderer.setColor(new Color(1f, 0.85f, 0.1f, 0.28f));
             shapeRenderer.circle(cx, cy, 70f);
         }
