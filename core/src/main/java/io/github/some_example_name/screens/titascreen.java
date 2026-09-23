@@ -936,7 +936,11 @@ public class titascreen extends ScreenAdapter {
     }
 
     private void enterCalisto() {
-        SaveManager.SaveData data = new SaveManager.SaveData();
+        SaveManager.SaveData data = SaveManager.load();
+        if (data == null) {
+            data = new SaveManager.SaveData();
+        }
+
         data.phase = SaveManager.Phase.CALISTO;
         data.playerX = 210f;
         data.playerY = 620f;
@@ -951,6 +955,8 @@ public class titascreen extends ScreenAdapter {
         data.calistoBossHealth = 18000f;
         data.calistoBossDefeated = false;
         data.calistoBossPhase = 1;
+        data.calistoFinalKeySpawned = false;
+        data.calistoFinalKeyCollected = false;
 
         SaveManager.save(data);
 
