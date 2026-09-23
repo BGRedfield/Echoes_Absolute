@@ -25,8 +25,15 @@ public class MarsIntroScreen extends ScreenAdapter {
     private boolean changingScreen;
     private boolean disposed;
 
+    private final SaveManager.SaveData saveData;
+
     public MarsIntroScreen(Game game) {
+        this(game, SaveManager.load());
+    }
+
+    public MarsIntroScreen(Game game, SaveManager.SaveData saveData) {
         this.game = game;
+        this.saveData = saveData;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
         font = new BitmapFont();
