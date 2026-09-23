@@ -118,6 +118,7 @@ public class LuaScreen extends ScreenAdapter {
     private float americanSpawnTimer;
     private float baseRecoveryTimer;
     private float stormWarningFlashTimer;
+    private float collectibleFloatTime;
     private boolean portalSpawned;
     private boolean portalUnlocked;
     private boolean portalEntryArmed;
@@ -293,6 +294,7 @@ public class LuaScreen extends ScreenAdapter {
             stormWarningFlashTimer = 0f;
         }
 
+        collectibleFloatTime += delta;
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
         if (portalSpawned) {
             portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
@@ -809,7 +811,8 @@ public class LuaScreen extends ScreenAdapter {
         }
     }
 
-    private void drawLuaItems() {
+        private void drawLuaItems() {
+        int index = 0;
         for (LuaItem item : luaItems) {
             Texture texture;
             switch (item.getType()) {
@@ -818,7 +821,20 @@ public class LuaScreen extends ScreenAdapter {
                 case ICE: texture = assets.getIceTexture(); break;
                 default: continue;
             }
-            batch.draw(texture, item.getX(), item.getY(), item.getWidth(), item.getHeight());
+
+            float floatOffset = MathUtils.sin(
+                    collectibleFloatTime * 2.2f + index * 0.85f
+            ) * 8f;
+
+            batch.draw(
+                    texture,
+                    item.getX(),
+                    item.getY() + floatOffset,
+                    item.getWidth(),
+                    item.getHeight()
+            );
+
+            index++;
         }
     }
 
@@ -991,50 +1007,26 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
-        if (redKeyVisible && !redKeyCollected) batch.draw(assets.getRedKeyTexture(), redKeyHitbox.x, redKeyHitbox.y, redKeyHitbox.width, redKeyHitbox.height);
+        if (redKeyVisible && !redKeyCollected) {
+            float keyFloatOffset = MathUtils.sin(collectibleFloatTime * 2.2f + 1.7f) * 8f;
+            batch.draw(
+                    assets.getRedKeyTexture(),
+                    redKeyHitbox.x,
+                    redKeyHitbox.y + keyFloatOffset,
+                    redKeyHitbox.width,
+                    redKeyHitbox.height
+            );
+        }
 
         for (Laser laser : lasers) batch.draw(assets.getLaserTexture(), laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
         batch.draw(assets.getPlayerTexture(), player.getX(), player.getY(), player.getWidth(), player.getHeight());
         batch.end();
     
-        drawLuaLocationOutlines();
+
 
     }
 
-    private void drawLuaLocationOutlines() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.WHITE);
-        Gdx.gl.glLineWidth(4f);
-
-        drawWhiteOutline(
-                LUNAR_BASE_X,
-                LUNAR_BASE_Y,
-                LUNAR_BASE_WIDTH,
-                LUNAR_BASE_HEIGHT
-        );
-
-        for (LuaItem item : luaItems) {
-            drawWhiteOutline(
-                    item.getX(),
-                    item.getY(),
-                    item.getWidth(),
-                    item.getHeight()
-            );
-        }
-
-        if (marsPortal != null && portalSpawned) {
-            drawWhiteOutline(
-                    marsPortal.getX(),
-                    marsPortal.getY(),
-                    marsPortal.getWidth(),
-                    marsPortal.getHeight()
-            );
-        }
-
-        shapeRenderer.end();
-        Gdx.gl.glLineWidth(1f);
-    }
+    
 
     private void drawWhiteOutline(float x, float y, float width, float height) {
         float padding = 4f;
