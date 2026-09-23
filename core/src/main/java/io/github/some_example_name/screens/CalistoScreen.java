@@ -90,6 +90,7 @@ public class CalistoScreen extends ScreenAdapter {
 
     private static final float FINAL_KEY_SIZE = 82f;
     private static final float FINAL_PORTAL_SIZE = 170f;
+    private static final float PORTAL_ROTATION_SPEED = 120f;
     private final Rectangle[] angels = new Rectangle[5];
     private final boolean[] angelBlessings = new boolean[5];
     private final Array<Laser> lasers = new Array<>();
@@ -114,6 +115,7 @@ public class CalistoScreen extends ScreenAdapter {
     private int bossAttackIndex;
     private int lastDisplayedPhase;
     private float bossAttackTimer = 1.4f;
+    private float portalRotationDegrees;
 
     private String message = "";
     private float messageTimer;
@@ -238,6 +240,9 @@ public class CalistoScreen extends ScreenAdapter {
 
         if (!inBossArena) {
             player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+            if (finalPortalActive) {
+                portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
+            }
             clampPlayerToCorridor();
             handleCorridorInteractions();
         } else {
@@ -733,6 +738,7 @@ public class CalistoScreen extends ScreenAdapter {
         batch.end();
 
         drawEnvironmentShapes();
+        drawFinalPortalSprite();
     }
 
     private void drawFloor() {
@@ -884,12 +890,8 @@ public class CalistoScreen extends ScreenAdapter {
             shapeRenderer.circle(cx, cy, 70f);
         }
 
-        if (inBossArena && finalPortalActive) {
-            float cx = finalPortalHitbox.x + finalPortalHitbox.width / 2f;
-            float cy = finalPortalHitbox.y + finalPortalHitbox.height / 2f;
-            shapeRenderer.setColor(new Color(1f, 0.85f, 0.1f, 0.18f));
-            shapeRenderer.circle(cx, cy, 115f);
-        }
+        // O portal final agora é desenhado pela textura própria de Aharin.
+
 
         // Boss final.
         if (inBossArena && !bossDefeated) {
@@ -1052,6 +1054,33 @@ public class CalistoScreen extends ScreenAdapter {
             );
         }
 
+        batch.end();
+    }
+
+    private void drawFinalPortalSprite() {
+        if (!inBossArena || !finalPortalActive) {
+            return;
+        }
+
+        float x = finalPortalHitbox.x;
+        float y = finalPortalHitbox.y;
+        float w = finalPortalHitbox.width;
+        float h = finalPortalHitbox.height;
+
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.draw(
+                assets.getPortalAharinTexture(),
+                x,
+                y,
+                w / 2f,
+                h / 2f,
+                w,
+                h,
+                1f,
+                1f,
+                portalRotationDegrees
+        );
         batch.end();
     }
 
