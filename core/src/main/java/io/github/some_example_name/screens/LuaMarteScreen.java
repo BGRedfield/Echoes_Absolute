@@ -324,7 +324,16 @@ public class LuaMarteScreen extends ScreenAdapter {
         bossStorm.update(delta, stats, player.getCenterX(), player.getCenterY());
         updatePortalStrikes(delta);
         handleExitPortal();
-        stats.update(delta);
+
+        Rectangle lunarBase = new Rectangle(
+                BASE_X,
+                BASE_Y,
+                BASE_WIDTH,
+                BASE_HEIGHT
+        );
+        if (!player.getHitbox().overlaps(lunarBase)) {
+            stats.update(delta);
+        }
 
         if (stats.isDead()) {
             changingScreen = true;
@@ -349,8 +358,8 @@ public class LuaMarteScreen extends ScreenAdapter {
         baseRecoveryTimer += delta;
         while (baseRecoveryTimer >= 1f) {
             baseRecoveryTimer -= 1f;
-            stats.addOxygen(5f);
-            stats.addHunger(5f);
+            stats.addOxygen(10f);
+            stats.addHunger(10f);
         }
     }
 
@@ -968,7 +977,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         hudFont.getData().setScale(1.05f);
         hudFont.setColor(Color.WHITE);
         hudFont.draw(batch, String.format("HP: %.0f / 100", stats.getHealth()), x + 10f, firstY + 20f);
-        hudFont.draw(batch, String.format("FOME: %.0f / 100", stats.getHunger()), x + 10f, firstY - gap + 20f);
+        hudFont.draw(batch, String.format("SACIAÇÃO: %.0f / 100", stats.getHunger()), x + 10f, firstY - gap + 20f);
         hudFont.draw(batch, String.format("O2: %.0f / 100", stats.getOxygen()), x + 10f, firstY - gap * 2f + 20f);
 
         hudFont.getData().setScale(1f);
