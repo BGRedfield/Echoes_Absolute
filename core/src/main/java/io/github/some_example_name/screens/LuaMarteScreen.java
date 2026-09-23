@@ -80,6 +80,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private static final float MARTIAN_RESPAWN_INTERVAL = 3f;
     private static final float KEY_SIZE = 76f;
     private static final float BOSS_DEATH_DELAY = 1f;
+    private static final float PORTAL_ROTATION_SPEED = 120f;
 
     private final Game game;
     private final OrthographicCamera camera;
@@ -118,6 +119,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private boolean bossDeathSequenceStarted;
 
     private float fireTimer;
+    private float portalRotationDegrees;
     private float bossAttackTimer;
     private float bossDeathTimer;
     private float martianSpawnTimer;
@@ -305,6 +307,9 @@ public class LuaMarteScreen extends ScreenAdapter {
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+        if (portalSpawned) {
+            portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
+        }
         collectResources();
         collectOres();
         handleMissionInteraction();
@@ -737,7 +742,20 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
 
         if (marsPortal != null && portalSpawned) {
-            batch.draw(portalTexture, marsPortal.getX(), marsPortal.getY(), marsPortal.getWidth(), marsPortal.getHeight());
+            float w = marsPortal.getWidth();
+            float h = marsPortal.getHeight();
+            batch.draw(
+                    assets.getPortalTitaTexture(),
+                    marsPortal.getX(),
+                    marsPortal.getY(),
+                    w / 2f,
+                    h / 2f,
+                    w,
+                    h,
+                    1f,
+                    1f,
+                    portalRotationDegrees
+            );
         }
 
         if (greenKeyVisible) {
