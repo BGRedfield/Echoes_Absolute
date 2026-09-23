@@ -1704,6 +1704,10 @@ public class titascreen extends ScreenAdapter {
             return;
         }
 
+        float keyFloatOffset = MathUtils.sin(
+                collectibleFloatTime * 2.2f + 1.7f
+        ) * 8f;
+
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
         shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
