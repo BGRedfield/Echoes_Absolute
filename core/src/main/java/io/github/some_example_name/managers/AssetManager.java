@@ -31,6 +31,9 @@ public class AssetManager {
     public static final String TRUMP = "trump.png";
     public static final String RIFLE = "ak47.png";
     public static final String PORTAL = "portal.png";
+    public static final String PORTAL_TITA = "portaltita.png";
+    public static final String PORTAL_CALISTO = "portalcalisto.png";
+    public static final String PORTAL_AHARIN = "portalaharin.png";
     public static final String RED_KEY = "chave.png";
     public static final String GREEN_KEY = "chave_verde.png";
 
@@ -66,6 +69,9 @@ public class AssetManager {
     private static Texture sharedTrumpTexture;
     private static Texture sharedRifleTexture;
     private static Texture sharedPortalTexture;
+    private static Texture sharedPortalTitaTexture;
+    private static Texture sharedPortalCalistoTexture;
+    private static Texture sharedPortalAharinTexture;
     private static Texture sharedRedKeyTexture;
     private static Texture sharedGreenKeyTexture;
     private static Texture sharedTitaTileTexture;
@@ -99,6 +105,9 @@ public class AssetManager {
     private Texture trumpTexture;
     private Texture rifleTexture;
     private Texture portalTexture;
+    private Texture portalTitaTexture;
+    private Texture portalCalistoTexture;
+    private Texture portalAharinTexture;
     private Texture redKeyTexture;
     private Texture greenKeyTexture;
     private Texture titaTileTexture;
@@ -160,6 +169,9 @@ public class AssetManager {
                 sharedTrumpTexture = loadAsset(TRUMP, new Color(1f, 0.45f, 0.05f, 1f));
                 sharedRifleTexture = loadAsset(RIFLE, new Color(0.10f, 0.10f, 0.10f, 1f));
                 sharedPortalTexture = loadAsset(PORTAL, new Color(0.15f, 0.85f, 1f, 1f));
+                sharedPortalTitaTexture = loadAsset(PORTAL_TITA, new Color(0.75f, 0.20f, 1f, 1f));
+                sharedPortalCalistoTexture = loadAsset(PORTAL_CALISTO, new Color(0.35f, 1f, 0.95f, 1f));
+                sharedPortalAharinTexture = loadAsset(PORTAL_AHARIN, new Color(1f, 0.75f, 0.15f, 1f));
                 sharedRedKeyTexture = loadAsset(RED_KEY, Color.RED);
                 sharedGreenKeyTexture = loadAsset(GREEN_KEY, Color.GREEN);
 
@@ -212,6 +224,9 @@ public class AssetManager {
         trumpTexture = sharedTrumpTexture;
         rifleTexture = sharedRifleTexture;
         portalTexture = sharedPortalTexture;
+        portalTitaTexture = sharedPortalTitaTexture;
+        portalCalistoTexture = sharedPortalCalistoTexture;
+        portalAharinTexture = sharedPortalAharinTexture;
         redKeyTexture = sharedRedKeyTexture;
         greenKeyTexture = sharedGreenKeyTexture;
         titaTileTexture = sharedTitaTileTexture;
@@ -326,6 +341,9 @@ public class AssetManager {
     public Texture getTrumpTexture() { return trumpTexture; }
     public Texture getRifleTexture() { return rifleTexture; }
     public Texture getPortalTexture() { return portalTexture; }
+    public Texture getPortalTitaTexture() { return portalTitaTexture; }
+    public Texture getPortalCalistoTexture() { return portalCalistoTexture; }
+    public Texture getPortalAharinTexture() { return portalAharinTexture; }
     public Texture getRedKeyTexture() { return redKeyTexture; }
     public Texture getGreenKeyTexture() { return greenKeyTexture; }
     public Texture getTitaTileTexture() { return titaTileTexture; }
