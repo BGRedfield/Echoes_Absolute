@@ -69,6 +69,19 @@ public class BossStorm {
     }
 
     /**
+     * Inicia a tempestade imediatamente, sem a contagem de preparação.
+     */
+    public void startImmediate(float targetX, float targetY) {
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.remaining = DURATION;
+        this.delayRemaining = 0f;
+        this.damageTimer = 1f;
+        this.safeRadius = INITIAL_SAFE_RADIUS;
+        this.pendingStart = false;
+    }
+
+    /**
      * Restaura uma tempestade que estava nos 4 segundos de espera.
      */
     public void restorePending(float delayRemaining, float targetX, float targetY) {
