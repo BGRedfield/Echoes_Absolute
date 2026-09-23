@@ -197,10 +197,15 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
 
         if (!portalSpawned && bossDeathSequenceStarted) {
-            float remaining = data.marsStormRemaining > 0f
-                    ? data.marsStormRemaining
-                    : BossStorm.DURATION;
-            bossStorm.restore(remaining, 2580f, 1530f);
+            if (data.marsStormRemaining < 0f) {
+                bossStorm.restorePending(
+                        -data.marsStormRemaining,
+                        2580f,
+                        1530f
+                );
+            } else if (data.marsStormRemaining > 0f) {
+                bossStorm.restore(data.marsStormRemaining, 2580f, 1530f);
+            }
         }
     }
 
@@ -230,7 +235,9 @@ public class LuaMarteScreen extends ScreenAdapter {
         data.supremeAlienHealth = supremeAlien == null
                 ? SupremeAlienBoss.MAX_HEALTH
                 : supremeAlien.getHealth();
-        data.marsStormRemaining = bossStorm.getRemaining();
+        data.marsStormRemaining = bossStorm.isPending()
+                ? -bossStorm.getDelayRemaining()
+                : bossStorm.getRemaining();
 
         SaveManager.save(data);
         showMessage("JOGO SALVO! O save permanece mesmo fechando o jogo.");
@@ -599,7 +606,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         martians.clear();
         portalStrikes.clear();
         bossStorm.start(2580f, 1530f);
-        showMessage("ALIEN SUPREMO DERROTADO! UMA TEMPESTADE ROXA FECHOU O PORTAL! Sobreviva por 12s.");
+        showMessage("ALIEN SUPREMO DERROTADO! A TEMPESTADE ROXA CHEGARÁ EM 4s PELAS BORDAS. O CENTRO É SEGURO.");
     }
 
     private void spawnMarsExit() {
