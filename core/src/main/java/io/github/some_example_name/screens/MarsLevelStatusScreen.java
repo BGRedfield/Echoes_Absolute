@@ -10,6 +10,7 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
+import io.github.some_example_name.managers.SaveManager;
 
 /** Mars completion screen. The next planet will be added later. */
 public class MarsLevelStatusScreen extends ScreenAdapter {
@@ -48,8 +49,20 @@ public class MarsLevelStatusScreen extends ScreenAdapter {
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
             changingScreen = true;
+            SaveManager.SaveData data = SaveManager.load();
+            if (data == null) {
+                data = new SaveManager.SaveData();
+            }
+            data.phase = SaveManager.Phase.TITA;
+            data.playerX = 600f;
+            data.playerY = 600f;
+            data.health = health;
+            data.hunger = hunger;
+            data.oxygen = oxygen;
+            SaveManager.save(data);
+
             dispose();
-            game.setScreen(new TitaIntroScreen(game));
+            game.setScreen(new TitaIntroScreen(game, data));
             return;
         }
 
