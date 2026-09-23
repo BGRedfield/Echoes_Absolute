@@ -1619,15 +1619,7 @@ public class titascreen extends ScreenAdapter {
 
     
 
-    private void drawWhiteOutline(float x, float y, float width, float height) {
-        float padding = 4f;
-        shapeRenderer.rect(
-                x - padding,
-                y - padding,
-                width + padding * 2f,
-                height + padding * 2f
-        );
-    }
+    
 
     private void drawArenaExitGuide() {
         if (!insideCastle || currentCastle < 0 || bosses[currentCastle] == null
