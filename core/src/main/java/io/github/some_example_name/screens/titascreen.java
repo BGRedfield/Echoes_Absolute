@@ -79,6 +79,7 @@ public class titascreen extends ScreenAdapter {
     private static final float TILE_SIZE = 128f;
     private static final float FIRE_INTERVAL = 0.12f;
     private static final float BASE_RECOVERY_INTERVAL = 1f;
+    private static final float PORTAL_ROTATION_SPEED = 120f;
 
     private static final float YELLOW_KEY_X = 2480f;
     private static final float YELLOW_KEY_Y = 620f;
@@ -177,6 +178,8 @@ public class titascreen extends ScreenAdapter {
             TITA_NPC_WIDTH,
             TITA_NPC_HEIGHT
     );
+
+    private float portalRotationDegrees;
 
     private boolean titanDialogueOpen;
     private boolean titanDialogueWaiting;
@@ -375,6 +378,10 @@ public class titascreen extends ScreenAdapter {
 
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
+
+        if (calistoPortalUnlocked) {
+            portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
+        }
 
         if (!titanDialogueOpen) {
             player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
@@ -1718,18 +1725,26 @@ public class titascreen extends ScreenAdapter {
             return;
         }
 
-        float cx = calistoPortal.x + calistoPortal.width / 2f;
-        float cy = calistoPortal.y + calistoPortal.height / 2f;
+        float x = calistoPortal.x;
+        float y = calistoPortal.y;
+        float w = calistoPortal.width;
+        float h = calistoPortal.height;
 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(new Color(0.35f, 0.85f, 1f, 0.20f));
-        shapeRenderer.circle(cx, cy, 100f);
-        shapeRenderer.setColor(new Color(0.70f, 0.95f, 1f, 0.70f));
-        shapeRenderer.circle(cx, cy, 70f);
-        shapeRenderer.setColor(new Color(0.02f, 0.08f, 0.20f, 1f));
-        shapeRenderer.circle(cx, cy, 50f);
-        shapeRenderer.end();
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        batch.draw(
+                assets.getPortalCalistoTexture(),
+                x,
+                y,
+                w / 2f,
+                h / 2f,
+                w,
+                h,
+                1f,
+                1f,
+                portalRotationDegrees
+        );
+        batch.end();
     }
 
     private void drawArenaEffects() {
