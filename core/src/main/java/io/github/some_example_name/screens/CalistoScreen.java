@@ -8,6 +8,7 @@ import com.badlogic.gdx.graphics.Color;
 import com.badlogic.gdx.graphics.GL20;
 import com.badlogic.gdx.graphics.OrthographicCamera;
 import com.badlogic.gdx.graphics.Texture;
+import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.GlyphLayout;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
@@ -1069,8 +1070,9 @@ public class CalistoScreen extends ScreenAdapter {
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
+        TextureRegion portalRegion = new TextureRegion(assets.getPortalAharinTexture());
         batch.draw(
-                assets.getPortalAharinTexture(),
+                portalRegion,
                 x,
                 y,
                 w / 2f,
