@@ -445,9 +445,16 @@ public class titascreen extends ScreenAdapter {
             collectExteriorResources();
             recoverAtBase(delta);
 
-            // Fora dos bosses, PlayerStats.update() cuida de recursos
-            // e também do timer de invulnerabilidade.
-            stats.update(delta);
+            Rectangle lunarBase = new Rectangle(
+                    BASE_X,
+                    BASE_Y,
+                    BASE_WIDTH,
+                    BASE_HEIGHT
+            );
+            if (!player.getHitbox().overlaps(lunarBase)) {
+                // Fora da base, os recursos continuam diminuindo normalmente.
+                stats.update(delta);
+            }
         }
 
         if (stats.isDead()) {
@@ -514,8 +521,8 @@ public class titascreen extends ScreenAdapter {
         baseRecoveryTimer += delta;
         while (baseRecoveryTimer >= BASE_RECOVERY_INTERVAL) {
             baseRecoveryTimer -= BASE_RECOVERY_INTERVAL;
-            stats.addOxygen(5f);
-            stats.addHunger(5f);
+            stats.addOxygen(10f);
+            stats.addHunger(10f);
         }
     }
 
@@ -2042,7 +2049,7 @@ public class titascreen extends ScreenAdapter {
         font.getData().setScale(1.02f);
         font.setColor(Color.WHITE);
         font.draw(batch, String.format("HP %.0f/100", stats.getHealth()), x + 10f, firstY + 20f);
-        font.draw(batch, String.format("FOME %.0f/100", stats.getHunger()), x + 10f, firstY - gap + 20f);
+        font.draw(batch, String.format("SACIAÇÃO %.0f/100", stats.getHunger()), x + 10f, firstY - gap + 20f);
         font.draw(batch, String.format("O2 %.0f/100", stats.getOxygen()), x + 10f, firstY - gap * 2f + 20f);
 
         font.getData().setScale(1.15f);
