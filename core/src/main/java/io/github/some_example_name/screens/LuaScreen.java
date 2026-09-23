@@ -65,6 +65,7 @@ public class LuaScreen extends ScreenAdapter {
     private static final int REQUIRED_ICE = 5;
     private static final float PLAYER_SHOT_DAMAGE = 10f;
     private static final float PLAYER_FIRE_INTERVAL = 0.12f;
+    private static final float PORTAL_ROTATION_SPEED = 120f;
     private static final float ENEMY_BULLET_DAMAGE = 10f;
     private static final float BOSS_ATTACK_COOLDOWN = 5f;
     private static final float MISSILE_WARNING_TIME = 2f;
@@ -108,6 +109,7 @@ public class LuaScreen extends ScreenAdapter {
     private final Rectangle redKeyHitbox = new Rectangle();
 
     private float bossPhaseTimer;
+    private float portalRotationDegrees;
     private float playerFireTimer;
     private float bossCooldownTimer;
     private float messageTimer;
@@ -284,6 +286,9 @@ public class LuaScreen extends ScreenAdapter {
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+        if (portalSpawned) {
+            portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
+        }
         collectItems();
         handleMissionInteraction();
         recoverAtLunarBase(delta);
@@ -976,7 +981,23 @@ public class LuaScreen extends ScreenAdapter {
             }
         }
 
-        if (marsPortal != null && portalSpawned) batch.draw(assets.getPortalTexture(), marsPortal.getX(), marsPortal.getY(), marsPortal.getWidth(), marsPortal.getHeight());
+        if (marsPortal != null && portalSpawned) {
+            Texture portalTexture = assets.getPortalTexture();
+            float w = marsPortal.getWidth();
+            float h = marsPortal.getHeight();
+            batch.draw(
+                    portalTexture,
+                    marsPortal.getX(),
+                    marsPortal.getY(),
+                    w / 2f,
+                    h / 2f,
+                    w,
+                    h,
+                    1f,
+                    1f,
+                    portalRotationDegrees
+            );
+        }
 
         if (redKeyVisible && !redKeyCollected) batch.draw(assets.getRedKeyTexture(), redKeyHitbox.x, redKeyHitbox.y, redKeyHitbox.width, redKeyHitbox.height);
 
