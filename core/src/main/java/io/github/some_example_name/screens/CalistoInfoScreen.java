@@ -12,8 +12,10 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.utils.viewport.ScreenViewport;
 import com.badlogic.gdx.utils.viewport.Viewport;
 
+import io.github.some_example_name.managers.SaveManager;
+
 /**
- * Tela de explicação de Calisto antes dos créditos.
+ * Tela de explicação de Calisto antes de Aharin.
  */
 public class CalistoInfoScreen extends ScreenAdapter {
 
@@ -24,9 +26,15 @@ public class CalistoInfoScreen extends ScreenAdapter {
 
     private boolean changingScreen;
     private boolean disposed;
+    private final SaveManager.SaveData saveData;
 
     public CalistoInfoScreen(Game game) {
+        this(game, SaveManager.load());
+    }
+
+    public CalistoInfoScreen(Game game, SaveManager.SaveData saveData) {
         this.game = game;
+        this.saveData = saveData;
         batch = new SpriteBatch();
         font = new BitmapFont();
         viewport = new ScreenViewport();
@@ -45,9 +53,16 @@ public class CalistoInfoScreen extends ScreenAdapter {
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)) {
+            SaveManager.SaveData data = saveData != null ? saveData : SaveManager.load();
+            if (data == null) {
+                data = new SaveManager.SaveData();
+            }
+            data.phase = SaveManager.Phase.AHARIN;
+            SaveManager.save(data);
+
             changingScreen = true;
             dispose();
-            game.setScreen(new VictoryScreen(game));
+            game.setScreen(new AharinInfoScreen(game, data));
             return;
         }
 
@@ -96,7 +111,7 @@ public class CalistoInfoScreen extends ScreenAdapter {
 
         font.setColor(Color.valueOf("FFD54A"));
         font.getData().setScale(1.05f);
-        drawCentered("[ ENTER ] CONTINUAR PARA OS CRÉDITOS", w / 2f, 66f);
+        drawCentered("[ ENTER ] CONTINUAR PARA AHARIN", w / 2f, 66f);
 
         batch.end();
     }
