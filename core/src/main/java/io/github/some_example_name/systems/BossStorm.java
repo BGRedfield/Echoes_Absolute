@@ -69,6 +69,19 @@ public class BossStorm {
     }
 
     /**
+     * Restaura uma tempestade que estava nos 4 segundos de espera.
+     */
+    public void restorePending(float delayRemaining, float targetX, float targetY) {
+        this.targetX = targetX;
+        this.targetY = targetY;
+        this.remaining = 0f;
+        this.delayRemaining = Math.max(0f, delayRemaining);
+        this.damageTimer = 1f;
+        this.safeRadius = INITIAL_SAFE_RADIUS;
+        this.pendingStart = this.delayRemaining > 0.001f;
+    }
+
+    /**
      * Restaura uma tempestade que já estava ativa no save.
      */
     public void restore(float remaining, float targetX, float targetY) {
