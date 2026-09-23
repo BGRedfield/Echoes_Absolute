@@ -200,6 +200,7 @@ public class titascreen extends ScreenAdapter {
     private float fireTimer;
     private float baseRecoveryTimer;
     private float messageTimer;
+    private float collectibleFloatTime;
     private float obamaAttackTimer;
     private float obamaRifleOrbitAngle;
     private int obamaAttackCycle;
@@ -378,6 +379,8 @@ public class titascreen extends ScreenAdapter {
 
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
+
+        collectibleFloatTime += delta;
 
         if (calistoPortalUnlocked) {
             portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
@@ -1610,44 +1613,11 @@ public class titascreen extends ScreenAdapter {
             drawYellowKey();
         } else {
             drawCalistoPortal();
-            drawTitanExteriorLocationOutlines();
+
         }
     }
 
-    private void drawTitanExteriorLocationOutlines() {
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.WHITE);
-        Gdx.gl.glLineWidth(4f);
-
-        drawWhiteOutline(
-                BASE_X,
-                BASE_Y,
-                BASE_WIDTH,
-                BASE_HEIGHT
-        );
-
-        for (LuaItem item : exteriorResources) {
-            drawWhiteOutline(
-                    item.getX(),
-                    item.getY(),
-                    item.getWidth(),
-                    item.getHeight()
-            );
-        }
-
-        if (calistoPortalUnlocked) {
-            drawWhiteOutline(
-                    calistoPortal.x,
-                    calistoPortal.y,
-                    calistoPortal.width,
-                    calistoPortal.height
-            );
-        }
-
-        shapeRenderer.end();
-        Gdx.gl.glLineWidth(1f);
-    }
+    
 
     private void drawWhiteOutline(float x, float y, float width, float height) {
         float padding = 4f;
@@ -1747,19 +1717,19 @@ public class titascreen extends ScreenAdapter {
         shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
         shapeRenderer.circle(
                 yellowKey.x + yellowKey.width / 2f,
-                yellowKey.y + yellowKey.height / 2f,
+                yellowKey.y + yellowKey.height / 2f + keyFloatOffset,
                 27f
         );
         shapeRenderer.rect(
                 yellowKey.x + 22f,
-                yellowKey.y + 8f,
+                yellowKey.y + 8f + keyFloatOffset,
                 16f,
                 45f
         );
         shapeRenderer.setColor(Color.BLACK);
         shapeRenderer.rect(
                 yellowKey.x + 34f,
-                yellowKey.y + 20f,
+                yellowKey.y + 20f + keyFloatOffset,
                 22f,
                 8f
         );
@@ -1956,19 +1926,26 @@ public class titascreen extends ScreenAdapter {
         batch.draw(assets.getTitaFinalCastleTexture(), FINAL_CASTLE_X, FINAL_CASTLE_Y, width, height);
     }
 
-    private void drawExteriorResources() {
+        private void drawExteriorResources() {
+        int index = 0;
         for (LuaItem item : exteriorResources) {
             Texture texture = item.getType() == LuaItem.Type.FOOD
                     ? assets.getFoodTexture()
                     : assets.getO2TankTexture();
 
+            float floatOffset = MathUtils.sin(
+                    collectibleFloatTime * 2.2f + index * 0.85f
+            ) * 8f;
+
             batch.draw(
                     texture,
                     item.getX(),
-                    item.getY(),
+                    item.getY() + floatOffset,
                     item.getWidth(),
                     item.getHeight()
             );
+
+            index++;
         }
     }
 
