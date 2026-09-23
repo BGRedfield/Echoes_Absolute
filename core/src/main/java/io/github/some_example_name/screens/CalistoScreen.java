@@ -238,6 +238,7 @@ public class CalistoScreen extends ScreenAdapter {
     }
 
     private void update(float delta) {
+        collectibleFloatTime += delta;
         delta = Math.min(delta, 0.05f);
 
         if (!inBossArena) {
