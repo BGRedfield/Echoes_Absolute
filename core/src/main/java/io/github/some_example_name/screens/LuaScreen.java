@@ -292,6 +292,7 @@ public class LuaScreen extends ScreenAdapter {
             float health = stats.getHealth();
             float hunger = stats.getHunger();
             float oxygen = stats.getOxygen();
+            saveGame();
             dispose();
             game.setScreen(new LuaLevelStatusScreen(game, health, hunger, oxygen, REQUIRED_ICE));
             return false;
