@@ -80,7 +80,6 @@ public class LuaMarteScreen extends ScreenAdapter {
     private static final int MARTIANS_PER_WAVE = 10;
     private static final float MARTIAN_RESPAWN_INTERVAL = 3f;
     private static final float KEY_SIZE = 76f;
-    private static final float BOSS_DEATH_DELAY = 1f;
     private static final float PORTAL_ROTATION_SPEED = 120f;
     private static final float LASER_RENDER_LENGTH = 42f;
 
@@ -123,7 +122,6 @@ public class LuaMarteScreen extends ScreenAdapter {
     private float fireTimer;
     private float portalRotationDegrees;
     private float bossAttackTimer;
-    private float bossDeathTimer;
     private float martianSpawnTimer;
     private float baseRecoveryTimer;
     private float messageTimer;
@@ -191,17 +189,14 @@ public class LuaMarteScreen extends ScreenAdapter {
 
         if (portalSpawned) {
             marsPortal = new MarsPortal(2580f, 1530f);
-            if (supremeAlien != null) {
-                greenKeyHitbox.set(
-                        supremeAlien.getCenterX() - KEY_SIZE / 2f,
-                        supremeAlien.getCenterY() - KEY_SIZE / 2f,
-                        KEY_SIZE,
-                        KEY_SIZE
-                );
-            }
         }
 
-        if (!portalSpawned && bossDeathSequenceStarted) {
+        if (portalSpawned && greenKeyCollected) {
+            portalUnlocked = true;
+            portalEntryArmed = true;
+        }
+
+        if (bossDeathSequenceStarted) {
             if (data.marsStormRemaining < 0f) {
                 bossStorm.restorePending(
                         -data.marsStormRemaining,
@@ -514,10 +509,6 @@ public class LuaMarteScreen extends ScreenAdapter {
 
         if (supremeAlien.isDead()) {
             if (!bossDeathSequenceStarted) beginBossDeathSequence();
-            bossDeathTimer -= delta;
-            if (bossDeathTimer <= 0f && bossStorm.isFinished() && !portalSpawned) {
-                spawnMarsExit();
-            }
             return;
         }
 
@@ -618,59 +609,62 @@ public class LuaMarteScreen extends ScreenAdapter {
 
     private void beginBossDeathSequence() {
         if (bossDeathSequenceStarted) return;
+
         bossDeathSequenceStarted = true;
-        bossDeathTimer = BOSS_DEATH_DELAY;
         mission = MarsMission.GO_TO_NEXT;
         martians.clear();
         portalStrikes.clear();
-        bossStorm.start(2580f, 1530f);
-        showMessage("ALIEN SUPREMO DERROTADO! A TEMPESTADE ROXA CHEGARÁ EM 4s PELAS BORDAS. O CENTRO É SEGURO.");
-    }
+        bossStorm.restore(0f, 2580f, 1530f);
 
-    private void spawnMarsExit() {
-        portalSpawned = true;
-        portalUnlocked = false;
-        portalEntryArmed = false;
+        // Igual à Lua: a chave nasce imediatamente no local do boss.
+        // O portal só aparece quando a chave é coletada.
         greenKeyVisible = true;
         greenKeyCollected = false;
+        portalSpawned = false;
+        portalUnlocked = false;
+        portalEntryArmed = false;
+
         greenKeyHitbox.set(
                 supremeAlien.getCenterX() - KEY_SIZE / 2f,
                 supremeAlien.getCenterY() - KEY_SIZE / 2f,
                 KEY_SIZE,
                 KEY_SIZE
         );
+
+        showMessage(
+                "ALIEN SUPREMO DERROTADO! PEGUE A CHAVE VERDE NO LOCAL DO BOSS. "
+                        + "A TEMPESTADE COMEÇA QUANDO A CHAVE FOR COLETADA!"
+        );
+    }
+
+    private void spawnMarsExit() {
+        portalSpawned = true;
+        portalUnlocked = true;
+        portalEntryArmed = true;
         marsPortal = new MarsPortal(2580f, 1530f);
-        showMessage("CHAVE VERDE: toque nela para coletar e siga até o portal.");
     }
 
     private void handleExitPortal() {
-        if (!portalSpawned || marsPortal == null || mission != MarsMission.GO_TO_NEXT) return;
+        if (mission != MarsMission.GO_TO_NEXT) return;
 
-        if (greenKeyVisible && player.getHitbox().overlaps(greenKeyHitbox)) {
+        // Igual à Lua: tocar na chave faz a tempestade começar e revela o portal.
+        if (greenKeyVisible
+                && !greenKeyCollected
+                && player.getHitbox().overlaps(greenKeyHitbox)) {
+
             greenKeyVisible = false;
             greenKeyCollected = true;
+
+            bossStorm.startImmediate(2580f, 1530f);
+            spawnMarsExit();
             saveGame();
-            showMessage("CHAVE VERDE COLETADA! Vá ao portal e pressione E.");
+
+            showMessage("CHAVE VERDE COLETADA! CORRA PARA O PORTAL!");
         }
 
-        boolean atPortal = player.getHitbox().overlaps(marsPortal.getHitbox());
-        if (!portalUnlocked) {
-            if (!greenKeyCollected) return;
-            if (atPortal && Gdx.input.isKeyJustPressed(Input.Keys.E)) {
-                portalUnlocked = true;
-                portalEntryArmed = false;
-                showMessage("PORTAL ABERTO! Saia e entre novamente para concluir Marte.");
-            }
-            return;
-        }
+        if (!portalSpawned || marsPortal == null || !portalUnlocked) return;
 
-        if (!atPortal) {
-            portalEntryArmed = true;
-            return;
-        }
-
-        if (portalEntryArmed) {
-            saveGame();
+        if (player.getHitbox().overlaps(marsPortal.getHitbox())) {
             float health = stats.getHealth();
             float hunger = stats.getHunger();
             float oxygen = stats.getOxygen();
@@ -800,17 +794,16 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
 
         if (marsPortal != null && portalSpawned) {
-            float w = marsPortal.getWidth();
-            float h = marsPortal.getHeight();
-            TextureRegion portalRegion = new TextureRegion(assets.getPortalTitaTexture());
+            TextureRegion portalRegion = createCenteredSquareRegion(assets.getPortalTitaTexture());
+            float portalSize = Math.min(marsPortal.getWidth(), marsPortal.getHeight());
             batch.draw(
                     portalRegion,
                     marsPortal.getX(),
                     marsPortal.getY(),
-                    w / 2f,
-                    h / 2f,
-                    w,
-                    h,
+                    portalSize / 2f,
+                    portalSize / 2f,
+                    portalSize,
+                    portalSize,
                     1f,
                     1f,
                     portalRotationDegrees
@@ -1040,6 +1033,13 @@ public class LuaMarteScreen extends ScreenAdapter {
                 1f,
                 angle
         );
+    }
+
+    private TextureRegion createCenteredSquareRegion(Texture texture) {
+        int side = Math.min(texture.getWidth(), texture.getHeight());
+        int x = (texture.getWidth() - side) / 2;
+        int y = (texture.getHeight() - side) / 2;
+        return new TextureRegion(texture, x, y, side, side);
     }
 
     private void drawTextureFacingPlayer(
