@@ -54,7 +54,7 @@ public class PauseMenu {
         this.game = game;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
+        font = PixelFontFactory.create();
         viewport = new ScreenViewport();
         font.setColor(Color.WHITE);
     }
