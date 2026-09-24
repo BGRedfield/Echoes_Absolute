@@ -1261,10 +1261,9 @@ public class titascreen extends ScreenAdapter {
 
         obamaMissileWarnings.add(
                 new MissileWarning(
-                        targetX - size / 2f,
-                        targetY - size / 2f,
-                        size,
-                        size,
+                        targetX,
+                        targetY,
+                        size / 2f,
                         OBAMA_MISSILE_WARNING_TIME
                 )
         );
