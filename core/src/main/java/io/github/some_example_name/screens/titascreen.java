@@ -630,13 +630,20 @@ public class titascreen extends ScreenAdapter {
         Vector3 mouse = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
         hudViewport.unproject(mouse);
 
-        float panelX = 45f;
-        float buttonX = panelX + 30f;
-        float buttonWidth = Math.min(570f, hudViewport.getWorldWidth() - 410f);
-        float buttonHeight = 78f;
+        float width = hudViewport.getWorldWidth();
+        float panelX = 55f;
+        float panelY = 42f;
+        float panelWidth = width - 110f;
+        float portraitSize = 155f;
+        float portraitX = panelX + panelWidth - portraitSize - 28f;
+        float textX = panelX + 28f;
+        float buttonX = textX;
+        float buttonWidth = Math.min(565f, portraitX - textX - 24f);
+        float buttonHeight = 48f;
+        float buttonGap = 10f;
 
         for (int i = 0; i < 3; i++) {
-            float buttonY = 100f + (2 - i) * 95f;
+            float buttonY = panelY + 24f + (2 - i) * (buttonHeight + buttonGap);
             if (mouse.x >= buttonX && mouse.x <= buttonX + buttonWidth
                     && mouse.y >= buttonY && mouse.y <= buttonY + buttonHeight) {
                 return i;
@@ -771,57 +778,71 @@ public class titascreen extends ScreenAdapter {
         float width = hudViewport.getWorldWidth();
         float height = hudViewport.getWorldHeight();
 
-        float panelX = 40f;
-        float panelY = 35f;
-        float panelWidth = width - 80f;
-        float panelHeight = height - 70f;
+        // Caixa compacta no estilo de caixas de diálogo de RPG retrô:
+        // ocupa apenas a faixa inferior da tela.
+        float panelX = 55f;
+        float panelY = 42f;
+        float panelWidth = width - 110f;
+        float panelHeight = 225f;
 
-        float portraitSize = 250f;
-        float portraitX = width - portraitSize - 70f;
-        float portraitY = height - portraitSize - 75f;
+        float portraitSize = 155f;
+        float portraitX = panelX + panelWidth - portraitSize - 28f;
+        float portraitY = panelY + 36f;
 
-        float buttonX = panelX + 30f;
-        float buttonWidth = Math.min(570f, width - 410f);
-        float buttonHeight = 78f;
+        float textX = panelX + 28f;
+        float contentWidth = portraitX - textX - 24f;
+
+        float buttonX = textX;
+        float buttonWidth = Math.min(565f, contentWidth);
+        float buttonHeight = 48f;
+        float buttonGap = 10f;
 
         shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
+
+        // Borda branca/preta, lembrando as caixas de diálogo retrô.
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(Color.WHITE);
+        shapeRenderer.rect(panelX - 5f, panelY - 5f, panelWidth + 10f, panelHeight + 10f);
 
         shapeRenderer.setColor(Color.BLACK);
         shapeRenderer.rect(panelX, panelY, panelWidth, panelHeight);
 
-        // Retrato do NPC à direita.
-        shapeRenderer.setColor(new Color(0.04f, 0.04f, 0.04f, 1f));
+        // Retrato menor, sem dominar a tela.
+        shapeRenderer.setColor(new Color(0.035f, 0.035f, 0.035f, 1f));
         shapeRenderer.rect(portraitX, portraitY, portraitSize, portraitSize);
 
-        float cubeSize = 145f;
+        float cubeSize = 92f;
         float cubeX = portraitX + (portraitSize - cubeSize) / 2f;
-        float cubeY = portraitY + 52f;
+        float cubeY = portraitY + 28f;
+
         shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
         shapeRenderer.rect(cubeX, cubeY, cubeSize, cubeSize);
 
         shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.rect(cubeX + 32f, cubeY + 88f, 16f, 16f);
-        shapeRenderer.rect(cubeX + cubeSize - 48f, cubeY + 88f, 16f, 16f);
+        shapeRenderer.rect(cubeX + 20f, cubeY + 57f, 11f, 11f);
+        shapeRenderer.rect(cubeX + cubeSize - 31f, cubeY + 57f, 11f, 11f);
 
-        // Opções grandes, empilhadas na lateral esquerda.
         if (!titanDialogueWaiting) {
+            int hovered = getHoveredTitanDialogueChoice();
+
             for (int i = 0; i < 3; i++) {
-                float buttonY = 100f + (2 - i) * 95f;
-                int hovered = getHoveredTitanDialogueChoice();
+                float buttonY = panelY + 24f + (2 - i) * (buttonHeight + buttonGap);
 
-                shapeRenderer.setColor(Color.BLACK);
-                shapeRenderer.rect(buttonX, buttonY, buttonWidth, buttonHeight);
-
-                shapeRenderer.setColor(
-                        hovered == i
-                                ? Color.YELLOW
-                                : Color.WHITE
+                shapeRenderer.setColor(hovered == i
+                        ? new Color(0.35f, 0.28f, 0f, 1f)
+                        : Color.BLACK);
+                shapeRenderer.rect(
+                        buttonX,
+                        buttonY,
+                        buttonWidth,
+                        buttonHeight
                 );
-                shapeRenderer.rect(buttonX, buttonY, buttonWidth, 4f);
-                shapeRenderer.rect(buttonX, buttonY + buttonHeight - 4f, buttonWidth, 4f);
-                shapeRenderer.rect(buttonX, buttonY, 4f, buttonHeight);
-                shapeRenderer.rect(buttonX + buttonWidth - 4f, buttonY, 4f, buttonHeight);
+
+                shapeRenderer.setColor(hovered == i ? Color.YELLOW : Color.WHITE);
+                shapeRenderer.rect(buttonX, buttonY, buttonWidth, 3f);
+                shapeRenderer.rect(buttonX, buttonY + buttonHeight - 3f, buttonWidth, 3f);
+                shapeRenderer.rect(buttonX, buttonY, 3f, buttonHeight);
+                shapeRenderer.rect(buttonX + buttonWidth - 3f, buttonY, 3f, buttonHeight);
             }
         }
 
@@ -830,14 +851,10 @@ public class titascreen extends ScreenAdapter {
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
 
-        float textX = panelX + 38f;
-        float textWidth = width - 430f;
-
-        font.getData().setScale(1.65f);
         font.setColor(Color.YELLOW);
-        font.draw(batch, "NPC", textX, height - 85f);
+        font.getData().setScale(1.20f);
+        font.draw(batch, "NPC", textX, panelY + panelHeight - 26f);
 
-        font.getData().setScale(1.55f);
         font.setColor(Color.WHITE);
 
         if (titanDialogueWaiting) {
@@ -845,51 +862,62 @@ public class titascreen extends ScreenAdapter {
                     ? titanDialogueResponse
                     : getTitanDialogueSpeech(titanDialogueRound);
 
+            font.getData().setScale(1.08f);
             font.draw(
                     batch,
                     speech,
                     textX,
-                    height - 125f,
-                    textWidth,
+                    panelY + panelHeight - 55f,
+                    contentWidth,
                     0,
                     true
             );
 
-            font.getData().setScale(1.05f);
+            font.getData().setScale(0.80f);
             font.setColor(Color.LIGHT_GRAY);
-            font.draw(batch, "ENTER = continuar", textX, 75f);
-            font.draw(batch, "ESC = fechar", width - 225f, 75f);
+            font.draw(batch, "ENTER = continuar", textX, panelY + 20f);
+            font.draw(batch, "ESC = fechar", portraitX - 120f, panelY + 20f);
         } else {
-            font.getData().setScale(1.25f);
+            font.getData().setScale(0.90f);
             font.setColor(Color.WHITE);
-            font.draw(batch, "Escolha uma pergunta:", textX, height - 165f);
+            font.draw(
+                    batch,
+                    "Escolha uma pergunta:",
+                    textX,
+                    panelY + panelHeight - 42f
+            );
 
-            font.getData().setScale(0.98f);
+            font.getData().setScale(0.72f);
+
+            int hovered = getHoveredTitanDialogueChoice();
             for (int i = 0; i < 3; i++) {
-                float buttonY = 100f + (2 - i) * 95f;
-                int hovered = getHoveredTitanDialogueChoice();
+                float buttonY = panelY + 24f + (2 - i) * (buttonHeight + buttonGap);
                 font.setColor(hovered == i ? Color.YELLOW : Color.WHITE);
 
                 font.draw(
                         batch,
                         (i + 1) + ". " + getTitanDialogueQuestion(titanDialogueRound, i),
-                        buttonX + 18f,
-                        buttonY + 48f,
-                        buttonWidth - 36f,
+                        buttonX + 12f,
+                        buttonY + 31f,
+                        buttonWidth - 24f,
                         0,
                         true
                 );
             }
 
-            font.getData().setScale(0.95f);
+            font.getData().setScale(0.72f);
             font.setColor(Color.LIGHT_GRAY);
-            font.draw(batch, "Passe o mouse e clique para escolher", textX, 75f);
-            font.draw(batch, "ESC = fechar", width - 180f, 75f);
+            font.draw(batch, "MOUSE = escolher | CLIQUE = confirmar", portraitX - 15f, panelY + 18f);
         }
 
-        font.getData().setScale(0.95f);
+        font.getData().setScale(0.70f);
         font.setColor(Color.GRAY);
-        font.draw(batch, "RODADA " + (titanDialogueRound + 1) + "/3", textX, height - 200f);
+        font.draw(
+                batch,
+                "RODADA " + (titanDialogueRound + 1) + "/3",
+                portraitX,
+                panelY + portraitSize + 2f
+        );
 
         batch.end();
     }
