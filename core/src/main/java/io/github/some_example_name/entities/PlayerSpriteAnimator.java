@@ -5,24 +5,22 @@ import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 
 /**
- * Anima o jogador a partir de um sprite sheet 512x256.
+ * Anima o jogador a partir de um sprite sheet 512x768.
  *
  * Cada frame tem 64x64.
  *
- * Linha 0: andando para baixo
- * Linha 1: andando para a esquerda
- * Linha 2: andando para a direita
- * Linha 3: andando para cima
+ * As 12 linhas são:
+ * 0-3: caminhada (baixo, cima, esquerda, direita)
+ * 4-7: dash      (baixo, cima, esquerda, direita)
+ * 8-11: dano     (baixo, cima, esquerda, direita)
  *
- * Colunas 0-3: caminhada
- * Colunas 4-5: dash
- * Colunas 6-7: dano
+ * Cada animação possui 8 frames por direção.
  */
 public class PlayerSpriteAnimator {
 
     public static final int FRAME_SIZE = 64;
     public static final int SHEET_COLUMNS = 8;
-    public static final int SHEET_ROWS = 4;
+    public static final int SHEET_ROWS = 12;
 
     private static final float WALK_FRAME_TIME = 0.12f;
     private static final float DASH_FRAME_TIME = 0.07f;
@@ -60,16 +58,21 @@ public class PlayerSpriteAnimator {
                 FRAME_SIZE
         );
 
-        int row = getDirectionRow(player);
+        int directionRow = getDirectionRow(player);
+        int row;
         int column;
 
         if (stats.isInvulnerable()) {
-            column = 6 + ((int) (animationTime / DAMAGE_FRAME_TIME) % 2);
+            row = 8 + directionRow;
+            column = (int) (animationTime / DAMAGE_FRAME_TIME) % 8;
         } else if (player.isDashing()) {
-            column = 4 + ((int) (animationTime / DASH_FRAME_TIME) % 2);
+            row = 4 + directionRow;
+            column = (int) (animationTime / DASH_FRAME_TIME) % 8;
         } else if (player.isMoving()) {
-            column = (int) (animationTime / WALK_FRAME_TIME) % 4;
+            row = directionRow;
+            column = (int) (animationTime / WALK_FRAME_TIME) % 8;
         } else {
+            row = directionRow;
             column = 0;
         }
 
