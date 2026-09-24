@@ -910,20 +910,13 @@ public class titascreen extends ScreenAdapter {
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
 
-        // Retrato do NPC dentro da caixa: corpo + cabeça, usando os dois assets.
-        drawNpcTexturePreservingAspect(
-                assets.getTitaNpcBodyTexture(),
-                portraitX + portraitSize / 2f,
-                portraitY + 46f,
-                82f,
-                82f
-        );
+        // No diálogo aparece SOMENTE a cabeça do NPC.
         drawNpcTexturePreservingAspect(
                 assets.getTitaNpcHeadTexture(),
                 portraitX + portraitSize / 2f,
-                portraitY + 110f,
-                76f,
-                58f
+                portraitY + portraitSize / 2f,
+                110f,
+                110f
         );
 
         font.setColor(Color.YELLOW);
