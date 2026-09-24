@@ -30,6 +30,7 @@ import io.github.some_example_name.entities.MarsOre;
 import io.github.some_example_name.entities.MarsPortal;
 import io.github.some_example_name.entities.MarsPortalStrike;
 import io.github.some_example_name.entities.Player;
+import io.github.some_example_name.entities.PlayerSpriteAnimator;
 import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.entities.SupremeAlienBoss;
 import io.github.some_example_name.managers.AssetManager;
@@ -92,6 +93,7 @@ public class LuaMarteScreen extends ScreenAdapter {
     private final BitmapFont hudFont;
     private final AssetManager assets;
     private final Player player;
+    private final PlayerSpriteAnimator playerAnimator;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
     private final QuestLog questLog;
@@ -148,6 +150,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         assets = new AssetManager();
         assets.load();
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
+        playerAnimator = new PlayerSpriteAnimator();
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
         questLog = new QuestLog();
@@ -310,6 +313,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         delta = Math.min(delta, 0.05f);
         collectibleFloatTime += delta;
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+        playerAnimator.update(delta);
         if (portalSpawned) {
             portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
         }
@@ -813,8 +817,13 @@ public class LuaMarteScreen extends ScreenAdapter {
         Texture laserTexture = assets.getLaserTexture();
         for (Laser laser : lasers) batch.draw(laserTexture, laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
 
-        Texture playerTexture = assets.getPlayerTexture();
-        batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
+        playerAnimator.draw(
+                batch,
+                assets.getPlayerSpriteSheetTexture(),
+                assets.getPlayerTexture(),
+                player,
+                stats
+        );
         batch.end();
     
 
