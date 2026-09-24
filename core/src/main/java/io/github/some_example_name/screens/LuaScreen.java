@@ -994,7 +994,15 @@ public class LuaScreen extends ScreenAdapter {
 
         if (trumpBoss != null && !trumpBoss.isDead()) {
             Texture trumpTexture = assets.getTrumpTexture();
-            batch.draw(trumpTexture, trumpBoss.getX(), trumpBoss.getY(), trumpBoss.getWidth(), trumpBoss.getHeight());
+            drawTextureFacingPlayer(
+                    trumpTexture,
+                    trumpBoss.getX(),
+                    trumpBoss.getY(),
+                    trumpBoss.getWidth(),
+                    trumpBoss.getHeight(),
+                    trumpBoss.getCenterX(),
+                    trumpBoss.getCenterY()
+            );
         }
 
         Texture rifleTexture = assets.getRifleTexture();
