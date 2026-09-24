@@ -121,6 +121,7 @@ public class titascreen extends ScreenAdapter {
     private static final float EVOLVED_FIRE_INTERVAL = 0.09f;
     private static final float EVOLVED_BURST_SPREAD = 0.045f;
     private static final float LASER_RENDER_LENGTH = 42f;
+    private static final float TITAN_DIALOGUE_CHAR_DELAY = 0.025f;
 
     private final Game game;
     private final OrthographicCamera camera;
@@ -189,6 +190,8 @@ public class titascreen extends ScreenAdapter {
     private int titanDialogueRound;
     private int titanDialogueChoice = -1;
     private String titanDialogueResponse = "";
+    private float titanDialogueTypeTimer;
+    private int titanDialogueCharIndex;
 
     private int currentCastle = -1;
     private boolean insideCastle;
@@ -393,7 +396,7 @@ public class titascreen extends ScreenAdapter {
         }
 
         if (titanDialogueOpen) {
-            updateTitanDialogueInput();
+            updateTitanDialogueInput(delta);
             stats.updateInvulnerability(delta);
             updateCamera();
             return true;
@@ -566,6 +569,7 @@ public class titascreen extends ScreenAdapter {
         titanDialogueShowingResponse = false;
         titanDialogueChoice = -1;
         titanDialogueResponse = "";
+        startTitanDialogueText();
     }
 
     private void closeTitanDialogue() {
@@ -580,10 +584,18 @@ public class titascreen extends ScreenAdapter {
         }
     }
 
-    private void updateTitanDialogueInput() {
+    private void updateTitanDialogueInput(float delta) {
+        updateTitanDialogueTypewriter(delta);
+
         if (titanDialogueWaiting) {
             if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
                     || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
+
+                if (!isTitanDialogueTextComplete()) {
+                    // Primeiro ENTER termina a animação; o próximo avança.
+                    showCompleteTitanDialogueText();
+                    return;
+                }
 
                 if (titanDialogueShowingResponse) {
                     titanDialogueRound++;
@@ -594,9 +606,10 @@ public class titascreen extends ScreenAdapter {
                         titanDialogueShowingResponse = false;
                         titanDialogueChoice = -1;
                         titanDialogueResponse = "";
+                        startTitanDialogueText();
                     }
                 } else {
-                    // A primeira fala do NPC termina. Agora aparecem as opções.
+                    // A fala do NPC terminou. Agora aparecem as opções.
                     titanDialogueWaiting = false;
                 }
             }
@@ -619,11 +632,51 @@ public class titascreen extends ScreenAdapter {
             titanDialogueResponse = getTitanDialogueResponse(titanDialogueRound, choice);
             titanDialogueShowingResponse = true;
             titanDialogueWaiting = true;
+            startTitanDialogueText();
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             closeTitanDialogue();
         }
+    }
+
+    private String getTitanDialogueCurrentText() {
+        return titanDialogueShowingResponse
+                ? titanDialogueResponse
+                : getTitanDialogueSpeech(titanDialogueRound);
+    }
+
+    private void startTitanDialogueText() {
+        titanDialogueTypeTimer = 0f;
+        titanDialogueCharIndex = 0;
+    }
+
+    private void updateTitanDialogueTypewriter(float delta) {
+        String fullText = getTitanDialogueCurrentText();
+        if (titanDialogueCharIndex >= fullText.length()) {
+            return;
+        }
+
+        titanDialogueTypeTimer += delta;
+        while (titanDialogueTypeTimer >= TITAN_DIALOGUE_CHAR_DELAY) {
+            titanDialogueTypeTimer -= TITAN_DIALOGUE_CHAR_DELAY;
+            titanDialogueCharIndex++;
+
+            if (titanDialogueCharIndex >= fullText.length()) {
+                titanDialogueCharIndex = fullText.length();
+                titanDialogueTypeTimer = 0f;
+                break;
+            }
+        }
+    }
+
+    private boolean isTitanDialogueTextComplete() {
+        return titanDialogueCharIndex >= getTitanDialogueCurrentText().length();
+    }
+
+    private void showCompleteTitanDialogueText() {
+        titanDialogueCharIndex = getTitanDialogueCurrentText().length();
+        titanDialogueTypeTimer = 0f;
     }
 
     private int getHoveredTitanDialogueChoice() {
@@ -655,9 +708,9 @@ public class titascreen extends ScreenAdapter {
 
     private String getTitanDialogueSpeech(int round) {
         String[] speeches = {
-                "Você chegou até Titã. Antes de seguir, posso esclarecer algumas coisas.",
-                "Interessante. Titã guarda muito mais do que estas fortalezas deixam perceber.",
-                "Você já conhece parte dos segredos daqui. Faça mais uma pergunta antes de partir."
+                "Bem-vindo a Titã. Para avançar, derrote os três primeiros chefes, colete os três cristais e coloque cada cristal no altar da mesma cor. Isso abrirá o Bastião, onde está o chefe final. Depois de derrotá-lo, pegue a chave amarela e entre no portal para Calisto.",
+                "Os três castelos iniciais guardam os cristais. Derrote cada chefe e leve os três cristais aos altares no centro da superfície. Depois, a grande porta do Bastião será liberada.",
+                "Quando o Bastião for aberto, derrote o chefe final. A chave amarela aparecerá depois da vitória; pegue-a e use o portal para continuar sua jornada."
         };
 
         return speeches[MathUtils.clamp(round, 0, speeches.length - 1)];
@@ -741,33 +794,62 @@ public class titascreen extends ScreenAdapter {
             return;
         }
 
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        Texture bodyTexture = assets.getTitaNpcBodyTexture();
+        Texture headTexture = assets.getTitaNpcHeadTexture();
 
-        // Placeholder pedido: um cubo amarelo simples.
-        shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
-        shapeRenderer.rect(
-                titanNpcHitbox.x + 5f,
-                titanNpcHitbox.y + 8f,
-                titanNpcHitbox.width - 10f,
-                titanNpcHitbox.height - 16f
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+
+        float bodyWidth = titanNpcHitbox.width;
+        float bodyHeight = 82f;
+        float bodyX = titanNpcHitbox.x;
+        float bodyY = titanNpcHitbox.y;
+
+        drawNpcTexturePreservingAspect(
+                bodyTexture,
+                bodyX + bodyWidth / 2f,
+                bodyY + bodyHeight / 2f,
+                bodyWidth,
+                bodyHeight
         );
 
-        shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.rect(
-                titanNpcHitbox.x + 20f,
-                titanNpcHitbox.y + 82f,
-                10f,
-                10f
-        );
-        shapeRenderer.rect(
-                titanNpcHitbox.x + titanNpcHitbox.width - 30f,
-                titanNpcHitbox.y + 82f,
-                10f,
-                10f
+        float headWidth = 76f;
+        float headHeight = 58f;
+        float headX = titanNpcHitbox.x + titanNpcHitbox.width / 2f;
+        float headY = bodyY + bodyHeight - 4f + headHeight / 2f;
+
+        drawNpcTexturePreservingAspect(
+                headTexture,
+                headX,
+                headY,
+                headWidth,
+                headHeight
         );
 
-        shapeRenderer.end();
+        batch.end();
+    }
+
+    private void drawNpcTexturePreservingAspect(
+            Texture texture,
+            float centerX,
+            float centerY,
+            float maxWidth,
+            float maxHeight
+    ) {
+        float textureWidth = Math.max(1f, texture.getWidth());
+        float textureHeight = Math.max(1f, texture.getHeight());
+        float scale = Math.min(maxWidth / textureWidth, maxHeight / textureHeight);
+
+        float width = textureWidth * scale;
+        float height = textureHeight * scale;
+
+        batch.draw(
+                texture,
+                centerX - width / 2f,
+                centerY - height / 2f,
+                width,
+                height
+        );
     }
 
     private void drawTitanDialogue() {
@@ -858,9 +940,9 @@ public class titascreen extends ScreenAdapter {
         font.setColor(Color.WHITE);
 
         if (titanDialogueWaiting) {
-            String speech = titanDialogueShowingResponse
-                    ? titanDialogueResponse
-                    : getTitanDialogueSpeech(titanDialogueRound);
+            String fullSpeech = getTitanDialogueCurrentText();
+            int visibleCharacters = Math.min(titanDialogueCharIndex, fullSpeech.length());
+            String speech = fullSpeech.substring(0, visibleCharacters);
 
             font.getData().setScale(1.32f);
             font.draw(
@@ -875,7 +957,14 @@ public class titascreen extends ScreenAdapter {
 
             font.getData().setScale(0.95f);
             font.setColor(Color.LIGHT_GRAY);
-            font.draw(batch, "ENTER = continuar", textX, panelY + 20f);
+            font.draw(
+                    batch,
+                    isTitanDialogueTextComplete()
+                            ? "ENTER = continuar"
+                            : "ENTER = mostrar tudo",
+                    textX,
+                    panelY + 20f
+            );
             font.draw(batch, "ESC = fechar", portraitX - 120f, panelY + 20f);
         } else {
             font.getData().setScale(1.05f);
