@@ -32,6 +32,7 @@ import io.github.some_example_name.entities.LuaMission;
 import io.github.some_example_name.entities.MarsPortal;
 import io.github.some_example_name.entities.MissileWarning;
 import io.github.some_example_name.entities.Player;
+import io.github.some_example_name.entities.PlayerSpriteAnimator;
 import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.entities.RifleWeapon;
 import io.github.some_example_name.entities.TrumpBoss;
@@ -87,6 +88,7 @@ public class LuaScreen extends ScreenAdapter {
     private final BitmapFont hudFont;
     private final AssetManager assets;
     private final Player player;
+    private final PlayerSpriteAnimator playerAnimator;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
     private final QuestLog questLog;
@@ -145,6 +147,7 @@ public class LuaScreen extends ScreenAdapter {
         assets = new AssetManager();
         assets.load();
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
+        playerAnimator = new PlayerSpriteAnimator();
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
         questLog = new QuestLog();
@@ -296,6 +299,7 @@ public class LuaScreen extends ScreenAdapter {
 
         collectibleFloatTime += delta;
         player.update(delta, WORLD_WIDTH, WORLD_HEIGHT);
+        playerAnimator.update(delta);
         if (portalSpawned) {
             portalRotationDegrees -= PORTAL_ROTATION_SPEED * delta;
         }
@@ -1028,7 +1032,13 @@ public class LuaScreen extends ScreenAdapter {
         }
 
         for (Laser laser : lasers) batch.draw(assets.getLaserTexture(), laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
-        batch.draw(assets.getPlayerTexture(), player.getX(), player.getY(), player.getWidth(), player.getHeight());
+        playerAnimator.draw(
+                batch,
+                assets.getPlayerSpriteSheetTexture(),
+                assets.getPlayerTexture(),
+                player,
+                stats
+        );
         batch.end();
     
 
