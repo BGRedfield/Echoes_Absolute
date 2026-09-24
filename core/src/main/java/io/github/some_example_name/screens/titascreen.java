@@ -1636,6 +1636,7 @@ public class titascreen extends ScreenAdapter {
         }
 
         drawLasers();
+        drawAmericanBullets();
 
         drawPlayerFacingMouse();
 
@@ -1886,15 +1887,8 @@ public class titascreen extends ScreenAdapter {
             );
         }
 
-        shapeRenderer.setColor(Color.BLUE);
-        for (EnemyBullet bullet : obamaAmericanBullets) {
-            shapeRenderer.rect(
-                    bullet.getX(),
-                    bullet.getY(),
-                    bullet.getWidth(),
-                    bullet.getHeight()
-            );
-        }
+        // Os tiros dos americanos são desenhados como americanobullet.png em drawWorld().
+
 
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
@@ -2053,6 +2047,32 @@ public class titascreen extends ScreenAdapter {
         }
 
         shapeRenderer.end();
+    }
+
+    private void drawAmericanBullets() {
+        TextureRegion bulletRegion = new TextureRegion(assets.getAmericanBulletTexture());
+
+        for (EnemyBullet bullet : obamaAmericanBullets) {
+            float width = Math.max(20f, bullet.getWidth() * 1.8f);
+            float height = Math.max(20f, bullet.getHeight() * 1.8f);
+            float angle = MathUtils.atan2(
+                    bullet.getDirectionY(),
+                    bullet.getDirectionX()
+            ) * MathUtils.radiansToDegrees;
+
+            batch.draw(
+                    bulletRegion,
+                    bullet.getX() + bullet.getWidth() / 2f - width / 2f,
+                    bullet.getY() + bullet.getHeight() / 2f - height / 2f,
+                    width / 2f,
+                    height / 2f,
+                    width,
+                    height,
+                    1f,
+                    1f,
+                    angle
+            );
+        }
     }
 
     private void drawPlayerFacingMouse() {
