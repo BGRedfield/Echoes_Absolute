@@ -30,7 +30,6 @@ import io.github.some_example_name.entities.Laser;
 import io.github.some_example_name.entities.LuaItem;
 import io.github.some_example_name.entities.MissileWarning;
 import io.github.some_example_name.entities.Player;
-import io.github.some_example_name.entities.PlayerSpriteAnimator;
 import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.entities.RifleWeapon;
 import io.github.some_example_name.entities.TitaBoss;
@@ -131,7 +130,6 @@ public class titascreen extends ScreenAdapter {
     private final BitmapFont font;
     private final AssetManager assets;
     private final Player player;
-    private final PlayerSpriteAnimator playerAnimator;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
     private final QuestLog questLog;
@@ -225,7 +223,6 @@ public class titascreen extends ScreenAdapter {
         assets = new AssetManager();
         assets.load();
         player = new Player(BASE_X + 120f, BASE_Y + 50f);
-        playerAnimator = new PlayerSpriteAnimator();
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
         questLog = new QuestLog();
@@ -382,7 +379,6 @@ public class titascreen extends ScreenAdapter {
 
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
-        playerAnimator.update(delta);
 
         collectibleFloatTime += delta;
 
@@ -1610,13 +1606,7 @@ public class titascreen extends ScreenAdapter {
 
         drawLasers();
 
-        playerAnimator.draw(
-                batch,
-                assets.getPlayerSpriteSheetTexture(),
-                assets.getPlayerTexture(),
-                player,
-                stats
-        );
+        drawPlayerFacingMouse();
 
         batch.end();
 
@@ -2032,6 +2022,35 @@ public class titascreen extends ScreenAdapter {
         }
 
         shapeRenderer.end();
+    }
+
+    private void drawPlayerFacingMouse() {
+        Vector3 mouseWorld = new Vector3(
+                Gdx.input.getX(),
+                Gdx.input.getY(),
+                0f
+        );
+        camera.unproject(mouseWorld);
+
+        float dx = mouseWorld.x - player.getCenterX();
+        float dy = mouseWorld.y - player.getCenterY();
+        float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
+
+        float width = player.getWidth();
+        float height = player.getHeight();
+
+        batch.draw(
+                assets.getPlayerTexture(),
+                player.getX(),
+                player.getY(),
+                width / 2f,
+                height / 2f,
+                width,
+                height,
+                1f,
+                1f,
+                angle
+        );
     }
 
     private void drawHud() {
