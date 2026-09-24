@@ -184,6 +184,7 @@ public class titascreen extends ScreenAdapter {
 
     private boolean titanDialogueOpen;
     private boolean titanDialogueWaiting;
+    private boolean titanDialogueShowingResponse;
     private boolean titanDialogueFinished;
     private int titanDialogueRound;
     private int titanDialogueChoice = -1;
@@ -561,7 +562,8 @@ public class titascreen extends ScreenAdapter {
 
     private void openTitanDialogue() {
         titanDialogueOpen = true;
-        titanDialogueWaiting = false;
+        titanDialogueWaiting = true;
+        titanDialogueShowingResponse = false;
         titanDialogueChoice = -1;
         titanDialogueResponse = "";
     }
@@ -569,6 +571,7 @@ public class titascreen extends ScreenAdapter {
     private void closeTitanDialogue() {
         titanDialogueOpen = false;
         titanDialogueWaiting = false;
+        titanDialogueShowingResponse = false;
         titanDialogueChoice = -1;
         titanDialogueResponse = "";
 
@@ -581,14 +584,20 @@ public class titascreen extends ScreenAdapter {
         if (titanDialogueWaiting) {
             if (Gdx.input.isKeyJustPressed(Input.Keys.ENTER)
                     || Gdx.input.isKeyJustPressed(Input.Keys.SPACE)) {
-                titanDialogueRound++;
 
-                if (titanDialogueRound >= 3) {
-                    closeTitanDialogue();
+                if (titanDialogueShowingResponse) {
+                    titanDialogueRound++;
+
+                    if (titanDialogueRound >= 3) {
+                        closeTitanDialogue();
+                    } else {
+                        titanDialogueShowingResponse = false;
+                        titanDialogueChoice = -1;
+                        titanDialogueResponse = "";
+                    }
                 } else {
+                    // A primeira fala do NPC termina. Agora aparecem as opções.
                     titanDialogueWaiting = false;
-                    titanDialogueChoice = -1;
-                    titanDialogueResponse = "";
                 }
             }
 
@@ -598,20 +607,53 @@ public class titascreen extends ScreenAdapter {
             return;
         }
 
-        int choice = -1;
+        int choice = getHoveredTitanDialogueChoice();
+
+        // Teclado continua funcionando como alternativa ao mouse.
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_1)) choice = 0;
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_2)) choice = 1;
         if (Gdx.input.isKeyJustPressed(Input.Keys.NUM_3)) choice = 2;
 
-        if (choice >= 0) {
+        if (Gdx.input.isButtonJustPressed(Input.Buttons.LEFT) && choice >= 0) {
             titanDialogueChoice = choice;
             titanDialogueResponse = getTitanDialogueResponse(titanDialogueRound, choice);
+            titanDialogueShowingResponse = true;
             titanDialogueWaiting = true;
         }
 
         if (Gdx.input.isKeyJustPressed(Input.Keys.ESCAPE)) {
             closeTitanDialogue();
         }
+    }
+
+    private int getHoveredTitanDialogueChoice() {
+        Vector3 mouse = new Vector3(Gdx.input.getX(), Gdx.input.getY(), 0f);
+        hudViewport.unproject(mouse);
+
+        float panelX = 45f;
+        float buttonX = panelX + 30f;
+        float buttonWidth = Math.min(570f, hudViewport.getWorldWidth() - 410f);
+        float buttonHeight = 78f;
+
+        for (int i = 0; i < 3; i++) {
+            float buttonY = 100f + (2 - i) * 95f;
+            if (mouse.x >= buttonX && mouse.x <= buttonX + buttonWidth
+                    && mouse.y >= buttonY && mouse.y <= buttonY + buttonHeight) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private String getTitanDialogueSpeech(int round) {
+        String[] speeches = {
+                "Você chegou até Titã. Antes de seguir, posso esclarecer algumas coisas.",
+                "Interessante. Titã guarda muito mais do que estas fortalezas deixam perceber.",
+                "Você já conhece parte dos segredos daqui. Faça mais uma pergunta antes de partir."
+        };
+
+        return speeches[MathUtils.clamp(round, 0, speeches.length - 1)];
     }
 
     private String getTitanDialogueQuestion(int round, int choice) {
@@ -729,28 +771,32 @@ public class titascreen extends ScreenAdapter {
         float width = hudViewport.getWorldWidth();
         float height = hudViewport.getWorldHeight();
 
-        float panelX = 45f;
-        float panelY = 45f;
-        float panelWidth = width - 90f;
-        float panelHeight = 305f;
-        float portraitX = width - 330f;
-        float portraitY = 345f;
+        float panelX = 40f;
+        float panelY = 35f;
+        float panelWidth = width - 80f;
+        float panelHeight = height - 70f;
+
         float portraitSize = 250f;
+        float portraitX = width - portraitSize - 70f;
+        float portraitY = height - portraitSize - 75f;
+
+        float buttonX = panelX + 30f;
+        float buttonWidth = Math.min(570f, width - 410f);
+        float buttonHeight = 78f;
 
         shapeRenderer.setProjectionMatrix(hudViewport.getCamera().combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        // Balão preto.
         shapeRenderer.setColor(Color.BLACK);
         shapeRenderer.rect(panelX, panelY, panelWidth, panelHeight);
 
-        // Place holder grande do NPC na lateral direita.
+        // Retrato do NPC à direita.
         shapeRenderer.setColor(new Color(0.04f, 0.04f, 0.04f, 1f));
         shapeRenderer.rect(portraitX, portraitY, portraitSize, portraitSize);
 
         float cubeSize = 145f;
         float cubeX = portraitX + (portraitSize - cubeSize) / 2f;
-        float cubeY = portraitY + 55f;
+        float cubeY = portraitY + 52f;
         shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
         shapeRenderer.rect(cubeX, cubeY, cubeSize, cubeSize);
 
@@ -758,81 +804,92 @@ public class titascreen extends ScreenAdapter {
         shapeRenderer.rect(cubeX + 32f, cubeY + 88f, 16f, 16f);
         shapeRenderer.rect(cubeX + cubeSize - 48f, cubeY + 88f, 16f, 16f);
 
-        // Outline preto, como solicitado.
-        shapeRenderer.end();
+        // Opções grandes, empilhadas na lateral esquerda.
+        if (!titanDialogueWaiting) {
+            for (int i = 0; i < 3; i++) {
+                float buttonY = 100f + (2 - i) * 95f;
+                int hovered = getHoveredTitanDialogueChoice();
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
-        shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.rect(panelX, panelY, panelWidth, panelHeight);
-        shapeRenderer.rect(portraitX, portraitY, portraitSize, portraitSize);
+                shapeRenderer.setColor(Color.BLACK);
+                shapeRenderer.rect(buttonX, buttonY, buttonWidth, buttonHeight);
 
-        for (int i = 0; i < 3; i++) {
-            float bx = panelX + 25f + i * 300f;
-            shapeRenderer.rect(bx, panelY + 18f, 280f, 62f);
+                shapeRenderer.setColor(
+                        hovered == i
+                                ? Color.YELLOW
+                                : Color.WHITE
+                );
+                shapeRenderer.rect(buttonX, buttonY, buttonWidth, 4f);
+                shapeRenderer.rect(buttonX, buttonY + buttonHeight - 4f, buttonWidth, 4f);
+                shapeRenderer.rect(buttonX, buttonY, 4f, buttonHeight);
+                shapeRenderer.rect(buttonX + buttonWidth - 4f, buttonY, 4f, buttonHeight);
+            }
         }
-        shapeRenderer.end();
 
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        for (int i = 0; i < 3; i++) {
-            float bx = panelX + 25f + i * 300f;
-            shapeRenderer.setColor(Color.BLACK);
-            shapeRenderer.rect(bx, panelY + 18f, 280f, 62f);
-        }
         shapeRenderer.end();
 
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
 
-        font.setColor(Color.WHITE);
-        font.getData().setScale(1.0f);
+        float textX = panelX + 38f;
+        float textWidth = width - 430f;
 
-        float textWidth = width - 420f;
+        font.getData().setScale(1.65f);
+        font.setColor(Color.YELLOW);
+        font.draw(batch, "NPC", textX, height - 85f);
+
+        font.getData().setScale(1.55f);
+        font.setColor(Color.WHITE);
 
         if (titanDialogueWaiting) {
-            font.draw(batch, "NPC:", 75f, 300f);
+            String speech = titanDialogueShowingResponse
+                    ? titanDialogueResponse
+                    : getTitanDialogueSpeech(titanDialogueRound);
+
             font.draw(
                     batch,
-                    titanDialogueResponse,
-                    75f,
-                    255f,
+                    speech,
+                    textX,
+                    height - 125f,
                     textWidth,
-                    3,
+                    0,
                     true
             );
 
-            font.getData().setScale(0.82f);
+            font.getData().setScale(1.05f);
             font.setColor(Color.LIGHT_GRAY);
-            font.draw(batch, "ENTER = próxima pergunta    ESC = fechar", 75f, 125f);
+            font.draw(batch, "ENTER = continuar", textX, 75f);
+            font.draw(batch, "ESC = fechar", width - 225f, 75f);
         } else {
-            font.draw(batch, "Você:", 75f, 300f);
-            font.draw(batch, "Escolha uma pergunta:", 75f, 262f);
+            font.getData().setScale(1.25f);
+            font.setColor(Color.WHITE);
+            font.draw(batch, "Escolha uma pergunta:", textX, height - 165f);
 
-            font.getData().setScale(0.80f);
+            font.getData().setScale(0.98f);
             for (int i = 0; i < 3; i++) {
-                float bx = panelX + 35f + i * 300f;
-                font.setColor(Color.WHITE);
+                float buttonY = 100f + (2 - i) * 95f;
+                int hovered = getHoveredTitanDialogueChoice();
+                font.setColor(hovered == i ? Color.YELLOW : Color.WHITE);
+
                 font.draw(
                         batch,
-                        (i + 1) + " - " + getTitanDialogueQuestion(titanDialogueRound, i),
-                        bx,
-                        panelY + 68f,
-                        260f,
-                        2,
+                        (i + 1) + ". " + getTitanDialogueQuestion(titanDialogueRound, i),
+                        buttonX + 18f,
+                        buttonY + 48f,
+                        buttonWidth - 36f,
+                        0,
                         true
                 );
             }
+
+            font.getData().setScale(0.95f);
+            font.setColor(Color.LIGHT_GRAY);
+            font.draw(batch, "Passe o mouse e clique para escolher", textX, 75f);
+            font.draw(batch, "ESC = fechar", width - 180f, 75f);
         }
 
-        font.getData().setScale(0.82f);
+        font.getData().setScale(0.95f);
         font.setColor(Color.GRAY);
-        if (!titanDialogueWaiting) {
-            font.draw(
-                    batch,
-                    "Rodada " + (titanDialogueRound + 1) + "/3",
-                    75f,
-                    205f
-            );
-        }
+        font.draw(batch, "RODADA " + (titanDialogueRound + 1) + "/3", textX, height - 200f);
 
         batch.end();
     }
