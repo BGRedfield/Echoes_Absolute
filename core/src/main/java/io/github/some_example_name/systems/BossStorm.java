@@ -251,7 +251,15 @@ public class BossStorm {
      * Mesma tempestade visual da Lua, mas em Marte ela começa pelos
      * quatro cantos e vai ocupando as bordas antes de formar o anel.
      */
-    public void drawWorldFromCorners(ShapeRenderer renderer, float worldWidth, float worldHeight) {
+    public void drawWorldFromCorners(
+            ShapeRenderer renderer,
+            float worldWidth,
+            float worldHeight,
+            float cameraX,
+            float cameraY,
+            float visibleWidth,
+            float visibleHeight
+    ) {
         if (!isActive()) {
             return;
         }
@@ -268,32 +276,27 @@ public class BossStorm {
 
         final int segments = 96;
 
-        // No começo, apenas os quatro cantos estão tomados.
-        float cornerReach = MathUtils.lerp(0f, Math.min(worldWidth, worldHeight) * 0.62f, progress);
-        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, 0.30f));
+        float halfVisibleWidth = visibleWidth / 2f;
+        float halfVisibleHeight = visibleHeight / 2f;
 
-        renderer.triangle(
-                0f, worldHeight,
-                cornerReach, worldHeight,
-                0f, worldHeight - cornerReach
-        );
-        renderer.triangle(
-                worldWidth, worldHeight,
-                worldWidth - cornerReach, worldHeight,
-                worldWidth, worldHeight - cornerReach
-        );
-        renderer.triangle(
-                0f, 0f,
-                cornerReach, 0f,
-                0f, cornerReach
-        );
-        renderer.triangle(
-                worldWidth, 0f,
-                worldWidth - cornerReach, 0f,
-                worldWidth, cornerReach
-        );
+        float left = Math.max(0f, cameraX - halfVisibleWidth);
+        float right = Math.min(worldWidth, cameraX + halfVisibleWidth);
+        float bottom = Math.max(0f, cameraY - halfVisibleHeight);
+        float top = Math.min(worldHeight, cameraY + halfVisibleHeight);
 
-        // À medida que avança, a mesma borda circular da Lua aparece.
+        // A tempestade entra primeiro pelos quatro cantos da TELA.
+        float maxCornerReach = Math.min(visibleWidth, visibleHeight) * 0.70f;
+        float cornerReach = MathUtils.lerp(75f, maxCornerReach, progress);
+
+        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, 0.38f));
+
+        renderer.triangle(left, top, left + cornerReach, top, left, top - cornerReach);
+        renderer.triangle(right, top, right - cornerReach, top, right, top - cornerReach);
+        renderer.triangle(left, bottom, left + cornerReach, bottom, left, bottom + cornerReach);
+        renderer.triangle(right, bottom, right - cornerReach, bottom, right, bottom + cornerReach);
+
+        // Depois, ela ganha exatamente o mesmo anel da tempestade da Lua,
+        // fechando em direção ao ponto seguro do portal.
         float ringAlpha = 0.23f * progress;
         renderer.setColor(new Color(0.38f, 0.02f, 0.55f, ringAlpha));
 
