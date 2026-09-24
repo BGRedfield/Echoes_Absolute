@@ -42,7 +42,7 @@ public class LuaLevelStatusScreen extends ScreenAdapter {
         this.iceCollected = iceCollected;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
     }
 
