@@ -943,9 +943,7 @@ public class LuaScreen extends ScreenAdapter {
             shapeRenderer.circle(explosion.getCenterX(), explosion.getCenterY(), radius * 0.25f);
         }
 
-        shapeRenderer.setColor(Color.BLUE);
-        for (EnemyBullet bullet : americanBullets) shapeRenderer.rect(bullet.getX(), bullet.getY(), bullet.getWidth(), bullet.getHeight());
-        for (EnemyBullet bullet : rifleBullets) shapeRenderer.rect(bullet.getX(), bullet.getY(), bullet.getWidth(), bullet.getHeight());
+        // American bullets are drawn with americanobullet.png in drawWorld().
 
         if (bossDeathSequenceStarted && trumpBoss != null && !portalSpawned) {
             float progress = 1f - MathUtils.clamp(bossExplosionTimer / BOSS_EXPLOSION_DURATION, 0f, 1f);
@@ -1038,6 +1036,7 @@ public class LuaScreen extends ScreenAdapter {
         }
 
         for (Laser laser : lasers) batch.draw(assets.getLaserTexture(), laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
+        drawAmericanBullets();
         drawPlayerFacingMouse();
         batch.end();
     
@@ -1076,6 +1075,32 @@ public class LuaScreen extends ScreenAdapter {
                 1f,
                 angle
         );
+    }
+
+    private void drawAmericanBullets() {
+        TextureRegion bulletRegion = new TextureRegion(assets.getAmericanBulletTexture());
+
+        for (EnemyBullet bullet : americanBullets) {
+            float width = Math.max(20f, bullet.getWidth() * 1.8f);
+            float height = Math.max(20f, bullet.getHeight() * 1.8f);
+            float angle = MathUtils.atan2(
+                    bullet.getDirectionY(),
+                    bullet.getDirectionX()
+            ) * MathUtils.radiansToDegrees;
+
+            batch.draw(
+                    bulletRegion,
+                    bullet.getX() + bullet.getWidth() / 2f - width / 2f,
+                    bullet.getY() + bullet.getHeight() / 2f - height / 2f,
+                    width / 2f,
+                    height / 2f,
+                    width,
+                    height,
+                    1f,
+                    1f,
+                    angle
+            );
+        }
     }
 
     private void drawPlayerFacingMouse() {
