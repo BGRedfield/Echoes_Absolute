@@ -200,44 +200,133 @@ public class BossStorm {
 
         float progress = getProgress();
 
-        // A tempestade nasce nas BORDAS do mapa e avança para dentro.
-        // Não desenhamos uma bola/anel centrado no portal.
-        float startThickness = 55f;
-        float maxThickness = Math.max(worldWidth, worldHeight);
-        float thickness = MathUtils.lerp(startThickness, maxThickness, progress);
+        float maxRadius = (float) Math.sqrt(
+                worldWidth * worldWidth + worldHeight * worldHeight
+        ) * 1.15f;
 
-        float alpha = MathUtils.lerp(0.24f, 0.62f, progress);
-        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, alpha));
-
-        // Norte.
-        renderer.rect(0f, worldHeight - thickness, worldWidth, thickness);
-
-        // Sul.
-        renderer.rect(0f, 0f, worldWidth, thickness);
-
-        // Oeste.
-        renderer.rect(0f, thickness, thickness, Math.max(0f, worldHeight - thickness * 2f));
-
-        // Leste.
-        renderer.rect(
-                worldWidth - thickness,
-                thickness,
-                thickness,
-                Math.max(0f, worldHeight - thickness * 2f)
+        float outerRadius = maxRadius;
+        float innerRadius = MathUtils.lerp(
+                INITIAL_SAFE_RADIUS,
+                FINAL_SAFE_RADIUS,
+                progress
         );
 
-        // Bordas mais fortes para deixar claro de onde a tempestade está vindo.
-        float edgeWidth = Math.min(18f + progress * 22f, thickness);
-        renderer.setColor(new Color(0.90f, 0.22f, 1f, 0.88f));
+        final int segments = 96;
 
-        renderer.rect(0f, worldHeight - edgeWidth, worldWidth, edgeWidth);
-        renderer.rect(0f, 0f, worldWidth, edgeWidth);
-        renderer.rect(0f, edgeWidth, edgeWidth, Math.max(0f, worldHeight - edgeWidth * 2f));
-        renderer.rect(
-                worldWidth - edgeWidth,
-                edgeWidth,
-                edgeWidth,
-                Math.max(0f, worldHeight - edgeWidth * 2f)
+        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, 0.23f));
+
+        for (int i = 0; i < segments; i++) {
+            float a0 = MathUtils.PI2 * i / segments;
+            float a1 = MathUtils.PI2 * (i + 1) / segments;
+
+            float x0Outer = targetX + MathUtils.cos(a0) * outerRadius;
+            float y0Outer = targetY + MathUtils.sin(a0) * outerRadius;
+            float x1Outer = targetX + MathUtils.cos(a1) * outerRadius;
+            float y1Outer = targetY + MathUtils.sin(a1) * outerRadius;
+
+            float x0Inner = targetX + MathUtils.cos(a0) * innerRadius;
+            float y0Inner = targetY + MathUtils.sin(a0) * innerRadius;
+            float x1Inner = targetX + MathUtils.cos(a1) * innerRadius;
+            float y1Inner = targetY + MathUtils.sin(a1) * innerRadius;
+
+            renderer.triangle(x0Outer, y0Outer, x1Outer, y1Outer, x1Inner, y1Inner);
+            renderer.triangle(x0Outer, y0Outer, x1Inner, y1Inner, x0Inner, y0Inner);
+        }
+
+        renderer.setColor(new Color(0.90f, 0.22f, 1f, 0.90f));
+        for (int i = 0; i < segments; i++) {
+            float a0 = MathUtils.PI2 * i / segments;
+            float a1 = MathUtils.PI2 * (i + 1) / segments;
+
+            float x0 = targetX + MathUtils.cos(a0) * innerRadius;
+            float y0 = targetY + MathUtils.sin(a0) * innerRadius;
+            float x1 = targetX + MathUtils.cos(a1) * innerRadius;
+            float y1 = targetY + MathUtils.sin(a1) * innerRadius;
+
+            renderer.rectLine(x0, y0, x1, y1, 8f);
+        }
+    }
+
+    /**
+     * Mesma tempestade visual da Lua, mas em Marte ela começa pelos
+     * quatro cantos e vai ocupando as bordas antes de formar o anel.
+     */
+    public void drawWorldFromCorners(ShapeRenderer renderer, float worldWidth, float worldHeight) {
+        if (!isActive()) {
+            return;
+        }
+
+        float progress = getProgress();
+        float maxRadius = (float) Math.sqrt(
+                worldWidth * worldWidth + worldHeight * worldHeight
+        ) * 1.15f;
+        float innerRadius = MathUtils.lerp(
+                INITIAL_SAFE_RADIUS,
+                FINAL_SAFE_RADIUS,
+                progress
         );
+
+        final int segments = 96;
+
+        // No começo, apenas os quatro cantos estão tomados.
+        float cornerReach = MathUtils.lerp(0f, Math.min(worldWidth, worldHeight) * 0.62f, progress);
+        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, 0.30f));
+
+        renderer.triangle(
+                0f, worldHeight,
+                cornerReach, worldHeight,
+                0f, worldHeight - cornerReach
+        );
+        renderer.triangle(
+                worldWidth, worldHeight,
+                worldWidth - cornerReach, worldHeight,
+                worldWidth, worldHeight - cornerReach
+        );
+        renderer.triangle(
+                0f, 0f,
+                cornerReach, 0f,
+                0f, cornerReach
+        );
+        renderer.triangle(
+                worldWidth, 0f,
+                worldWidth - cornerReach, 0f,
+                worldWidth, cornerReach
+        );
+
+        // À medida que avança, a mesma borda circular da Lua aparece.
+        float ringAlpha = 0.23f * progress;
+        renderer.setColor(new Color(0.38f, 0.02f, 0.55f, ringAlpha));
+
+        float outerRadius = maxRadius;
+        for (int i = 0; i < segments; i++) {
+            float a0 = MathUtils.PI2 * i / segments;
+            float a1 = MathUtils.PI2 * (i + 1f) / segments;
+
+            float x0Outer = targetX + MathUtils.cos(a0) * outerRadius;
+            float y0Outer = targetY + MathUtils.sin(a0) * outerRadius;
+            float x1Outer = targetX + MathUtils.cos(a1) * outerRadius;
+            float y1Outer = targetY + MathUtils.sin(a1) * outerRadius;
+
+            float x0Inner = targetX + MathUtils.cos(a0) * innerRadius;
+            float y0Inner = targetY + MathUtils.sin(a0) * innerRadius;
+            float x1Inner = targetX + MathUtils.cos(a1) * innerRadius;
+            float y1Inner = targetY + MathUtils.sin(a1) * innerRadius;
+
+            renderer.triangle(x0Outer, y0Outer, x1Outer, y1Outer, x1Inner, y1Inner);
+            renderer.triangle(x0Outer, y0Outer, x1Inner, y1Inner, x0Inner, y0Inner);
+        }
+
+        renderer.setColor(new Color(0.90f, 0.22f, 1f, 0.90f));
+        for (int i = 0; i < segments; i++) {
+            float a0 = MathUtils.PI2 * i / segments;
+            float a1 = MathUtils.PI2 * (i + 1f) / segments;
+
+            float x0 = targetX + MathUtils.cos(a0) * innerRadius;
+            float y0 = targetY + MathUtils.sin(a0) * innerRadius;
+            float x1 = targetX + MathUtils.cos(a1) * innerRadius;
+            float y1 = targetY + MathUtils.sin(a1) * innerRadius;
+
+            renderer.rectLine(x0, y0, x1, y1, 8f);
+        }
     }
 }
