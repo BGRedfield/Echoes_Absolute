@@ -134,7 +134,7 @@ public class CalistoScreen extends ScreenAdapter {
         hudViewport = new ScreenViewport();
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
+        font = PixelFontFactory.create();
         assets = new AssetManager();
         assets.load();
 
