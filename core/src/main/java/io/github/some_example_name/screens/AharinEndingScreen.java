@@ -41,7 +41,7 @@ public class AharinEndingScreen extends ScreenAdapter {
         this.ending = MathUtils.clamp(ending, 0, 2);
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
     }
 
