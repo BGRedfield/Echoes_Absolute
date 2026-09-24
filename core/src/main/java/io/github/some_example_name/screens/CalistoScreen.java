@@ -92,6 +92,7 @@ public class CalistoScreen extends ScreenAdapter {
     private static final float FINAL_KEY_SIZE = 82f;
     private static final float FINAL_PORTAL_SIZE = 170f;
     private static final float PORTAL_ROTATION_SPEED = 120f;
+    private static final float LASER_RENDER_LENGTH = 42f;
     private final Rectangle[] angels = new Rectangle[5];
     private final boolean[] angelBlessings = new boolean[5];
     private final Array<Laser> lasers = new Array<>();
@@ -721,15 +722,7 @@ public class CalistoScreen extends ScreenAdapter {
 
         drawPlayerFacingMouse();
 
-        for (Laser laser : lasers) {
-            batch.draw(
-                    assets.getLaserTexture(),
-                    laser.getX(),
-                    laser.getY(),
-                    laser.getWidth(),
-                    laser.getHeight()
-            );
-        }
+        drawPlayerLasers();
 
         batch.end();
 
@@ -934,6 +927,45 @@ public class CalistoScreen extends ScreenAdapter {
         }
 
         shapeRenderer.end();
+    }
+
+    private void drawPlayerLasers() {
+        Texture laserTexture = assets.getLaserTexture();
+        TextureRegion laserRegion = new TextureRegion(laserTexture);
+
+        float aspect = laserTexture.getWidth()
+                / (float) Math.max(1, laserTexture.getHeight());
+
+        float width = aspect >= 1f
+                ? LASER_RENDER_LENGTH
+                : LASER_RENDER_LENGTH * aspect;
+        float height = aspect >= 1f
+                ? LASER_RENDER_LENGTH / Math.max(aspect, 0.001f)
+                : LASER_RENDER_LENGTH;
+
+        for (Laser laser : lasers) {
+            float angle = MathUtils.atan2(
+                    laser.getDirectionY(),
+                    laser.getDirectionX()
+            ) * MathUtils.radiansToDegrees;
+
+            if (laserTexture.getHeight() > laserTexture.getWidth()) {
+                angle -= 90f;
+            }
+
+            batch.draw(
+                    laserRegion,
+                    laser.getHitbox().x + laser.getWidth() / 2f - width / 2f,
+                    laser.getHitbox().y + laser.getHeight() / 2f - height / 2f,
+                    width / 2f,
+                    height / 2f,
+                    width,
+                    height,
+                    1f,
+                    1f,
+                    angle
+            );
+        }
     }
 
     private void drawPlayerFacingMouse() {
