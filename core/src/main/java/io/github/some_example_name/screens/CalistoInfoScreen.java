@@ -36,7 +36,7 @@ public class CalistoInfoScreen extends ScreenAdapter {
         this.game = game;
         this.saveData = saveData;
         batch = new SpriteBatch();
-        font = new BitmapFont();
+        font = PixelFontFactory.create();
         viewport = new ScreenViewport();
     }
 
