@@ -81,7 +81,7 @@ public class VictoryScreen extends ScreenAdapter {
     public VictoryScreen(Game game, String title, String subtitle) {
         this.game = game;
         batch = new SpriteBatch();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
 
         // Keep the existing VictoryScreen constructor API so CalistoScreen
