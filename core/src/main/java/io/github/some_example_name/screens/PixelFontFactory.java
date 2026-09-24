@@ -84,7 +84,10 @@ public final class PixelFontFactory {
             BitmapFont.Glyph glyph = new BitmapFont.Glyph();
             glyph.id = c;
             glyph.srcX = (index % COLUMNS) * CELL;
-            glyph.srcY = (index / COLUMNS) * CELL;
+            // BitmapFont usa coordenadas Y a partir do topo do atlas.
+            // O Pixmap usado na criação tem origem no canto inferior,
+            // então precisamos inverter a posição vertical do glyph.
+            glyph.srcY = (ROWS - 1 - (index / COLUMNS)) * CELL;
             glyph.width = CELL;
             glyph.height = CELL;
             glyph.xoffset = 0;
