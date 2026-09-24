@@ -31,7 +31,7 @@ public class MarsLevelStatusScreen extends ScreenAdapter {
         this.hunger = hunger;
         this.oxygen = oxygen;
         batch = new SpriteBatch();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
     }
 
