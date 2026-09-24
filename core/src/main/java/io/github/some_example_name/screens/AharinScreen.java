@@ -83,7 +83,7 @@ public class AharinScreen extends ScreenAdapter {
         this.game = game;
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
         questLog = new QuestLog();
 
