@@ -119,7 +119,7 @@ public final class PixelFontFactory {
     private static String[] withAccent(String[] base, char accent) {
         String[] result = new String[8];
         result[0] = accent == '~' ? "00100" : "00000";
-        result[1] = accent == ''' ? "00100" : "00000";
+        result[1] = accent == '\'' ? "00100" : "00000";
         for (int i = 0; i < 7; i++) {
             result[i + 1] = i < base.length ? base[i] : "00000";
         }
