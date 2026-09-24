@@ -196,6 +196,15 @@ public class LuaMarteScreen extends ScreenAdapter {
             portalEntryArmed = true;
         }
 
+        if (supremeAlien != null && greenKeyVisible && !greenKeyCollected) {
+            greenKeyHitbox.set(
+                    supremeAlien.getCenterX() - KEY_SIZE / 2f,
+                    supremeAlien.getCenterY() - KEY_SIZE / 2f,
+                    KEY_SIZE,
+                    KEY_SIZE
+            );
+        }
+
         if (bossDeathSequenceStarted) {
             if (data.marsStormRemaining < 0f) {
                 bossStorm.restorePending(
