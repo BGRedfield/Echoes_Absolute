@@ -982,7 +982,17 @@ public class LuaScreen extends ScreenAdapter {
         drawLuaItems();
 
         Texture americanTexture = assets.getAmericanTexture();
-        for (AmericanEnemy enemy : americans) batch.draw(americanTexture, enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
+        for (AmericanEnemy enemy : americans) {
+            drawTextureFacingPlayer(
+                    americanTexture,
+                    enemy.getX(),
+                    enemy.getY(),
+                    enemy.getWidth(),
+                    enemy.getHeight(),
+                    enemy.getCenterX(),
+                    enemy.getCenterY()
+            );
+        }
 
         if (trumpBoss != null && !trumpBoss.isDead()) {
             Texture trumpTexture = assets.getTrumpTexture();
@@ -1038,6 +1048,35 @@ public class LuaScreen extends ScreenAdapter {
     
 
     
+
+    private void drawTextureFacingPlayer(
+            Texture texture,
+            float x,
+            float y,
+            float width,
+            float height,
+            float targetX,
+            float targetY
+    ) {
+        float dx = player.getCenterX() - targetX;
+        float dy = player.getCenterY() - targetY;
+        float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
+
+        TextureRegion region = new TextureRegion(texture);
+
+        batch.draw(
+                region,
+                x,
+                y,
+                width / 2f,
+                height / 2f,
+                width,
+                height,
+                1f,
+                1f,
+                angle
+        );
+    }
 
     private void drawPlayerFacingMouse() {
         Vector3 mouseWorld = new Vector3(
