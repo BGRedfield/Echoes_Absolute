@@ -11,8 +11,21 @@ public class EnemyBullet {
     private final Rectangle hitbox;
     private final float directionX;
     private final float directionY;
+    private final boolean americanBullet;
 
     public EnemyBullet(float x, float y, float directionX, float directionY) {
+        this(x, y, directionX, directionY, false);
+    }
+
+    public EnemyBullet(
+            float x,
+            float y,
+            float directionX,
+            float directionY,
+            boolean americanBullet
+    ) {
+        this.americanBullet = americanBullet;
+
         float length = (float) Math.sqrt(directionX * directionX + directionY * directionY);
         if (length <= 0.001f) {
             directionX = 0f;
@@ -25,6 +38,18 @@ public class EnemyBullet {
         this.directionX = directionX;
         this.directionY = directionY;
         hitbox = new Rectangle(x - SIZE / 2f, y - SIZE / 2f, SIZE, SIZE);
+    }
+
+    public boolean isAmericanBullet() {
+        return americanBullet;
+    }
+
+    public float getDirectionX() {
+        return directionX;
+    }
+
+    public float getDirectionY() {
+        return directionY;
     }
 
     public void update(float delta) {
