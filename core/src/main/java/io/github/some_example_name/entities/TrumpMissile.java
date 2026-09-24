@@ -13,6 +13,8 @@ public class TrumpMissile {
     private final Rectangle hitbox;
     private final float targetX;
     private final float targetY;
+    private final float directionX;
+    private final float directionY;
     private final Rectangle impactArea;
     private boolean arrived;
 
@@ -25,6 +27,19 @@ public class TrumpMissile {
         );
         this.targetX = targetX;
         this.targetY = targetY;
+
+        float directionLength = (float) Math.sqrt(
+                (targetX - startX) * (targetX - startX)
+                        + (targetY - startY) * (targetY - startY)
+        );
+        if (directionLength <= 0.001f) {
+            this.directionX = 1f;
+            this.directionY = 0f;
+        } else {
+            this.directionX = (targetX - startX) / directionLength;
+            this.directionY = (targetY - startY) / directionLength;
+        }
+
         impactArea = new Rectangle(
                 targetX - IMPACT_SIZE / 2f,
                 targetY - IMPACT_SIZE / 2f,
@@ -53,6 +68,14 @@ public class TrumpMissile {
             hitbox.x += dx / distance * SPEED * delta;
             hitbox.y += dy / distance * SPEED * delta;
         }
+    }
+
+    public float getDirectionX() {
+        return directionX;
+    }
+
+    public float getDirectionY() {
+        return directionY;
     }
 
     public boolean hasArrived() {
