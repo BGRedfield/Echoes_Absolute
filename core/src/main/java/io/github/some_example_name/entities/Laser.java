@@ -15,6 +15,15 @@ public class Laser {
     private final float directionY;
 
     public Laser(float x, float y, float directionX, float directionY) {
+        float length = (float) Math.sqrt(directionX * directionX + directionY * directionY);
+        if (length <= 0.001f) {
+            directionX = 1f;
+            directionY = 0f;
+        } else {
+            directionX /= length;
+            directionY /= length;
+        }
+
         this.directionX = directionX;
         this.directionY = directionY;
 
@@ -40,6 +49,14 @@ public class Laser {
                 || hitbox.y + hitbox.height < 0f
                 || hitbox.x > worldWidth
                 || hitbox.y > worldHeight;
+    }
+
+    public float getDirectionX() {
+        return directionX;
+    }
+
+    public float getDirectionY() {
+        return directionY;
     }
 
     public Rectangle getHitbox() {
