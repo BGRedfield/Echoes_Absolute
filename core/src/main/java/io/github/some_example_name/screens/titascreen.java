@@ -220,7 +220,7 @@ public class titascreen extends ScreenAdapter {
         hudViewport = new ScreenViewport();
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
+        font = PixelFontFactory.create();
         assets = new AssetManager();
         assets.load();
         player = new Player(BASE_X + 120f, BASE_Y + 50f);
