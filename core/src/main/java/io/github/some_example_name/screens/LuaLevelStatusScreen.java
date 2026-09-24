@@ -73,7 +73,7 @@ public class LuaLevelStatusScreen extends ScreenAdapter {
             SaveManager.save(data);
 
             dispose();
-            game.setScreen(new MarsVideoScreen(game, data));
+            game.setScreen(new MarsIntroScreen(game, data));
             return;
         }
 
