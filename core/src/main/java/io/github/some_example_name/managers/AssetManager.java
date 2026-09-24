@@ -17,6 +17,7 @@ public class AssetManager {
     public static final String PLAYER = "astronauta.png";
     public static final String LUA_BACKGROUND = "lua_background.png";
     public static final String LASER = "laser.png";
+    public static final String AMERICAN_BULLET = "americanobullet.png";
     public static final String LUNAR_BASE = "baselunar.png";
     public static final String LUA_TILE = "tilemap_lua.png";
     public static final String MARS_TILE = "tilemap_marte.png";
@@ -55,6 +56,7 @@ public class AssetManager {
     private static Texture sharedPlayerTexture;
     private static Texture sharedLuaBackgroundTexture;
     private static Texture sharedLaserTexture;
+    private static Texture sharedAmericanBulletTexture;
     private static Texture sharedLunarBaseTexture;
     private static Texture sharedLuaTileTexture;
     private static Texture sharedMarsTileTexture;
@@ -91,6 +93,7 @@ public class AssetManager {
     private Texture playerTexture;
     private Texture luaBackgroundTexture;
     private Texture laserTexture;
+    private Texture americanBulletTexture;
     private Texture lunarBaseTexture;
     private Texture luaTileTexture;
     private Texture marsTileTexture;
@@ -145,6 +148,8 @@ public class AssetManager {
                         LUA_BACKGROUND, new Color(0.08f, 0.08f, 0.13f, 1f));
                 sharedLaserTexture = loadAsset(
                         LASER, new Color(1f, 0.90f, 0.10f, 1f));
+                sharedAmericanBulletTexture = loadAsset(
+                        AMERICAN_BULLET, new Color(0.90f, 0.08f, 0.08f, 1f));
                 sharedLunarBaseTexture = loadAsset(
                         LUNAR_BASE, new Color(0.45f, 0.45f, 0.50f, 1f));
                 sharedLuaTileTexture = loadAsset(
@@ -210,6 +215,7 @@ public class AssetManager {
         playerTexture = sharedPlayerTexture;
         luaBackgroundTexture = sharedLuaBackgroundTexture;
         laserTexture = sharedLaserTexture;
+        americanBulletTexture = sharedAmericanBulletTexture;
         lunarBaseTexture = sharedLunarBaseTexture;
         luaTileTexture = sharedLuaTileTexture;
         marsTileTexture = sharedMarsTileTexture;
@@ -327,6 +333,7 @@ public class AssetManager {
     public Texture getPlayerTexture() { return playerTexture; }
     public Texture getLuaBackgroundTexture() { return luaBackgroundTexture; }
     public Texture getLaserTexture() { return laserTexture; }
+    public Texture getAmericanBulletTexture() { return americanBulletTexture; }
     public Texture getLunarBaseTexture() { return lunarBaseTexture; }
     public Texture getLuaTileTexture() { return luaTileTexture; }
     public Texture getMarsTileTexture() { return marsTileTexture; }
