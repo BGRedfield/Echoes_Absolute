@@ -101,7 +101,8 @@ public class AmericanEnemy {
                         getCenterX(),
                         getCenterY(),
                         shotDx,
-                        shotDy
+                        shotDy,
+                        true
                 ));
             }
         } else if (cycleTimer >= BURST_DURATION + PAUSE_DURATION) {
