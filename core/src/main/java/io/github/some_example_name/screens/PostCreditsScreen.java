@@ -35,7 +35,7 @@ public class PostCreditsScreen extends ScreenAdapter {
         this.game = game;
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
-        font = new BitmapFont();
+        font = PixelFontFactory.create();
         viewport = new ScreenViewport();
     }
 
