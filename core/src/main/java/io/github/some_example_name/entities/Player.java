@@ -21,6 +21,7 @@ public class Player {
     private float lastDirectionY = 0f;
     private float dashTimer = 0f;
     private float dashCooldownTimer = 0f;
+    private boolean moving;
 
     public Player(float x, float y) {
         hitbox = new Rectangle(x, y, WIDTH, HEIGHT);
@@ -41,6 +42,7 @@ public class Player {
         if (Gdx.input.isKeyPressed(Input.Keys.DOWN)) moveY -= 1f;
 
         float length = (float) Math.sqrt(moveX * moveX + moveY * moveY);
+        moving = length > 0f;
         if (length > 0f) {
             moveX /= length;
             moveY /= length;
@@ -84,6 +86,18 @@ public class Player {
 
     public float getDashCooldownRemaining() {
         return Math.max(0f, dashCooldownTimer);
+    }
+
+    public boolean isMoving() {
+        return moving;
+    }
+
+    public float getFacingDirectionX() {
+        return lastDirectionX;
+    }
+
+    public float getFacingDirectionY() {
+        return lastDirectionY;
     }
 
     public Rectangle getHitbox() { return hitbox; }
