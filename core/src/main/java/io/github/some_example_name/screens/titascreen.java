@@ -795,35 +795,20 @@ public class titascreen extends ScreenAdapter {
         }
 
         Texture bodyTexture = assets.getTitaNpcBodyTexture();
-        Texture headTexture = assets.getTitaNpcHeadTexture();
 
         batch.setProjectionMatrix(camera.combined);
         batch.begin();
 
+        // No mapa aparece SOMENTE o corpo. A cabeça fica exclusiva do retrato do diálogo.
         float bodyWidth = titanNpcHitbox.width;
-        float bodyHeight = 82f;
-        float bodyX = titanNpcHitbox.x;
-        float bodyY = titanNpcHitbox.y;
+        float bodyHeight = titanNpcHitbox.height;
 
         drawNpcTexturePreservingAspect(
                 bodyTexture,
-                bodyX + bodyWidth / 2f,
-                bodyY + bodyHeight / 2f,
+                titanNpcHitbox.x + titanNpcHitbox.width / 2f,
+                titanNpcHitbox.y + titanNpcHitbox.height / 2f,
                 bodyWidth,
                 bodyHeight
-        );
-
-        float headWidth = 76f;
-        float headHeight = 58f;
-        float headX = titanNpcHitbox.x + titanNpcHitbox.width / 2f;
-        float headY = bodyY + bodyHeight - 4f + headHeight / 2f;
-
-        drawNpcTexturePreservingAspect(
-                headTexture,
-                headX,
-                headY,
-                headWidth,
-                headHeight
         );
 
         batch.end();
