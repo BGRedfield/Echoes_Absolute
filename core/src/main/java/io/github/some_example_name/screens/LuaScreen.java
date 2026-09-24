@@ -69,6 +69,11 @@ public class LuaScreen extends ScreenAdapter {
     private static final float ENEMY_BULLET_DAMAGE = 10f;
     private static final float BOSS_ATTACK_COOLDOWN = 5f;
     private static final float MISSILE_WARNING_TIME = 2f;
+    private static final int MISSILE_WARNING_COUNT = 6;
+    private static final float MISSILE_WARNING_RADIUS = TrumpMissile.IMPACT_SIZE / 2f;
+    private static final float MISSILE_WARNING_GAP = 12f;
+    private static final float LASER_RENDER_LENGTH = 42f;
+    private static final float TRUMP_MISSILE_RENDER_LENGTH = 52f;
     private static final float MESSAGE_DURATION = 4f;
     private static final float BOSS_EXPLOSION_DURATION = 1.25f;
     private static final float RIFLE_ORBIT_RADIUS = 410f;
@@ -554,18 +559,66 @@ public class LuaScreen extends ScreenAdapter {
         trumpMissiles.clear();
         rifleWeapons.clear();
         rifleBullets.clear();
-        float shift = (bossAttackCycle % 3) * 100f;
-        addMissileWarning(850f + shift, 650f);
-        addMissileWarning(1500f - shift, 1180f);
-        addMissileWarning(2300f, 720f + shift);
-        showMessage("ATAQUE DE MÍSSEIS: áreas vermelhas = impacto em 2 segundos!");
+
+        spawnMissileWarnings();
+
+        showMessage("ATAQUE DE MÍSSEIS: 6 áreas vermelhas aparecem por 2 segundos!");
     }
 
-    private void addMissileWarning(float centerX, float centerY) {
-        float size = TrumpMissile.IMPACT_SIZE;
-        float x = MathUtils.clamp(centerX - size / 2f, 0f, WORLD_WIDTH - size);
-        float y = MathUtils.clamp(centerY - size / 2f, 0f, WORLD_HEIGHT - size);
-        missileWarnings.add(new MissileWarning(x, y, size, size, MISSILE_WARNING_TIME));
+    private void spawnMissileWarnings() {
+        if (trumpBoss == null) {
+            return;
+        }
+
+        float radius = MISSILE_WARNING_RADIUS;
+        float halfScreenWidth = viewport.getWorldWidth() * camera.zoom / 2f;
+        float halfScreenHeight = viewport.getWorldHeight() * camera.zoom / 2f;
+
+        float minX = Math.max(radius, camera.position.x - halfScreenWidth + radius);
+        float maxX = Math.min(WORLD_WIDTH - radius, camera.position.x + halfScreenWidth - radius);
+        float minY = Math.max(radius, camera.position.y - halfScreenHeight + radius);
+        float maxY = Math.min(WORLD_HEIGHT - radius, camera.position.y + halfScreenHeight - radius);
+
+        float minDistanceBetweenWarnings = radius * 2f + MISSILE_WARNING_GAP;
+        float bossClearance = radius
+                + Math.max(trumpBoss.getWidth(), trumpBoss.getHeight()) / 2f
+                + MISSILE_WARNING_GAP;
+
+        int attempts = 0;
+
+        while (missileWarnings.size < MISSILE_WARNING_COUNT && attempts < 5000) {
+            attempts++;
+
+            float centerX = MathUtils.random(minX, maxX);
+            float centerY = MathUtils.random(minY, maxY);
+
+            float bossDx = centerX - trumpBoss.getCenterX();
+            float bossDy = centerY - trumpBoss.getCenterY();
+            if (bossDx * bossDx + bossDy * bossDy < bossClearance * bossClearance) {
+                continue;
+            }
+
+            boolean overlapsExisting = false;
+            for (MissileWarning existing : missileWarnings) {
+                float dx = centerX - existing.getCenterX();
+                float dy = centerY - existing.getCenterY();
+                if (dx * dx + dy * dy < minDistanceBetweenWarnings * minDistanceBetweenWarnings) {
+                    overlapsExisting = true;
+                    break;
+                }
+            }
+
+            if (overlapsExisting) {
+                continue;
+            }
+
+            missileWarnings.add(new MissileWarning(
+                    centerX,
+                    centerY,
+                    radius,
+                    MISSILE_WARNING_TIME
+            ));
+        }
     }
 
     private void updateMissileWarnings(float delta) {
@@ -922,25 +975,13 @@ public class LuaScreen extends ScreenAdapter {
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
 
-        shapeRenderer.setColor(new Color(1f, 0f, 0f, 0.34f));
+        shapeRenderer.setColor(new Color(1f, 0f, 0f, 0.38f));
         for (MissileWarning warning : missileWarnings) {
-            shapeRenderer.rect(warning.getX(), warning.getY(), warning.getWidth(), warning.getHeight());
-        }
-
-        shapeRenderer.setColor(Color.RED);
-        for (TrumpMissile missile : trumpMissiles) {
-            shapeRenderer.rect(missile.getX(), missile.getY(), missile.getWidth(), missile.getHeight());
-        }
-
-        for (ExplosionEffect explosion : missileExplosions) {
-            float progress = explosion.getProgress();
-            float radius = explosion.getRadius();
-            shapeRenderer.setColor(new Color(1f, 0.15f, 0.02f, 0.18f * (1f - progress)));
-            shapeRenderer.circle(explosion.getCenterX(), explosion.getCenterY(), radius);
-            shapeRenderer.setColor(new Color(1f, 0.65f, 0.05f, 0.70f * (1f - progress)));
-            shapeRenderer.circle(explosion.getCenterX(), explosion.getCenterY(), radius * 0.58f);
-            shapeRenderer.setColor(new Color(1f, 0.92f, 0.30f, 0.88f * (1f - progress)));
-            shapeRenderer.circle(explosion.getCenterX(), explosion.getCenterY(), radius * 0.25f);
+            shapeRenderer.circle(
+                    warning.getCenterX(),
+                    warning.getCenterY(),
+                    warning.getRadius()
+            );
         }
 
         // American bullets are drawn with americanobullet.png in drawWorld().
@@ -954,6 +995,73 @@ public class LuaScreen extends ScreenAdapter {
 
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
+
+        batch.setProjectionMatrix(camera.combined);
+        batch.begin();
+        drawTrumpMissilesAndExplosions();
+        batch.end();
+    }
+
+    private void drawTrumpMissilesAndExplosions() {
+        Texture missileTexture = assets.getTrumpMissileTexture();
+        TextureRegion missileRegion = new TextureRegion(missileTexture);
+
+        for (TrumpMissile missile : trumpMissiles) {
+            float aspect = missileTexture.getWidth() / (float) Math.max(1, missileTexture.getHeight());
+            float width = aspect >= 1f
+                    ? TRUMP_MISSILE_RENDER_LENGTH
+                    : TRUMP_MISSILE_RENDER_LENGTH * aspect;
+            float height = aspect >= 1f
+                    ? TRUMP_MISSILE_RENDER_LENGTH / Math.max(aspect, 0.001f)
+                    : TRUMP_MISSILE_RENDER_LENGTH;
+
+            float angle = MathUtils.atan2(
+                    missile.getDirectionY(),
+                    missile.getDirectionX()
+            ) * MathUtils.radiansToDegrees;
+
+            if (missileTexture.getHeight() > missileTexture.getWidth()) {
+                angle -= 90f;
+            }
+
+            batch.draw(
+                    missileRegion,
+                    missile.getCenterX() - width / 2f,
+                    missile.getCenterY() - height / 2f,
+                    width / 2f,
+                    height / 2f,
+                    width,
+                    height,
+                    1f,
+                    1f,
+                    angle
+            );
+        }
+
+        Texture explosionTexture = assets.getExplosionTexture();
+        TextureRegion explosionRegion = new TextureRegion(explosionTexture);
+
+        for (ExplosionEffect explosion : missileExplosions) {
+            float progress = explosion.getProgress();
+            float size = explosion.getRadius() * 2f;
+            float alpha = 1f - progress;
+
+            batch.setColor(1f, 1f, 1f, alpha);
+            batch.draw(
+                    explosionRegion,
+                    explosion.getCenterX() - size / 2f,
+                    explosion.getCenterY() - size / 2f,
+                    size / 2f,
+                    size / 2f,
+                    size,
+                    size,
+                    1f,
+                    1f,
+                    0f
+            );
+        }
+
+        batch.setColor(Color.WHITE);
     }
 
     private void drawStormEffect() {
@@ -1043,7 +1151,7 @@ public class LuaScreen extends ScreenAdapter {
             );
         }
 
-        for (Laser laser : lasers) batch.draw(assets.getLaserTexture(), laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
+        drawPlayerLasers();
         drawAmericanBullets();
         drawPlayerFacingMouse();
         batch.end();
@@ -1083,6 +1191,45 @@ public class LuaScreen extends ScreenAdapter {
                 1f,
                 angle
         );
+    }
+
+    private void drawPlayerLasers() {
+        Texture laserTexture = assets.getLaserTexture();
+        TextureRegion laserRegion = new TextureRegion(laserTexture);
+
+        float aspect = laserTexture.getWidth()
+                / (float) Math.max(1, laserTexture.getHeight());
+
+        float width = aspect >= 1f
+                ? LASER_RENDER_LENGTH
+                : LASER_RENDER_LENGTH * aspect;
+        float height = aspect >= 1f
+                ? LASER_RENDER_LENGTH / Math.max(aspect, 0.001f)
+                : LASER_RENDER_LENGTH;
+
+        for (Laser laser : lasers) {
+            float angle = MathUtils.atan2(
+                    laser.getDirectionY(),
+                    laser.getDirectionX()
+            ) * MathUtils.radiansToDegrees;
+
+            if (laserTexture.getHeight() > laserTexture.getWidth()) {
+                angle -= 90f;
+            }
+
+            batch.draw(
+                    laserRegion,
+                    laser.getHitbox().x + laser.getWidth() / 2f - width / 2f,
+                    laser.getHitbox().y + laser.getHeight() / 2f - height / 2f,
+                    width / 2f,
+                    height / 2f,
+                    width,
+                    height,
+                    1f,
+                    1f,
+                    angle
+            );
+        }
     }
 
     private void drawAmericanBullets() {
