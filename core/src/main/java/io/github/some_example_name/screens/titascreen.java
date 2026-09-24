@@ -657,6 +657,35 @@ public class titascreen extends ScreenAdapter {
         return responses[MathUtils.clamp(round, 0, 2)][MathUtils.clamp(choice, 0, 2)];
     }
 
+    private void drawTextureFacingPlayer(
+            Texture texture,
+            float x,
+            float y,
+            float width,
+            float height,
+            float targetX,
+            float targetY
+    ) {
+        float dx = player.getCenterX() - targetX;
+        float dy = player.getCenterY() - targetY;
+        float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
+
+        TextureRegion region = new TextureRegion(texture);
+
+        batch.draw(
+                region,
+                x,
+                y,
+                width / 2f,
+                height / 2f,
+                width,
+                height,
+                1f,
+                1f,
+                angle
+        );
+    }
+
     private void drawTitanNpc() {
         if (titanDialogueOpen || titanDialogueFinished) {
             return;
@@ -1545,12 +1574,14 @@ public class titascreen extends ScreenAdapter {
     private void drawObamaSupportUnits() {
         Texture americanTexture = assets.getAmericanTexture();
         for (AmericanEnemy enemy : obamaAmericans) {
-            batch.draw(
+            drawTextureFacingPlayer(
                     americanTexture,
                     enemy.getX(),
                     enemy.getY(),
                     enemy.getWidth(),
-                    enemy.getHeight()
+                    enemy.getHeight(),
+                    enemy.getCenterX(),
+                    enemy.getCenterY()
             );
         }
 
