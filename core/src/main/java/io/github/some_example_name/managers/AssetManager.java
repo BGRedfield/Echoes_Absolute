@@ -53,6 +53,8 @@ public class AssetManager {
     public static final String TITA_AUTHENTIC = "authentic_games.png";
     public static final String TITA_VERITY = "verity.png";
     public static final String TITA_CR7 = "cr7.png";
+    public static final String TITA_NPC_BODY = "bixotita.png";
+    public static final String TITA_NPC_HEAD = "bixotitacabeca.png";
 
     private static boolean sharedLoaded;
     private static Texture sharedPlayerTexture;
@@ -93,6 +95,8 @@ public class AssetManager {
     private static Texture sharedAuthenticGamesTexture;
     private static Texture sharedVerityTexture;
     private static Texture sharedCr7Texture;
+    private static Texture sharedTitaNpcBodyTexture;
+    private static Texture sharedTitaNpcHeadTexture;
 
     private Texture playerTexture;
     private Texture luaBackgroundTexture;
@@ -132,6 +136,8 @@ public class AssetManager {
     private Texture authenticGamesTexture;
     private Texture verityTexture;
     private Texture cr7Texture;
+    private Texture titaNpcBodyTexture;
+    private Texture titaNpcHeadTexture;
 
     private boolean playerFallback;
 
@@ -213,6 +219,10 @@ public class AssetManager {
                         TITA_VERITY, new Color(0.85f, 0.25f, 0.75f, 1f));
                 sharedCr7Texture = loadAsset(
                         TITA_CR7, new Color(0.95f, 0.75f, 0.10f, 1f));
+                sharedTitaNpcBodyTexture = loadAsset(
+                        TITA_NPC_BODY, new Color(0.75f, 0.25f, 0.25f, 1f));
+                sharedTitaNpcHeadTexture = loadAsset(
+                        TITA_NPC_HEAD, new Color(0.95f, 0.70f, 0.55f, 1f));
 
                 sharedLoaded = true;
             }
@@ -260,6 +270,8 @@ public class AssetManager {
         authenticGamesTexture = sharedAuthenticGamesTexture;
         verityTexture = sharedVerityTexture;
         cr7Texture = sharedCr7Texture;
+        titaNpcBodyTexture = sharedTitaNpcBodyTexture;
+        titaNpcHeadTexture = sharedTitaNpcHeadTexture;
         playerFallback = playerTexture == sharedPlayerTexture && !assetExists(PLAYER);
     }
 
@@ -380,6 +392,8 @@ public class AssetManager {
     public Texture getAuthenticGamesTexture() { return authenticGamesTexture; }
     public Texture getVerityTexture() { return verityTexture; }
     public Texture getCr7Texture() { return cr7Texture; }
+    public Texture getTitaNpcBodyTexture() { return titaNpcBodyTexture; }
+    public Texture getTitaNpcHeadTexture() { return titaNpcHeadTexture; }
     public boolean isPlayerFallback() { return playerFallback; }
 
     /**
