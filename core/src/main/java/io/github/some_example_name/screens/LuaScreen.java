@@ -1163,17 +1163,16 @@ public class LuaScreen extends ScreenAdapter {
 
         if (marsPortal != null && portalSpawned) {
             Texture portalTexture = assets.getPortalTexture();
-            TextureRegion portalRegion = new TextureRegion(portalTexture);
-            float w = marsPortal.getWidth();
-            float h = marsPortal.getHeight();
+            TextureRegion portalRegion = createCenteredSquareRegion(portalTexture);
+            float portalSize = Math.min(marsPortal.getWidth(), marsPortal.getHeight());
             batch.draw(
                     portalRegion,
                     marsPortal.getX(),
                     marsPortal.getY(),
-                    w / 2f,
-                    h / 2f,
-                    w,
-                    h,
+                    portalSize / 2f,
+                    portalSize / 2f,
+                    portalSize,
+                    portalSize,
                     1f,
                     1f,
                     portalRotationDegrees
@@ -1203,6 +1202,13 @@ public class LuaScreen extends ScreenAdapter {
     
 
     
+
+    private TextureRegion createCenteredSquareRegion(Texture texture) {
+        int side = Math.min(texture.getWidth(), texture.getHeight());
+        int x = (texture.getWidth() - side) / 2;
+        int y = (texture.getHeight() - side) / 2;
+        return new TextureRegion(texture, x, y, side, side);
+    }
 
     private void drawTextureFacingPlayer(
             Texture texture,
