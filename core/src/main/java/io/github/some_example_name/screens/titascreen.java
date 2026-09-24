@@ -221,7 +221,7 @@ public class titascreen extends ScreenAdapter {
         hudViewport = new ScreenViewport();
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         assets = new AssetManager();
         assets.load();
         player = new Player(BASE_X + 120f, BASE_Y + 50f);
@@ -852,7 +852,7 @@ public class titascreen extends ScreenAdapter {
         batch.begin();
 
         font.setColor(Color.YELLOW);
-        font.getData().setScale(1.20f);
+        font.getData().setScale(1.35f);
         font.draw(batch, "NPC", textX, panelY + panelHeight - 26f);
 
         font.setColor(Color.WHITE);
@@ -862,7 +862,7 @@ public class titascreen extends ScreenAdapter {
                     ? titanDialogueResponse
                     : getTitanDialogueSpeech(titanDialogueRound);
 
-            font.getData().setScale(1.08f);
+            font.getData().setScale(1.32f);
             font.draw(
                     batch,
                     speech,
@@ -873,12 +873,12 @@ public class titascreen extends ScreenAdapter {
                     true
             );
 
-            font.getData().setScale(0.80f);
+            font.getData().setScale(0.95f);
             font.setColor(Color.LIGHT_GRAY);
             font.draw(batch, "ENTER = continuar", textX, panelY + 20f);
             font.draw(batch, "ESC = fechar", portraitX - 120f, panelY + 20f);
         } else {
-            font.getData().setScale(0.90f);
+            font.getData().setScale(1.05f);
             font.setColor(Color.WHITE);
             font.draw(
                     batch,
@@ -887,7 +887,7 @@ public class titascreen extends ScreenAdapter {
                     panelY + panelHeight - 42f
             );
 
-            font.getData().setScale(0.72f);
+            font.getData().setScale(0.95f);
 
             int hovered = getHoveredTitanDialogueChoice();
             for (int i = 0; i < 3; i++) {
@@ -910,7 +910,7 @@ public class titascreen extends ScreenAdapter {
             font.draw(batch, "MOUSE = escolher | CLIQUE = confirmar", portraitX - 15f, panelY + 18f);
         }
 
-        font.getData().setScale(0.70f);
+        font.getData().setScale(0.85f);
         font.setColor(Color.GRAY);
         font.draw(
                 batch,
