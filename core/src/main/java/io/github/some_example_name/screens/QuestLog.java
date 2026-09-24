@@ -70,7 +70,7 @@ public class QuestLog {
     public QuestLog() {
         batch = new SpriteBatch();
         shapes = new ShapeRenderer();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
         font.setColor(Color.WHITE);
     }
