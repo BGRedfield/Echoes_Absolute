@@ -26,7 +26,7 @@ public class PhaseSelectScreen extends ScreenAdapter {
     public PhaseSelectScreen(Game game) {
         this.game = game;
         batch = new SpriteBatch();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
     }
 
