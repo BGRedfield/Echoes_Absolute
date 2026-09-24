@@ -748,7 +748,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         Gdx.gl.glBlendFunc(GL20.GL_SRC_ALPHA, GL20.GL_ONE_MINUS_SRC_ALPHA);
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        bossStorm.drawWorld(shapeRenderer, WORLD_WIDTH, WORLD_HEIGHT);
+        bossStorm.drawWorldFromCorners(shapeRenderer, WORLD_WIDTH, WORLD_HEIGHT);
         shapeRenderer.end();
         Gdx.gl.glDisable(GL20.GL_BLEND);
     }
