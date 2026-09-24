@@ -143,7 +143,7 @@ public class LuaMarteScreen extends ScreenAdapter {
         hudViewport = new ScreenViewport();
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        hudFont = PixelFontFactory.create();
+        hudFont = new BitmapFont();
         assets = new AssetManager();
         assets.load();
         player = new Player(PLAYER_SPAWN_X, PLAYER_SPAWN_Y);
