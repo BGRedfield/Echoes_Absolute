@@ -619,6 +619,46 @@ public class LuaScreen extends ScreenAdapter {
                     MISSILE_WARNING_TIME
             ));
         }
+
+        // Fallback determinístico: se o sorteio não encontrou seis posições,
+        // procura em uma grade da área visível até completar as seis.
+        if (missileWarnings.size < MISSILE_WARNING_COUNT) {
+            float step = radius * 2f + MISSILE_WARNING_GAP;
+            for (float centerX = minX;
+                 centerX <= maxX && missileWarnings.size < MISSILE_WARNING_COUNT;
+                 centerX += step) {
+                for (float centerY = minY;
+                     centerY <= maxY && missileWarnings.size < MISSILE_WARNING_COUNT;
+                     centerY += step) {
+
+                    float bossDx = centerX - trumpBoss.getCenterX();
+                    float bossDy = centerY - trumpBoss.getCenterY();
+                    if (bossDx * bossDx + bossDy * bossDy < bossClearance * bossClearance) {
+                        continue;
+                    }
+
+                    boolean overlapsExisting = false;
+                    for (MissileWarning existing : missileWarnings) {
+                        float dx = centerX - existing.getCenterX();
+                        float dy = centerY - existing.getCenterY();
+                        if (dx * dx + dy * dy
+                                < minDistanceBetweenWarnings * minDistanceBetweenWarnings) {
+                            overlapsExisting = true;
+                            break;
+                        }
+                    }
+
+                    if (!overlapsExisting) {
+                        missileWarnings.add(new MissileWarning(
+                                centerX,
+                                centerY,
+                                radius,
+                                MISSILE_WARNING_TIME
+                        ));
+                    }
+                }
+            }
+        }
     }
 
     private void updateMissileWarnings(float delta) {
