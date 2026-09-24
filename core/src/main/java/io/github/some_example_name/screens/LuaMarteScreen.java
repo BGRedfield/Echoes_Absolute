@@ -330,6 +330,12 @@ public class LuaMarteScreen extends ScreenAdapter {
         updatePortalStrikes(delta);
         handleExitPortal();
 
+        // A troca de tela pode acontecer dentro do portal. Pare imediatamente
+        // antes de tentar desenhar esta Screen depois que ela foi descartada.
+        if (changingScreen) {
+            return false;
+        }
+
         Rectangle lunarBase = new Rectangle(
                 BASE_X,
                 BASE_Y,
