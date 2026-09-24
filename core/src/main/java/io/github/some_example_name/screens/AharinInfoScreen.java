@@ -36,7 +36,7 @@ public class AharinInfoScreen extends ScreenAdapter {
         this.game = game;
         this.saveData = saveData;
         batch = new SpriteBatch();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
     }
 
