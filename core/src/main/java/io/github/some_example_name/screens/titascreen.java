@@ -893,16 +893,8 @@ public class titascreen extends ScreenAdapter {
         shapeRenderer.setColor(new Color(0.035f, 0.035f, 0.035f, 1f));
         shapeRenderer.rect(portraitX, portraitY, portraitSize, portraitSize);
 
-        float cubeSize = 92f;
-        float cubeX = portraitX + (portraitSize - cubeSize) / 2f;
-        float cubeY = portraitY + 28f;
-
-        shapeRenderer.setColor(new Color(1f, 0.85f, 0.05f, 1f));
-        shapeRenderer.rect(cubeX, cubeY, cubeSize, cubeSize);
-
-        shapeRenderer.setColor(Color.BLACK);
-        shapeRenderer.rect(cubeX + 20f, cubeY + 57f, 11f, 11f);
-        shapeRenderer.rect(cubeX + cubeSize - 31f, cubeY + 57f, 11f, 11f);
+        // O retrato do NPC é desenhado com o corpo e a cabeça reais depois,
+        // sobre este fundo escuro.
 
         if (!titanDialogueWaiting) {
             int hovered = getHoveredTitanDialogueChoice();
@@ -932,6 +924,22 @@ public class titascreen extends ScreenAdapter {
 
         batch.setProjectionMatrix(hudViewport.getCamera().combined);
         batch.begin();
+
+        // Retrato do NPC dentro da caixa: corpo + cabeça, usando os dois assets.
+        drawNpcTexturePreservingAspect(
+                assets.getTitaNpcBodyTexture(),
+                portraitX + portraitSize / 2f,
+                portraitY + 46f,
+                82f,
+                82f
+        );
+        drawNpcTexturePreservingAspect(
+                assets.getTitaNpcHeadTexture(),
+                portraitX + portraitSize / 2f,
+                portraitY + 110f,
+                76f,
+                58f
+        );
 
         font.setColor(Color.YELLOW);
         font.getData().setScale(1.35f);
