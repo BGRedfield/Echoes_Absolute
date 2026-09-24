@@ -951,8 +951,10 @@ public class CalistoScreen extends ScreenAdapter {
         float width = player.getWidth();
         float height = player.getHeight();
 
+        TextureRegion playerRegion = new TextureRegion(assets.getPlayerTexture());
+
         batch.draw(
-                assets.getPlayerTexture(),
+                playerRegion,
                 player.getX(),
                 player.getY(),
                 width / 2f,
