@@ -41,7 +41,7 @@ public class GameOverScreen extends ScreenAdapter {
         this.retryPhase = retryPhase;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
     }
 
