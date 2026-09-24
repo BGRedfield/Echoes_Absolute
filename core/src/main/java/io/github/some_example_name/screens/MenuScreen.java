@@ -31,7 +31,7 @@ public class MenuScreen extends ScreenAdapter {
     public MenuScreen(Game game) {
         this.game = game;
         batch = new SpriteBatch();
-        font = PixelFontFactory.create();
+        font = new BitmapFont();
         viewport = new ScreenViewport();
         font.setColor(Color.WHITE);
     }
