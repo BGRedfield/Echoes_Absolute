@@ -15,7 +15,6 @@ import com.badlogic.gdx.graphics.Texture;
 public class AssetManager {
 
     public static final String PLAYER = "astronauta.png";
-    public static final String PLAYER_SHEET = "player_sheet_64.png";
     public static final String LUA_BACKGROUND = "lua_background.png";
     public static final String LASER = "laser.png";
     public static final String LUNAR_BASE = "baselunar.png";
@@ -54,7 +53,6 @@ public class AssetManager {
 
     private static boolean sharedLoaded;
     private static Texture sharedPlayerTexture;
-    private static Texture sharedPlayerSheetTexture;
     private static Texture sharedLuaBackgroundTexture;
     private static Texture sharedLaserTexture;
     private static Texture sharedLunarBaseTexture;
@@ -91,7 +89,6 @@ public class AssetManager {
     private static Texture sharedCr7Texture;
 
     private Texture playerTexture;
-    private Texture playerSheetTexture;
     private Texture luaBackgroundTexture;
     private Texture laserTexture;
     private Texture lunarBaseTexture;
@@ -143,10 +140,6 @@ public class AssetManager {
                 sharedPlayerTexture = !assetExists(PLAYER)
                         ? createAstronautFallback()
                         : loadAsset(PLAYER, Color.CYAN);
-
-                sharedPlayerSheetTexture = assetExists(PLAYER_SHEET)
-                        ? loadAsset(PLAYER_SHEET, Color.WHITE)
-                        : null;
 
                 sharedLuaBackgroundTexture = loadAsset(
                         LUA_BACKGROUND, new Color(0.08f, 0.08f, 0.13f, 1f));
@@ -215,7 +208,6 @@ public class AssetManager {
 
     private void attachSharedTextures() {
         playerTexture = sharedPlayerTexture;
-        playerSheetTexture = sharedPlayerSheetTexture;
         luaBackgroundTexture = sharedLuaBackgroundTexture;
         laserTexture = sharedLaserTexture;
         lunarBaseTexture = sharedLunarBaseTexture;
@@ -333,7 +325,6 @@ public class AssetManager {
     }
 
     public Texture getPlayerTexture() { return playerTexture; }
-    public Texture getPlayerSpriteSheetTexture() { return playerSheetTexture; }
     public Texture getLuaBackgroundTexture() { return luaBackgroundTexture; }
     public Texture getLaserTexture() { return laserTexture; }
     public Texture getLunarBaseTexture() { return lunarBaseTexture; }
