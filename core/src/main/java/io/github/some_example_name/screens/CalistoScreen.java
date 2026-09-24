@@ -25,7 +25,6 @@ import com.badlogic.gdx.utils.viewport.Viewport;
 import io.github.some_example_name.entities.DeathCause;
 import io.github.some_example_name.entities.Laser;
 import io.github.some_example_name.entities.Player;
-import io.github.some_example_name.entities.PlayerSpriteAnimator;
 import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.managers.AssetManager;
 import io.github.some_example_name.managers.SaveManager;
@@ -76,7 +75,6 @@ public class CalistoScreen extends ScreenAdapter {
     private final BitmapFont font;
     private final AssetManager assets;
     private final Player player;
-    private final PlayerSpriteAnimator playerAnimator;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
     private final QuestLog questLog;
@@ -140,7 +138,6 @@ public class CalistoScreen extends ScreenAdapter {
         assets.load();
 
         player = new Player(210f, 620f);
-        playerAnimator = new PlayerSpriteAnimator();
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
         questLog = new QuestLog();
@@ -242,7 +239,6 @@ public class CalistoScreen extends ScreenAdapter {
 
     private void update(float delta) {
         collectibleFloatTime += delta;
-        playerAnimator.update(delta);
         delta = Math.min(delta, 0.05f);
 
         if (!inBossArena) {
@@ -723,13 +719,7 @@ public class CalistoScreen extends ScreenAdapter {
             // Player and corridor entities are drawn above the floor.
         }
 
-        playerAnimator.draw(
-                batch,
-                assets.getPlayerSpriteSheetTexture(),
-                assets.getPlayerTexture(),
-                player,
-                stats
-        );
+        drawPlayerFacingMouse();
 
         for (Laser laser : lasers) {
             batch.draw(
@@ -944,6 +934,35 @@ public class CalistoScreen extends ScreenAdapter {
         }
 
         shapeRenderer.end();
+    }
+
+    private void drawPlayerFacingMouse() {
+        Vector3 mouseWorld = new Vector3(
+                Gdx.input.getX(),
+                Gdx.input.getY(),
+                0f
+        );
+        camera.unproject(mouseWorld);
+
+        float dx = mouseWorld.x - player.getCenterX();
+        float dy = mouseWorld.y - player.getCenterY();
+        float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
+
+        float width = player.getWidth();
+        float height = player.getHeight();
+
+        batch.draw(
+                assets.getPlayerTexture(),
+                player.getX(),
+                player.getY(),
+                width / 2f,
+                height / 2f,
+                width,
+                height,
+                1f,
+                1f,
+                angle
+        );
     }
 
     private void drawHud() {
