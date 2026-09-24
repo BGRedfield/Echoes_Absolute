@@ -120,6 +120,7 @@ public class titascreen extends ScreenAdapter {
     // Titã sempre entra com a arma aprimorada do Marte.
     private static final float EVOLVED_FIRE_INTERVAL = 0.09f;
     private static final float EVOLVED_BURST_SPREAD = 0.045f;
+    private static final float LASER_RENDER_LENGTH = 42f;
 
     private final Game game;
     private final OrthographicCamera camera;
@@ -2014,8 +2015,40 @@ public class titascreen extends ScreenAdapter {
 
     private void drawLasers() {
         Texture texture = assets.getLaserTexture();
+        TextureRegion region = new TextureRegion(texture);
+
+        float aspect = texture.getWidth()
+                / (float) Math.max(1, texture.getHeight());
+
+        float width = aspect >= 1f
+                ? LASER_RENDER_LENGTH
+                : LASER_RENDER_LENGTH * aspect;
+        float height = aspect >= 1f
+                ? LASER_RENDER_LENGTH / Math.max(aspect, 0.001f)
+                : LASER_RENDER_LENGTH;
+
         for (Laser laser : lasers) {
-            batch.draw(texture, laser.getX(), laser.getY(), laser.getWidth(), laser.getHeight());
+            float angle = MathUtils.atan2(
+                    laser.getDirectionY(),
+                    laser.getDirectionX()
+            ) * MathUtils.radiansToDegrees;
+
+            if (texture.getHeight() > texture.getWidth()) {
+                angle -= 90f;
+            }
+
+            batch.draw(
+                    region,
+                    laser.getHitbox().x + laser.getWidth() / 2f - width / 2f,
+                    laser.getHitbox().y + laser.getHeight() / 2f - height / 2f,
+                    width / 2f,
+                    height / 2f,
+                    width,
+                    height,
+                    1f,
+                    1f,
+                    angle
+            );
         }
 
         if (!insideCastle) {
@@ -2064,6 +2097,45 @@ public class titascreen extends ScreenAdapter {
                     bulletRegion,
                     bullet.getX() + bullet.getWidth() / 2f - width / 2f,
                     bullet.getY() + bullet.getHeight() / 2f - height / 2f,
+                    width / 2f,
+                    height / 2f,
+                    width,
+                    height,
+                    1f,
+                    1f,
+                    angle
+            );
+        }
+    }
+
+    private void drawPlayerLasers() {
+        Texture laserTexture = assets.getLaserTexture();
+        TextureRegion laserRegion = new TextureRegion(laserTexture);
+
+        float aspect = laserTexture.getWidth()
+                / (float) Math.max(1, laserTexture.getHeight());
+
+        float width = aspect >= 1f
+                ? LASER_RENDER_LENGTH
+                : LASER_RENDER_LENGTH * aspect;
+        float height = aspect >= 1f
+                ? LASER_RENDER_LENGTH / Math.max(aspect, 0.001f)
+                : LASER_RENDER_LENGTH;
+
+        for (Laser laser : lasers) {
+            float angle = MathUtils.atan2(
+                    laser.getDirectionY(),
+                    laser.getDirectionX()
+            ) * MathUtils.radiansToDegrees;
+
+            if (laserTexture.getHeight() > laserTexture.getWidth()) {
+                angle -= 90f;
+            }
+
+            batch.draw(
+                    laserRegion,
+                    laser.getHitbox().x + laser.getWidth() / 2f - width / 2f,
+                    laser.getHitbox().y + laser.getHeight() / 2f - height / 2f,
                     width / 2f,
                     height / 2f,
                     width,
