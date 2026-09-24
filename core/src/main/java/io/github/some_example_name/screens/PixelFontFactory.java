@@ -147,7 +147,7 @@ public final class PixelFontFactory {
     private static char accentFor(char c) {
         switch (c) {
             case 'Ã': case 'ã': case 'Õ': case 'õ': return '~';
-            default: return ''';
+            default: return '\'';
         }
     }
 
