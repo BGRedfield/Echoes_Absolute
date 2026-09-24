@@ -768,11 +768,29 @@ public class LuaMarteScreen extends ScreenAdapter {
         }
 
         Texture alienTexture = assets.getAlienTexture();
-        for (MarsEnemy enemy : martians) batch.draw(alienTexture, enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
+        for (MarsEnemy enemy : martians) {
+            drawTextureFacingPlayer(
+                    alienTexture,
+                    enemy.getX(),
+                    enemy.getY(),
+                    enemy.getWidth(),
+                    enemy.getHeight(),
+                    enemy.getCenterX(),
+                    enemy.getCenterY()
+            );
+        }
 
         if (supremeAlien != null && !supremeAlien.isDead()) {
             Texture bossTexture = assets.getBossMarsTexture();
-            batch.draw(bossTexture, supremeAlien.getX(), supremeAlien.getY(), supremeAlien.getWidth(), supremeAlien.getHeight());
+            drawTextureFacingPlayer(
+                    bossTexture,
+                    supremeAlien.getX(),
+                    supremeAlien.getY(),
+                    supremeAlien.getWidth(),
+                    supremeAlien.getHeight(),
+                    supremeAlien.getCenterX(),
+                    supremeAlien.getCenterY()
+            );
         }
 
         Texture portalTexture = assets.getPortalTexture();
@@ -975,6 +993,35 @@ public class LuaMarteScreen extends ScreenAdapter {
                 playerRegion,
                 player.getX(),
                 player.getY(),
+                width / 2f,
+                height / 2f,
+                width,
+                height,
+                1f,
+                1f,
+                angle
+        );
+    }
+
+    private void drawTextureFacingPlayer(
+            Texture texture,
+            float x,
+            float y,
+            float width,
+            float height,
+            float targetX,
+            float targetY
+    ) {
+        float dx = player.getCenterX() - targetX;
+        float dy = player.getCenterY() - targetY;
+        float angle = MathUtils.atan2(dy, dx) * MathUtils.radiansToDegrees;
+
+        TextureRegion region = new TextureRegion(texture);
+
+        batch.draw(
+                region,
+                x,
+                y,
                 width / 2f,
                 height / 2f,
                 width,
