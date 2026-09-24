@@ -36,7 +36,7 @@ public class TitaIntroScreen extends ScreenAdapter {
         this.saveData = saveData;
         batch = new SpriteBatch();
         shapeRenderer = new ShapeRenderer();
-        font = new BitmapFont();
+        font = PixelFontFactory.create();
         viewport = new ScreenViewport();
     }
 
