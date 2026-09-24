@@ -30,6 +30,7 @@ import io.github.some_example_name.entities.Laser;
 import io.github.some_example_name.entities.LuaItem;
 import io.github.some_example_name.entities.MissileWarning;
 import io.github.some_example_name.entities.Player;
+import io.github.some_example_name.entities.PlayerSpriteAnimator;
 import io.github.some_example_name.entities.PlayerStats;
 import io.github.some_example_name.entities.RifleWeapon;
 import io.github.some_example_name.entities.TitaBoss;
@@ -130,6 +131,7 @@ public class titascreen extends ScreenAdapter {
     private final BitmapFont font;
     private final AssetManager assets;
     private final Player player;
+    private final PlayerSpriteAnimator playerAnimator;
     private final PlayerStats stats;
     private final PauseMenu pauseMenu;
     private final QuestLog questLog;
@@ -223,6 +225,7 @@ public class titascreen extends ScreenAdapter {
         assets = new AssetManager();
         assets.load();
         player = new Player(BASE_X + 120f, BASE_Y + 50f);
+        playerAnimator = new PlayerSpriteAnimator();
         stats = new PlayerStats();
         pauseMenu = new PauseMenu(game);
         questLog = new QuestLog();
@@ -379,6 +382,7 @@ public class titascreen extends ScreenAdapter {
 
     private boolean update(float delta) {
         delta = Math.min(delta, 0.05f);
+        playerAnimator.update(delta);
 
         collectibleFloatTime += delta;
 
@@ -1606,8 +1610,13 @@ public class titascreen extends ScreenAdapter {
 
         drawLasers();
 
-        Texture playerTexture = assets.getPlayerTexture();
-        batch.draw(playerTexture, player.getX(), player.getY(), player.getWidth(), player.getHeight());
+        playerAnimator.draw(
+                batch,
+                assets.getPlayerSpriteSheetTexture(),
+                assets.getPlayerTexture(),
+                player,
+                stats
+        );
 
         batch.end();
 
